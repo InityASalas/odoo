@@ -37,7 +37,11 @@ class TestSaleOrder(ClickAndCollectCommon):
 
     def test_warehouse_is_computed_based_on_pickup_location(self):
         warehouse_2 = self._create_warehouse()
-        so = self._create_in_store_delivery_order(pickup_location_data={'id': warehouse_2.id})
+        warehouse2_shipping_partner = self.env['res.partner'].create({
+            'name': "Warehouse 2 Shipping Partner",
+            'location_data': {'id': warehouse_2.id},
+        })
+        so = self._create_in_store_delivery_order(partner_shipping_id=warehouse2_shipping_partner.id)
         self.assertEqual(so.warehouse_id, warehouse_2)
 
     def test_fiscal_position_id_is_computed_from_pickup_location_partner(self):
@@ -48,9 +52,12 @@ class TestSaleOrder(ClickAndCollectCommon):
         })
         self.default_partner.country_id = self.country_us
         self.warehouse.partner_id.country_id = self.country_be
+        warehouse_shipping_partner = self.env['res.partner'].create({
+            'name': "Warehouse Shipping Partner",
+            'location_data': {'id': self.warehouse.id},
+        })
         so = self._create_in_store_delivery_order(
-            partner_shipping_id=self.default_partner.id,
-            pickup_location_data={'id': self.warehouse.id},
+            partner_shipping_id=warehouse_shipping_partner.id,
         )
         self.assertEqual(so.fiscal_position_id, fp_be)
 
@@ -104,7 +111,7 @@ class TestSaleOrder(ClickAndCollectCommon):
                 })
             ]
         )
-        unavailable_ol = cart._get_unavailable_order_lines(self.warehouse.id)
+        unavailable_ol = cart._get_unavailable_lines(self.warehouse.id)
         self.assertFalse(unavailable_ol.product_id.ids)
 
     def test_out_of_stock_product_is_unavailable(self):
@@ -116,7 +123,7 @@ class TestSaleOrder(ClickAndCollectCommon):
                 }),
             ]
         )
-        unavailable_ol = cart._get_unavailable_order_lines(self.warehouse.id)
+        unavailable_ol = cart._get_unavailable_lines(self.warehouse.id)
         self.assertIn(self.product_2.id, unavailable_ol.product_id.ids)
 
     def test_product_in_different_warehouse_is_unavailable(self):
@@ -129,5 +136,5 @@ class TestSaleOrder(ClickAndCollectCommon):
                 })
             ]
         )
-        unavailable_ol = cart._get_unavailable_order_lines(self.warehouse_2.id)
+        unavailable_ol = cart._get_unavailable_lines(self.warehouse_2.id)
         self.assertIn(self.storable_product.id, unavailable_ol.product_id.ids)

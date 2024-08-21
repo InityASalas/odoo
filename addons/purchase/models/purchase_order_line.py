@@ -73,6 +73,7 @@ class PurchaseOrderLine(models.Model):
         ('line_section', "Section"),
         ('line_note', "Note")], default=False, help="Technical field for UX purpose.")
     is_downpayment = fields.Boolean()
+    selected_seller_id = fields.Many2one('product.supplierinfo', compute='_compute_selected_seller_id', help='Technical field to get the vendor pricelist used to generate this line')
 
     _accountable_required_fields = models.Constraint(
         'CHECK(display_type IS NOT NULL OR is_downpayment OR (product_id IS NOT NULL AND product_uom_id IS NOT NULL AND date_planned IS NOT NULL))',
@@ -182,6 +183,18 @@ class PurchaseOrderLine(models.Model):
                 line.qty_received_manual = line.qty_received
             else:
                 line.qty_received_manual = 0.0
+
+    @api.depends('product_id', 'product_id.seller_ids', 'partner_id', 'product_qty', 'order_id.date_order', 'product_uom_id')
+    def _compute_selected_seller_id(self):
+        for line in self:
+            params = line._get_select_sellers_params()
+            seller = line.product_id._select_seller(
+                partner_id=line.partner_id,
+                quantity=line.product_qty,
+                date=line.order_id.date_order and line.order_id.date_order.date() or fields.Date.context_today(line),
+                uom_id=line.product_uom_id,
+                params=params)
+            line.selected_seller_id = seller.id if seller else False
 
     @api.model_create_multi
     def create(self, vals_list):

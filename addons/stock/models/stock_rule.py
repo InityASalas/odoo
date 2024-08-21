@@ -249,6 +249,7 @@ class StockRule(models.Model):
             copied_quantity = move_to_copy.product_uom_qty
         if not company_id:
             company_id = self.sudo().warehouse_id and self.sudo().warehouse_id.company_id.id or self.sudo().picking_type_id.warehouse_id.company_id.id
+        product_lang = move_to_copy.product_id.with_context(lang=move_to_copy._get_lang())
         new_move_vals = {
             'product_uom_qty': copied_quantity,
             'origin': move_to_copy.origin or move_to_copy.picking_id.name or "/",
@@ -264,8 +265,12 @@ class StockRule(models.Model):
             'propagate_cancel': self.propagate_cancel,
             'warehouse_id': self.warehouse_id.id,
             'procure_method': 'make_to_order',
-            'description_picking': move_to_copy.product_id.with_context(lang=move_to_copy._get_lang())._get_description(
-                self.picking_type_id) or move_to_copy.description_picking,
+            'description_picking': '\n'.join(filter(None, [
+                move_to_copy.description_picking and move_to_copy.description_picking.replace(
+                    product_lang._get_description(move_to_copy.picking_type_id), ''
+                ).strip(),
+                product_lang._get_description(self.picking_type_id).strip(),
+            ])),
         }
         return new_move_vals
 
@@ -323,11 +328,11 @@ class StockRule(models.Model):
         )
         date_deadline = values.get('date_deadline') and (fields.Datetime.to_datetime(values['date_deadline']) - relativedelta(days=self.delay or 0)) or False
         partner = self.partner_address_id or (values.get('group_id', False) and values['group_id'].partner_id)
-        if partner:
-            product_id = product_id.with_context(lang=(partner and partner.lang) or self.env.user.lang)
+        product_id = product_id.with_context(lang=(partner and partner.lang) or self.env.user.lang)
         picking_description = ''
         if values.get('product_description_variants'):
-            picking_description += values['product_description_variants']
+            picking_description += values['product_description_variants'] + '\n'
+        picking_description += product_id._get_description(self.picking_type_id)
         # it is possible that we've already got some move done, so check for the done qty and create
         # a new move with the correct qty
         qty_left = product_qty
@@ -368,7 +373,7 @@ class StockRule(models.Model):
             'date': date_scheduled,
             'date_deadline': False if self.group_propagation_option == 'fixed' else date_deadline,
             'propagate_cancel': self.propagate_cancel,
-            'description_picking': picking_description,
+            'description_picking': picking_description.strip(),
             'priority': values.get('priority', "0"),
             'orderpoint_id': values.get('orderpoint_id') and values['orderpoint_id'].id,
         }

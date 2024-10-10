@@ -12,6 +12,7 @@
         'digest',
         'web',
         'web_editor',
+        'html_editor',
         'http_routing',
         'portal',
         'social_media',
@@ -307,6 +308,7 @@
             'website/static/tests/redirect_field_tests.js',
         ],
         'web.assets_unit_tests': [
+<<<<<<< d6d482e2fa8b24d323fdb76d6dd93ae54c13a483
             'web/static/src/legacy/js/public/minimal_dom.js',
             'website/static/tests/core/**/*',
             'website/static/tests/helpers.js',
@@ -330,6 +332,10 @@
             ('remove', 'website/static/src/xml/web_editor.xml'),
             'website/static/src/snippets/s_table_of_content/000.scss',
             'google_recaptcha/static/src/js/recaptcha.js',
+||||||| 05cff3b7d866f6bc95c4b32f343ae14a4da946f2
+=======
+            'website/static/tests/website_html_editor.test.js',
+>>>>>>> eead494d306e7dea71ac9548b5f43a4f81e53528
         ],
         'web.tests_assets': [
             'website/static/tests/website_service_mock.js',
@@ -342,6 +348,10 @@
             'website/static/src/xml/web_editor.xml',
             'website/static/src/js/editor/add_snippet_dialog.js',
             'website/static/src/js/editor/widget_link.js',
+        ],
+        'html_editor.assets_link_popover': [
+            'website/static/src/js/editor/html_editor.js',
+            'website/static/src/xml/html_editor.xml',
         ],
         'website.assets_wysiwyg': [
             ('include', 'web._assets_helpers'),

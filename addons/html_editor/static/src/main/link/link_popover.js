@@ -113,8 +113,15 @@ export class LinkPopover extends Component {
         this.state.url = deducedUrl
             ? this.correctLink(deducedUrl)
             : this.correctLink(this.state.url);
+<<<<<<< d6d482e2fa8b24d323fdb76d6dd93ae54c13a483
         this.loadAsyncLinkPreview();
         this.props.onApply(this.state.url, this.state.label, this.classes);
+||||||| 05cff3b7d866f6bc95c4b32f343ae14a4da946f2
+        this.loadAsyncLinkPreview();
+        this.props.onApply(this.state.url, this.state.label, this.state.classes);
+=======
+        this.props.onApply(this.state.url, this.state.label, this.state.classes);
+>>>>>>> eead494d306e7dea71ac9548b5f43a4f81e53528
     }
     onClickEdit() {
         this.state.editing = true;

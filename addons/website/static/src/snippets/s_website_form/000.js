@@ -20,6 +20,7 @@ import {
 } from "@web/core/l10n/dates";
 const { DateTime } = luxon;
 import wUtils from '@website/js/utils';
+import weUtils from "@web_editor/js/common/utils";
 
     publicWidget.registry.EditModeWebsiteForm = publicWidget.Widget.extend({
         selector: '.s_website_form form, form.s_website_form', // !compatibility
@@ -50,6 +51,16 @@ import wUtils from '@website/js/utils';
                         el.value = format(DateTime.fromSeconds(parseInt(value)));
                     }
                 });
+                // Set unique IDs for each fields (if not already set).
+                const inputEls = this.el.querySelectorAll(".s_website_form_input:not([type='hidden'])");
+                for (const inputEl of inputEls) {
+                    const labelEl = inputEl.closest('.row')?.querySelector('label');
+                    if (labelEl && !labelEl.hasAttribute("for") && !inputEl.hasAttribute("id")) {
+                        const id = weUtils.generateHTMLId();
+                        labelEl.setAttribute("for", id);
+                        inputEl.setAttribute("id", id);
+                    }
+                }
             }
             return this._super(...arguments);
         },

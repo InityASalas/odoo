@@ -610,19 +610,20 @@ class Properties(Field):
             raise ValueError(f"Missing property name for {self}")
 
         def expression_property(record):
-            # TODO the implementation is slow for relational fields
-            values = self.__get__(record)
+            property_value = self.__get__(record)
+            value = property_value.get(property_name)
+            if value:
+                return value
+            # find definition to check the type
             for definition in self._get_properties_definition(record) or ():
                 if definition.get('name') == property_name:
                     break
             else:
                 # definition not found
-                return values.get(property_name, False)
-            value_dict = {**definition, 'value': values.get(property_name)}
-            env = record.env
-            res_ids_per_model = self._get_res_ids_per_model(env, [[value_dict]])
-            self._parse_json_types([value_dict], env, res_ids_per_model)
-            return value_dict['value']
+                return value or False
+            if not value and definition['type'] in ('many2one', 'many2many'):
+                return record.env.get(definition.get('comodel'))
+            return value
         return expression_property
 
     def filter_function(self, records, field_expr, operator, value):

@@ -14,6 +14,7 @@ import traceback
 from collections.abc import Collection, Iterable
 from os.path import join as opj
 from os.path import normpath
+from pathlib import Path  # noqa: E402
 
 import odoo.addons
 import odoo.release as release
@@ -421,33 +422,15 @@ def load_openerp_module(module_name: str) -> None:
         raise
 
 
-def get_modules() -> list[str]:
-    """Get the list of module names that can be loaded.
-    """
-    def listdir(dir):
-        def clean(name):
-            name = os.path.basename(name)
-            if name[-4:] == '.zip':
-                name = name[:-4]
-            return name
-
-        def is_really_module(name):
-            for mname in MANIFEST_NAMES:
-                if os.path.isfile(opj(dir, name, mname)):
-                    return True
-        return [
-            clean(it)
-            for it in os.listdir(dir)
-            if is_really_module(it)
-        ]
-
-    plist: list[str] = []
-    for ad in odoo.addons.__path__:
-        if not os.path.exists(ad):
-            _logger.warning("addons path does not exist: %s", ad)
-            continue
-        plist.extend(listdir(ad))
-    return sorted(set(plist))
+def get_modules(paths: list[str] | None = None) -> list[str]:
+    """ Get the list of module names that can be loaded. """
+    paths = paths or odoo.addons.__path__
+    return sorted({
+        manifest.parent.stem
+        for path in paths
+        for manifest_name in MANIFEST_NAMES
+        for manifest in Path(path).glob(f"*/{manifest_name}")
+    })
 
 
 def get_modules_with_version() -> dict[str, str]:

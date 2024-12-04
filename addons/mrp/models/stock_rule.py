@@ -27,14 +27,15 @@ class StockRule(models.Model):
         message_dict['manufacture'] = manufacture_message
         return message_dict
 
-    def _compute_picking_type_code_domain(self):
-        remaining = self.browse()
-        for rule in self:
-            if rule.action == 'manufacture':
-                rule.picking_type_code_domain = 'mrp_operation'
-            else:
-                remaining |= rule
-        super(StockRule, remaining)._compute_picking_type_code_domain()
+    def _get_picking_type_code_domain(self):
+        domain_by_action = super()._get_picking_type_code_domain()
+
+        if self.action == 'manufacture':
+            domain = domain_by_action.get('manufacture', [])
+            domain = expression.AND([domain, [('code', '=', 'mrp_operation')]])
+            domain_by_action['manufacture'] = domain
+
+        return domain_by_action
 
     def _should_auto_confirm_procurement_mo(self, p):
         return (not p.orderpoint_id and p.move_raw_ids) or (p.move_dest_ids.procure_method != 'make_to_order' and not p.move_raw_ids and not p.workorder_ids)

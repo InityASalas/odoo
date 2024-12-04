@@ -8,6 +8,7 @@ from markupsafe import Markup
 from odoo.tools import float_compare
 
 from odoo import api, fields, models, SUPERUSER_ID, _
+from odoo.osv import expression
 from odoo.addons.stock.models.stock_rule import ProcurementException
 from odoo.tools import groupby
 
@@ -30,15 +31,15 @@ class StockRule(models.Model):
         })
         return message_dict
 
-    @api.depends('action')
-    def _compute_picking_type_code_domain(self):
-        remaining = self.browse()
-        for rule in self:
-            if rule.action == 'buy':
-                rule.picking_type_code_domain = 'incoming'
-            else:
-                remaining |= rule
-        super(StockRule, remaining)._compute_picking_type_code_domain()
+    def _get_picking_type_code_domain(self):
+        domain_by_action = super()._get_picking_type_code_domain()
+
+        if self.action == 'buy':
+            domain = domain_by_action.get('buy', [])
+            domain = expression.AND([domain, [('code', '=', 'incoming')]])
+            domain_by_action['buy'] = domain
+
+        return domain_by_action
 
     @api.onchange('action')
     def _onchange_action(self):

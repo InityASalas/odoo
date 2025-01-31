@@ -446,6 +446,9 @@ class WebsiteSale(payment_portal.PaymentPortal):
             layout_mode = 'grid'
 
         products_prices = lazy(lambda: products._get_sales_prices(website))
+        previewed_attribute_values = lazy(
+            lambda: products._get_previewed_attribute_values()
+        )
 
         attributes_values = request.env['product.attribute.value'].browse(attribute_value_ids)
         sorted_attributes_values = attributes_values.sorted('sequence')
@@ -484,6 +487,7 @@ class WebsiteSale(payment_portal.PaymentPortal):
             'float_round': float_round,
             'shop_path': SHOP_PATH,
             'product_query_string': self._get_product_query_string(**post),
+            'previewed_attribute_values': previewed_attribute_values,
         }
         if filter_by_price_enabled:
             values['min_price'] = min_price or available_min_price

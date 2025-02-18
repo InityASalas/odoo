@@ -1,13 +1,13 @@
 import { registry } from "@web/core/registry";
-import { listView } from "@web/views/list/list_view";
-import { ListRenderer } from "@web/views/list/list_renderer";
 import { ListController } from "@web/views/list/list_controller";
 import { PurchaseDashBoard } from "@purchase/views/purchase_dashboard";
 import { PurchaseFileUploader } from "@purchase/components/purchase_file_uploader/purchase_file_uploader";
+import { FileUploadListRenderer } from "@account/views/file_upload_list/file_upload_list_renderer";
+import { fileUploadListView } from "@account/views/file_upload_list/file_upload_list_view";
 
-export class PurchaseDashBoardRenderer extends ListRenderer {
+export class PurchaseDashBoardRenderer extends FileUploadListRenderer {
     static template = "purchase.ListRenderer";
-    static components = Object.assign({}, ListRenderer.components, { PurchaseDashBoard });
+    static components = Object.assign({}, FileUploadListRenderer.components, { PurchaseDashBoard });
 }
 
 export class FileUploadListController extends ListController {
@@ -19,7 +19,7 @@ export class FileUploadListController extends ListController {
 }
 
 export const PurchaseDashBoardListView = {
-    ...listView,
+    ...fileUploadListView,
     Controller: FileUploadListController,
     Renderer: PurchaseDashBoardRenderer,
 };

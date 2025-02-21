@@ -4,7 +4,8 @@ import publicWidget from "@web/legacy/js/public/public_widget";
 import "@website/libs/zoomodoo/zoomodoo";
 import { ProductImageViewer } from "@website_sale/js/components/website_sale_image_viewer";
 import VariantMixin from "@website_sale/js/sale_variant_mixin";
-
+import { Interaction } from "@web/public/interaction";
+import { registry } from "@web/core/registry";
 
 export const WebsiteSale = publicWidget.Widget.extend(VariantMixin, {
     selector: '.oe_website_sale',
@@ -342,7 +343,7 @@ export const WebsiteSale = publicWidget.Widget.extend(VariantMixin, {
         const max = parseFloat(input.dataset.max || Infinity);
         const previousQty = parseFloat(input.value || 0, 10);
         const quantity = (
-            ev.currentTarget.querySelector('i').classList.contains('fa-minus') ? -1 : 1
+            ev.currentTarget.querySelector('i').classList.contains('oi-minus') ? -1 : 1
         ) + previousQty;
         const newQty = quantity > min ? (quantity < max ? quantity : max) : min;
 
@@ -701,6 +702,52 @@ publicWidget.registry.WebsiteSaleAccordionProduct = publicWidget.Widget.extend({
         this.target.classList.remove('o_accordion_not_initialized');
     },
 });
+
+export class WebsiteSaleProductStickyCol extends Interaction {
+    static selector = ".oe_website_sale";
+
+    dynamicContent = {
+        ".o_wsale_product_sticky_col": {
+            "t-att-style": () => ({
+                "opacity": "1",
+                "top": `${this.position || 16}px`,
+            }),
+        }
+    };
+
+    setup() {
+        this.position = 16;
+    }
+
+    start() {
+        this._adaptToHeaderChange();
+        this.registerCleanup(this.services.website_menus.registerCallback(this._adaptToHeaderChange.bind(this)));
+    }
+
+    //--------------------------------------------------------------------------
+    // Private
+    //--------------------------------------------------------------------------
+
+    /**
+     * @private
+     */
+
+    _adaptToHeaderChange() {
+        let position = 16; // Add 1rem equivalent in px to provide a visual gap by default
+
+        for (const el of this.el.ownerDocument.querySelectorAll(".o_top_fixed_element")) {
+            position += el.offsetHeight;
+        }
+
+        if (this.position !== position) {
+            this.position = position;
+            this.updateContent();
+        }
+    }
+}
+registry
+    .category("public.interactions")
+    .add("website.website_sale_product_sticky_col", WebsiteSaleProductStickyCol);
 
 export default {
     WebsiteSale: publicWidget.registry.WebsiteSale,

@@ -1,10 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import pytz
+from datetime import datetime
+
+
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError
 from odoo.osv import expression
-import pytz
-from datetime import datetime
 
 
 class ResourceCalendarLeaves(models.Model):
@@ -126,7 +128,7 @@ class ResourceCalendarLeaves(models.Model):
                 continue
             user_tz = pytz.timezone(self.env.user.tz) if self.env.user.tz else pytz.utc
             calendar_tz = pytz.timezone(self.env['resource.calendar'].browse(vals['calendar_id']).tz)
-            if user_tz != calendar_tz:
+            if user_tz != calendar_tz and self.env.context.get('convert_datetime', True):
                 datetime_from = self._ensure_datetime(vals['date_from'], '%Y-%m-%d %H:%M:%S')
                 datetime_to = self._ensure_datetime(vals['date_to'], '%Y-%m-%d %H:%M:%S')
                 if datetime_from and datetime_to:
@@ -156,6 +158,9 @@ class ResourceCalendarLeaves(models.Model):
         self._reevaluate_leaves(time_domain_dict)
 
         return res
+
+    def load_public_holidays(self):
+        self.env.companies.load_public_holidays(convert_datetime=False)
 
 
 class ResourceCalendar(models.Model):

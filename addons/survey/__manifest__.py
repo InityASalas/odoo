@@ -64,13 +64,9 @@ sent mails with personal token for the invitation of the survey.
     'assets': {
         'survey.survey_assets': [
             ('include', "web.chartjs_lib"),
-            'survey/static/src/js/survey_image_zoomer.js',
             '/survey/static/src/xml/survey_image_zoomer_templates.xml',
-            'survey/static/src/js/survey_timer.js',
             'survey/static/src/js/survey_breadcrumb.js',
-            'survey/static/src/js/survey_form.js',
             'survey/static/src/js/survey_preload_image_mixin.js',
-            'survey/static/src/js/survey_result.js',
             ('include', 'web._assets_helpers'),
             ('include', 'web._assets_frontend_helpers'),
             'web/static/src/scss/pre_variables.scss',

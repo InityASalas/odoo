@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="project.ProjectTaskCalendarListToPlan">
+        <h5>Tasks to Schedule</h5>
+        <div class="list-group">
+            <div class="list-group-item cursor-pointer text-wrap" t-foreach="state.tasksToPlan" t-as="task" t-key="task.id" t-on-click="() => this.openRecord(task)">
+                <span t-out="task.name"/>
+            </div>
+        </div>
+        <button t-if="displayLoadMoreButton" class="btn btn-link" t-on-click="loadMoreTasksToPlan">Load More</button>
+    </t>
+</templates>

@@ -142,6 +142,9 @@ class StockMove(models.Model):
         'Scrapped', related='location_dest_id.scrap_location', readonly=True, store=True)
     scrap_id = fields.Many2one('stock.scrap', 'Scrap operation', readonly=True, check_company=True, index='btree_not_null')
     group_id = fields.Many2one('procurement.group', 'Procurement Group', default=_default_group_id, index=True)
+    reference_ids = fields.Many2many(
+        'stock.reference', 'stock_reference_move_rel', 'move_id', 'reference_id',
+        string='References', index=True)
     rule_id = fields.Many2one(
         'stock.rule', 'Stock Rule', ondelete='restrict', help='The stock rule that created this stock move',
         check_company=True)
@@ -1550,7 +1553,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         """ Prepare specific key for moves or other componenets that will be created from a stock rule
         comming from a stock move. This method could be override in order to add other custom key that could
         be used in move/po creation.
-        """
+        """        
         self.ensure_one()
         group_id = self.group_id or False
         if self.rule_id:
@@ -1580,6 +1583,7 @@ Please change the quantity done or the rounding precision in your settings.""",
             'route_ids': self.route_ids or self.move_line_ids.result_package_id.package_type_id.route_ids,
             'warehouse_id': warehouse,
             'priority': self.priority,
+            'references': self.reference_ids,
             'orderpoint_id': self.orderpoint_id,
             'packaging_uom_id': self.packaging_uom_id,
         }

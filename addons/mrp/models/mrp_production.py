@@ -210,7 +210,10 @@ class MrpProduction(models.Model):
     qty_produced = fields.Float(compute="_get_produced_qty", string="Quantity Produced")
     procurement_group_id = fields.Many2one(
         'procurement.group', 'Procurement Group',
-        copy=False, index='btree_not_null')
+        copy=False)
+    reference_ids = fields.Many2many(
+        'stock.reference', 'stock_reference_production_rel', 'production_id', 'reference_id', 'References'
+    )
     product_description_variants = fields.Char('Custom Description')
     orderpoint_id = fields.Many2one('stock.warehouse.orderpoint', 'Orderpoint', copy=False, index='btree_not_null')
     propagate_cancel = fields.Boolean(
@@ -1149,6 +1152,7 @@ class MrpProduction(models.Model):
             'warehouse_id': self.location_dest_id.warehouse_id.id,
             'origin': self.product_id.partner_ref,
             'group_id': self.procurement_group_id.id,
+            'reference_ids': self.reference_ids.ids,
             'propagate_cancel': self.propagate_cancel,
             'move_dest_ids': [(4, x.id) for x in self.move_dest_ids if not byproduct_id],
             'cost_share': cost_share,
@@ -1239,6 +1243,7 @@ class MrpProduction(models.Model):
             'state': 'draft',
             'warehouse_id': source_location.warehouse_id.id,
             'group_id': self.procurement_group_id.id,
+            'reference_ids': self.reference_ids.ids,
             'propagate_cancel': self.propagate_cancel,
             'manual_consumption': self.env['stock.move']._determine_is_manual_consumption(bom_line),
         }

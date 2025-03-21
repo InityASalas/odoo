@@ -15,7 +15,7 @@ class TestWorkEntryHolidaysPerformance(TestWorkEntryHolidaysBase):
         cls.jack = cls.env['hr.employee'].create({'name': 'Jack'})
         cls.employees = cls.richard_emp | cls.jack
 
-        cls.env['hr.contract'].create([{
+        cls.env['hr.version'].create([{
             'date_start': date(2018, 1, 1),
             'date_end': date(2018, 2, 1),
             'name': 'Contract for %s' % employee.name,
@@ -74,7 +74,7 @@ class TestWorkEntryHolidaysPerformancesBigData(TestWorkEntryHolidaysBase):
             'company_id': cls.company.id
         } for i in range(100)])
 
-        cls.contracts = cls.env['hr.contract'].create([{
+        cls.contracts = cls.env['hr.version'].create([{
             'date_start': date(2018, 1, 1),
             'date_end': False,
             'name': 'Contract for %s' % employee.name,

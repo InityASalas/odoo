@@ -26,7 +26,7 @@ class TestHolidayContract(TransactionCase):
         # I create a new employee "Jules"
         cls.jules_emp = cls.env['hr.employee'].create({
             'name': 'Jules',
-            'gender': 'male',
+            'sex': 'male',
             'birthday': '1984-05-01',
             'country_id': cls.env.ref('base.be').id,
             'department_id': cls.dep_rd.id,
@@ -55,7 +55,7 @@ class TestHolidayContract(TransactionCase):
         cls.calendar_40h = cls.env['resource.calendar'].create({'name': 'Default calendar'})
 
         # This contract ends at the 15th of the month
-        cls.contract_cdd = cls.env['hr.contract'].create({  # Fixed term contract
+        cls.contract_cdd = cls.env['hr.version'].create({  # Fixed term contract
             'date_end': datetime.strptime('2015-11-15', '%Y-%m-%d'),
             'date_start': datetime.strptime('2015-01-01', '%Y-%m-%d'),
             'name': 'First CDD Contract for Jules',
@@ -67,7 +67,7 @@ class TestHolidayContract(TransactionCase):
         })
 
         # This contract starts the next day
-        cls.contract_cdi = cls.env['hr.contract'].create({
+        cls.contract_cdi = cls.env['hr.version'].create({
             'date_start': datetime.strptime('2015-11-16', '%Y-%m-%d'),
             'name': 'Contract for Jules',
             'resource_calendar_id': cls.calendar_35h.id,

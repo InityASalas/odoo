@@ -13,23 +13,23 @@ from odoo.tools.intervals import Intervals
 class HrWorkEntry(models.Model):
     _inherit = 'hr.work.entry'
 
-    contract_id = fields.Many2one('hr.contract', string="Contract", required=True)
-    employee_id = fields.Many2one(domain=[('contract_ids.state', 'in', ('open', 'pending'))])
-    work_entry_source = fields.Selection(related='contract_id.work_entry_source')
+    version_id = fields.Many2one('hr.version', string="Versions", required=True)
+    employee_id = fields.Many2one()
+    work_entry_source = fields.Selection(related='version_id.work_entry_source')
 
     # FROM 7s by query to 2ms (with 2.6 millions entries)
-    _contract_date_start_stop_idx = models.Index("(contract_id, date_start, date_stop) WHERE state IN ('draft', 'validated')")
+    _contract_date_start_stop_idx = models.Index("(version_id, date_start, date_stop) WHERE state IN ('draft', 'validated')")
 
     def _init_column(self, column_name):
-        if column_name != 'contract_id':
+        if column_name != 'version_id':
             super()._init_column(column_name)
         else:
             self.env.cr.execute("""
                 UPDATE hr_work_entry AS _hwe
-                SET contract_id = result.contract_id
+                SET version_id = result.version_id
                 FROM (
                     SELECT
-                        hc.id AS contract_id,
+                        hc.id AS version_id,
                         array_agg(hwe.id) AS entry_ids
                     FROM
                         hr_work_entry AS hwe
@@ -41,7 +41,7 @@ class HrWorkEntry(models.Model):
                         hwe.date_start >= hc.date_start AND
                         hwe.date_stop < COALESCE(hc.date_end + integer '1', '9999-12-31 23:59:59')
                     WHERE
-                        hwe.contract_id IS NULL
+                        hwe.version_id IS NULL
                     GROUP BY
                         hwe.employee_id, hc.id
                 ) AS result
@@ -62,14 +62,14 @@ class HrWorkEntry(models.Model):
             res = self._set_current_contract(vals)
         except ValidationError:
             return
-        if res.get('contract_id'):
-            self.contract_id = res.get('contract_id')
+        if res.get('version_id'):
+            self.version_id = res.get('version_id')
 
     @api.depends('date_start', 'duration')
     def _compute_date_stop(self):
         for work_entry in self:
             if work_entry._get_duration_is_valid():
-                calendar = work_entry.contract_id.resource_calendar_id
+                calendar = work_entry.version_id.resource_calendar_id
                 if not calendar:
                     continue
                 work_entry.date_stop = calendar.plan_hours(work_entry.duration, work_entry.date_start, compute_leaves=True)
@@ -91,11 +91,11 @@ class HrWorkEntry(models.Model):
                 continue
             date_start = work_entry.date_start
             date_stop = work_entry.date_stop
-            calendar = work_entry.contract_id.resource_calendar_id
+            calendar = work_entry.version_id.resource_calendar_id
             if not calendar:
                 result[work_entry.id] = 0.0
                 continue
-            employee = work_entry.contract_id.employee_id
+            employee = work_entry.version_id.employee_id
             mapped_periods[(date_start, date_stop)][calendar] |= employee
 
         # {(date_start, date_stop): {calendar: {'hours': foo}}}
@@ -108,18 +108,18 @@ class HrWorkEntry(models.Model):
         for work_entry in self - super_work_entries:
             date_start = work_entry.date_start
             date_stop = work_entry.date_stop
-            calendar = work_entry.contract_id.resource_calendar_id
-            employee = work_entry.contract_id.employee_id
+            calendar = work_entry.version_id.resource_calendar_id
+            employee = work_entry.version_id.employee_id
             result[work_entry.id] = mapped_contract_data[(date_start, date_stop)][calendar][employee.id]['hours'] if calendar else 0.0
         return result
 
     @api.model
     def _set_current_contract(self, vals):
-        if not vals.get('contract_id') and vals.get('date_start') and vals.get('date_stop') and vals.get('employee_id'):
+        if not vals.get('version_id') and vals.get('date_start') and vals.get('date_stop') and vals.get('employee_id'):
             contract_start = fields.Datetime.to_datetime(vals.get('date_start')).date()
             contract_end = fields.Datetime.to_datetime(vals.get('date_stop')).date()
             employee = self.env['hr.employee'].browse(vals.get('employee_id'))
-            contracts = employee._get_contracts(contract_start, contract_end, states=['open', 'pending', 'close'])
+            contracts = employee._get_versions_with_contract_overlap_with_period(contract_start, contract_end, states=['open', 'pending', 'close'])
             if not contracts:
                 raise ValidationError(_(
                     "%(employee)s does not have a contract from %(date_start)s to %(date_end)s.",
@@ -130,7 +130,7 @@ class HrWorkEntry(models.Model):
             elif len(contracts) > 1:
                 raise ValidationError(_("%(employee)s has multiple contracts from %(date_start)s to %(date_end)s. A work entry cannot overlap multiple contracts.",
                                         employee=employee.name, date_start=contract_start, date_end=contract_end))
-            return dict(vals, contract_id=contracts[0].id)
+            return dict(vals, version_id=contracts[0].id)
         return vals
 
     @api.model_create_multi
@@ -156,7 +156,7 @@ class HrWorkEntry(models.Model):
         work_entries = self._get_leaves_entries_outside_schedule()
         entries_by_calendar = defaultdict(lambda: self.env['hr.work.entry'])
         for work_entry in work_entries:
-            calendar = work_entry.contract_id.resource_calendar_id
+            calendar = work_entry.version_id.resource_calendar_id
             entries_by_calendar[calendar] |= work_entry
 
         outside_entries = self.env['hr.work.entry']

@@ -20,7 +20,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
         cls.start = datetime(2015, 11, 1, 1, 0, 0)
         cls.end = datetime(2015, 11, 30, 23, 59, 59)
         cls.resource_calendar_id = cls.env['resource.calendar'].create({'name': 'Zboub'})
-        contract = cls.env['hr.contract'].create({
+        contract = cls.env['hr.version'].create({
             'date_start': cls.start.date() - relativedelta(days=5),
             'name': 'dodo',
             'resource_calendar_id': cls.resource_calendar_id.id,
@@ -30,7 +30,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
             'date_generated_from': cls.end.date() + relativedelta(days=5),
         })
         cls.richard_emp.resource_calendar_id = cls.resource_calendar_id
-        cls.richard_emp.contract_id = contract
+        cls.richard_emp.version_id = contract
 
     def test_time_week_leave_work_entry(self):
         # /!\ this is a week day => it exists an calendar attendance at this time
@@ -46,7 +46,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
         })
         leave.action_approve()
 
-        work_entries = self.richard_emp.contract_id.generate_work_entries(self.start.date(), self.end.date())
+        work_entries = self.richard_emp.version_id.generate_work_entries(self.start.date(), self.end.date())
         work_entries.action_validate()
         leave_work_entry = work_entries.filtered(lambda we: we.work_entry_type_id in self.work_entry_type_leave)
         sum_hours = sum(leave_work_entry.mapped('duration'))
@@ -68,7 +68,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
             'company_id': company.id,
         })
 
-        self.env['hr.contract'].create({
+        self.env['hr.version'].create({
             'name': 'Employee Contract',
             'employee_id': employee.id,
             'date_start': Date.from_string('2015-01-01'),
@@ -100,7 +100,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
             'login': 'Classic User',
             'company_id': self.env.ref('base.main_company').id,
             'company_ids': self.env.ref('base.main_company').ids,
-            'group_ids': [(6, 0, [self.env.ref('hr_contract.group_hr_contract_manager').id, self.env.ref('base.group_user').id])],
+            'group_ids': [(6, 0, [self.env.ref('hr.group_hr_contract').id, self.env.ref('base.group_user').id])],
         })
         self.env['hr.employee'].with_user(user).generate_work_entries('2019-12-01', '2019-12-31')
 
@@ -114,7 +114,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
             'attendance_ids': False,
         })
         employee.resource_calendar_id = calendar
-        contract = self.env['hr.contract'].create({
+        contract = self.env['hr.version'].create({
             'date_start': self.start.date() - relativedelta(years=1),
             'name': 'Contract - Parental 0h',
             'resource_calendar_id': calendar.id,

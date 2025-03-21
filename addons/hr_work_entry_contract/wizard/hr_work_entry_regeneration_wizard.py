@@ -33,13 +33,13 @@ class HrWorkEntryRegenerationWizard(models.TransientModel):
     @api.depends('employee_ids')
     def _compute_earliest_available_date(self):
         for wizard in self:
-            dates = wizard.employee_ids.contract_ids.mapped('date_generated_from')
+            dates = wizard.employee_ids.version_ids.mapped('date_generated_from')
             wizard.earliest_available_date = min(dates) if dates else None
 
     @api.depends('employee_ids')
     def _compute_latest_available_date(self):
         for wizard in self:
-            dates = wizard.employee_ids.contract_ids.mapped('date_generated_to')
+            dates = wizard.employee_ids.version_ids.mapped('date_generated_to')
             wizard.latest_available_date = max(dates) if dates else None
 
     @api.depends('date_from', 'date_to', 'employee_ids')

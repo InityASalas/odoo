@@ -45,7 +45,12 @@ class HrTimesheetAttendanceReport(models.Model):
                             at time zone
                                 (SELECT calendar.tz FROM resource_calendar as calendar
                                 INNER JOIN hr_employee as employee ON employee.id = employee_id
-                                WHERE calendar.id = employee.resource_calendar_id)
+                                LEFT JOIN (
+                                    SELECT DISTINCT ON (employee_id) *
+                                    FROM hr_version
+                                    ORDER BY employee_id, date_version DESC
+                                ) v ON v.employee_id = employee.id
+                                WHERE calendar.id = v.resource_calendar_id)
                     as DATE) as date,
                     hr_employee.company_id as company_id
                 FROM hr_attendance

@@ -133,14 +133,14 @@ class TestWorkingHours(TestHrContractCalendarCommon):
         self.env.user.company_ids = [self.company_A.id]
 
         # Contract from november
-        self.env['hr.contract'].create({
-            'date_start': datetime(2023, 11, 1),
-            'date_end': datetime(2023, 11, 30),
+        self.env['hr.version'].create({
+            'date_version': datetime(2023, 11, 1),
+            'contract_date_start': datetime(2023, 11, 1),
+            'contract_date_end': datetime(2023, 11, 30),
             'name': 'Contract november',
             'resource_calendar_id': self.calendar_35h_night.id,
             'wage': 5000.0,
             'employee_id': self.employeeA.id,
-            'state': 'close',
         })
         work_hours = self.env['res.partner'].get_working_hours_for_all_attendees(
             [self.partnerA.id],

@@ -5,7 +5,7 @@
     'version': '1.0',
     'category': 'Human Resources/Employees',
     'summary': "display working hours from employee's contracts",
-    'depends': ['hr_contract', 'hr_calendar'],
+    'depends': ['hr', 'hr_calendar'],
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',
 }

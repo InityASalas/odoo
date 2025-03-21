@@ -23,7 +23,7 @@ class TestWorkEntry(TestWorkEntryBase):
         cls.start = datetime(2015, 11, 1, 1, 0, 0)
         cls.end = datetime(2015, 11, 30, 23, 59, 59)
         cls.resource_calendar_id = cls.env['resource.calendar'].create({'name': 'My Calendar'})
-        contract = cls.env['hr.contract'].create({
+        contract = cls.env['hr.version'].create({
             'date_start': cls.start.date() - relativedelta(days=5),
             'name': 'dodo',
             'resource_calendar_id': cls.resource_calendar_id.id,
@@ -33,7 +33,7 @@ class TestWorkEntry(TestWorkEntryBase):
             'date_generated_from': cls.end.date() + relativedelta(days=5),
         })
         cls.richard_emp.resource_calendar_id = cls.resource_calendar_id
-        cls.richard_emp.contract_id = contract
+        cls.richard_emp.version_id = contract
 
     def test_no_duplicate(self):
         self.richard_emp.generate_work_entries(self.start, self.end)
@@ -58,7 +58,7 @@ class TestWorkEntry(TestWorkEntryBase):
         work_entry = self.env['hr.work.entry'].create({
             'name': '1',
             'employee_id': self.richard_emp.id,
-            'contract_id': self.richard_emp.contract_id.id,
+            'version_id': self.richard_emp.version_id.id,
             'date_start': start,
             'date_stop': end,
             'work_entry_type_id': self.work_entry_type.id,
@@ -74,7 +74,7 @@ class TestWorkEntry(TestWorkEntryBase):
             'name': '1',
             'employee_id': self.richard_emp.id,
             'work_entry_type_id': self.env.ref('hr_work_entry.work_entry_type_attendance').id,
-            'contract_id': self.richard_emp.contract_id.id,
+            'version_id': self.richard_emp.version_id.id,
             'date_start': start,
             'date_stop': end + relativedelta(hours=5),
         })
@@ -82,7 +82,7 @@ class TestWorkEntry(TestWorkEntryBase):
             'name': '2',
             'employee_id': self.richard_emp.id,
             'work_entry_type_id': self.env.ref('hr_work_entry.work_entry_type_attendance').id,
-            'contract_id': self.richard_emp.contract_id.id,
+            'version_id': self.richard_emp.version_id.id,
             'date_start': start + relativedelta(hours=3),
             'date_stop': end,
         })
@@ -94,7 +94,7 @@ class TestWorkEntry(TestWorkEntryBase):
         work_entry1 = self.env['hr.work.entry'].create({
             'name': '1',
             'employee_id': self.richard_emp.id,
-            'contract_id': self.richard_emp.contract_id.id,
+            'version_id': self.richard_emp.version_id.id,
             'date_start': self.start,
             'date_stop': self.end,
         })
@@ -231,7 +231,7 @@ class TestWorkEntry(TestWorkEntryBase):
             'resource_calendar_id': hk_resource_calendar_id.id,
         })
         self.env.company.resource_calendar_id = hk_resource_calendar_id
-        self.env['hr.contract'].create({
+        self.env['hr.version'].create({
             'date_start': datetime(2023, 8, 1),
             'name': 'Test Contract',
             'resource_calendar_id': hk_resource_calendar_id.id,
@@ -264,7 +264,7 @@ class TestWorkEntry(TestWorkEntryBase):
         calendar = self.env['resource.calendar'].create({'name': 'Calendar', 'tz': 'Europe/Brussels'})
         calendar.attendance_ids -= calendar.attendance_ids.filtered(lambda attendance: attendance.dayofweek == '0')
 
-        self.env['hr.contract'].create({
+        self.env['hr.version'].create({
             'employee_id': employee.id,
             'resource_calendar_id': calendar.id,
             'date_start': datetime(2024, 9, 1),

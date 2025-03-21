@@ -20,7 +20,7 @@ class TestWorkingHours(TestHrCalendarCommon):
             notification_type='email',
             login='user_bxls',
         )
-        if 'hr.contract' in cls.env:
+        if 'hr.version' in cls.env:
             cls.skipTest(cls,
                 "hr_contract module is installed. To test these features you need to install test_hr_contract_calendar")
 

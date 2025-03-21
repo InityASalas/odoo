@@ -22,14 +22,14 @@ class TestWorkEntryBase(TransactionCase):
         # I create a new employee "Richard"
         cls.richard_emp = cls.env['hr.employee'].create({
             'name': 'Richard',
-            'gender': 'male',
+            'sex': 'male',
             'birthday': '1984-05-01',
             'country_id': cls.env.ref('base.be').id,
             'department_id': cls.dep_rd.id,
         })
 
         # I create a contract for "Richard"
-        cls.env['hr.contract'].create({
+        cls.env['hr.version'].create({
             'date_end': Date.today() + relativedelta(years=2),
             'date_start': Date.to_date('2018-01-01'),
             'name': 'Contract for Richard',
@@ -68,7 +68,7 @@ class TestWorkEntryBase(TransactionCase):
             work_entry_type = interval[2] if len(interval) == 3\
                 else default_work_entry_type
             create_vals.append({
-                'contract_id': self.richard_emp.contract_ids[0].id,
+                'version_id': self.richard_emp.version_ids[0].id,
                 'name': 'Work entry %s-%s' % (start, stop),
                 'date_start': start,
                 'date_stop': stop,

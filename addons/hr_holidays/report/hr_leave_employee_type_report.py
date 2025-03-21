@@ -62,7 +62,7 @@ class HrLeaveEmployeeTypeReport(models.Model):
                             THEN aggregate_allocation.number_of_hours - COALESCE(aggregate_leave.number_of_hours, 0)
                             ELSE 0
                     END as number_of_hours,
-                    employee.department_id as department_id,
+                    v.department_id as department_id,
                     allocation.holiday_status_id as leave_type,
                     allocation.state as state,
                     allocation.date_from as date_from,
@@ -71,6 +71,11 @@ class HrLeaveEmployeeTypeReport(models.Model):
                     allocation.employee_company_id as company_id
                 FROM hr_leave_allocation as allocation
                 INNER JOIN hr_employee as employee ON (allocation.employee_id = employee.id)
+                LEFT JOIN (
+                    SELECT DISTINCT ON (employee_id) *
+                    FROM hr_version
+                    ORDER BY employee_id, date_version DESC
+                ) v ON v.employee_id = employee.id
 
                 /* Obtain the minimum id for a given employee and type of leave */
                 LEFT JOIN
@@ -102,7 +107,7 @@ class HrLeaveEmployeeTypeReport(models.Model):
                     employee.active as active_employee,
                     request.number_of_days as number_of_days,
                     request.number_of_hours as number_of_hours,
-                    employee.department_id as department_id,
+                    v.department_id as department_id,
                     request.holiday_status_id as leave_type,
                     request.state as state,
                     request.date_from as date_from,
@@ -114,6 +119,11 @@ class HrLeaveEmployeeTypeReport(models.Model):
                     request.employee_company_id as company_id
                 FROM hr_leave as request
                 INNER JOIN hr_employee as employee ON (request.employee_id = employee.id)
+                LEFT JOIN (
+                    SELECT DISTINCT ON (employee_id) *
+                    FROM hr_version
+                    ORDER BY employee_id, date_version DESC
+                ) v ON v.employee_id = employee.id
                 WHERE request.state IN ('confirm', 'validate', 'validate1')) leaves
             );
         """)

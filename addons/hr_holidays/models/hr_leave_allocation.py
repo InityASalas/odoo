@@ -733,7 +733,7 @@ class HrLeaveAllocation(models.Model):
                 raise UserError(_('Incorrect state for new allocation'))
             employee_id = values.get('employee_id', False)
             if not values.get('department_id'):
-                values.update({'department_id': self.env['hr.employee'].browse(employee_id).department_id.id})
+                values.update({'department_id': self.env['hr.employee'].sudo().browse(employee_id).department_id.id})
         allocations = super(HrLeaveAllocation, self.with_context(mail_create_nosubscribe=True)).create(vals_list)
         allocations._add_lastcalls()
         for allocation in allocations:

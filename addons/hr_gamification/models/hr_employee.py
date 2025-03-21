@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
 
 
-class HrEmployeeBase(models.AbstractModel):
-    _inherit = "hr.employee.base"
+class HrEmployee(models.Model):
+    _inherit = "hr.employee"
 
     goal_ids = fields.One2many('gamification.goal', string='Employee HR Goals', compute='_compute_employee_goals')
     badge_ids = fields.One2many(
@@ -36,3 +35,13 @@ class HrEmployeeBase(models.AbstractModel):
             ])
             employee.has_badges = bool(badge_ids)
             employee.badge_ids = badge_ids
+
+
+class HrEmployeePublic(models.Model):
+    _inherit = "hr.employee.public"
+
+    badge_ids = fields.One2many('gamification.badge.user', readonly=True)
+    has_badges = fields.Boolean(compute='_compute_has_badges')
+
+    def _compute_has_badges(self):
+        self._compute_from_employee('has_badges')

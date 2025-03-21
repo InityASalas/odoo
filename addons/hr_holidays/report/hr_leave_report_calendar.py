@@ -56,7 +56,7 @@ class HrLeaveReportCalendar(models.Model):
             hl.private_name AS description,
             hl.holiday_status_id AS holiday_status_id,
             em.company_id AS company_id,
-            em.job_id AS job_id,
+            v.job_id AS job_id,
             em.user_id AS user_id,
             COALESCE(
                 rr.tz,
@@ -69,10 +69,15 @@ class HrLeaveReportCalendar(models.Model):
         FROM hr_leave hl
             LEFT JOIN hr_employee em
                 ON em.id = hl.employee_id
+            LEFT JOIN (
+                SELECT DISTINCT ON (employee_id) *
+                FROM hr_version
+                ORDER BY employee_id, date_version DESC
+            ) v ON v.employee_id = em.id
             LEFT JOIN resource_resource rr
                 ON rr.id = em.resource_id
             LEFT JOIN resource_calendar rc
-                ON rc.id = em.resource_calendar_id
+                ON rc.id = v.resource_calendar_id
             LEFT JOIN res_company co
                 ON co.id = em.company_id
             LEFT JOIN resource_calendar cc

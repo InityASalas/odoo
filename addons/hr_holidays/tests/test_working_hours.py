@@ -13,7 +13,7 @@ class TestWorkingHours(TestHrCalendarCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        if 'hr.contract' in cls.env:
+        if 'hr.version' in cls.env:
             cls.skipTest(cls,
                 "hr_contract module is installed. To test these features you need to install hr_holidays_contract"
             )

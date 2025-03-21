@@ -35,7 +35,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
         leave.action_approve()
         # move contract in the middle of the leave
         with self.assertRaises(ValidationError):
-            self.env['hr.contract'].create({
+            self.env['hr.version'].create({
                 'date_start': datetime.strptime('2015-11-30', '%Y-%m-%d').date(),
                 'name': 'Contract for Richard',
                 'resource_calendar_id': self.calendar_40h.id,
@@ -91,7 +91,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
         leave.action_approve()
         self.contract_cdi.date_end = date(2022, 6, 15)
 
-        new_contract_cdi = self.env['hr.contract'].create({
+        new_contract_cdi = self.env['hr.version'].create({
             'date_start': date(2022, 6, 16),
             'name': 'New Contract for Jules',
             'resource_calendar_id': self.calendar_35h.id,
@@ -113,7 +113,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
         self.assertEqual(leave.state, 'validate')
 
         self.contract_cdi.date_end = date(2022, 6, 15)
-        new_contract_cdi = self.env['hr.contract'].create({
+        new_contract_cdi = self.env['hr.version'].create({
             'date_start': date(2022, 6, 16),
             'name': 'New Contract for Jules',
             'resource_calendar_id': self.calendar_40h.id,
@@ -165,7 +165,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
             'name': 'Employee',
             'resource_calendar_id': calendar_partial.id,
         })
-        self.env['hr.contract'].create([
+        self.env['hr.version'].create([
             {
                 'name': 'Full time (5/5)',
                 'employee_id': employee.id,
@@ -261,7 +261,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
             'resource_calendar_id': calendar_full.id,
         })
 
-        self.env['hr.contract'].create([
+        self.env['hr.version'].create([
             {
                 'name': 'Full time (5/5)',
                 'employee_id': employee.id,

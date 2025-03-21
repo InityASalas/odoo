@@ -154,10 +154,10 @@ class TestHrEmployee(TestHrCommon):
         self.assertFalse(emp_parent.member_of_department)
         employees = emp + emp_sub + emp_sub_sub + emp_other + emp_parent
         self.assertEqual(
-            employees.filtered_domain(employees._search_part_of_department('in', [True])),
+            employees.filtered_domain(employees.version_id._search_part_of_department('in', [True])),
             emp + emp_sub + emp_sub_sub)
         self.assertEqual(
-            employees.filtered_domain(['!'] + employees._search_part_of_department('in', [True])),
+            employees.filtered_domain(['!'] + employees.version_id._search_part_of_department('in', [True])),
             emp_other + emp_parent)
 
     def test_employee_create_from_user(self):

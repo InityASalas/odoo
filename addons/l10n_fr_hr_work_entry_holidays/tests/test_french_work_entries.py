@@ -23,13 +23,13 @@ class TestFrenchWorkEntries(TransactionCase):
 
         cls.employee = cls.env['hr.employee'].create({
             'name': 'Louis',
-            'gender': 'other',
+            'sex': 'male',
             'birthday': '1973-03-29',
             'country_id': country_fr.id,
             'company_id': cls.company.id,
         })
 
-        cls.employee_contract = cls.env['hr.contract'].create({
+        cls.employee_contract = cls.env['hr.version'].create({
             'date_start': '2020-01-01',
             'date_end': '2023-01-01',
             'name': 'Louis\'s contract',

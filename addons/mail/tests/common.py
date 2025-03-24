@@ -1943,6 +1943,11 @@ class MailCommon(MailCase):
         if "hr.leave" not in self.env:
             for data in partners_data:
                 data.pop("leave_date_to", None)
+        if "hr.employee" not in self.env:
+            for data in partners_data:
+                data.pop("department", None)
+                data.pop("designation", None)
+                data.pop("workplace", None)
         return list(partners_data)
 
     def _filter_threads_fields(self, /, *threads_data):

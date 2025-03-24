@@ -24,6 +24,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #       - fetch res_users (_to_store)
     #   8: settings:
     #       - search (_find_or_create_for_user)
+    #       - search hr_employee(department, designation, workplace)
     #       - fetch res_partner (_format_settings: display_name of user_id because classic load)
     #       - fetch res_users_settings (_format_settings)
     #       - search res_users_settings_volumes (_format_settings)
@@ -31,7 +32,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #       - search im_livechat_expertise_res_users_settings_rel (_format_settings)
     #       - search mail_canned_response
     #       - fetch res_groups_users_rel (for search mail_canned_response that user can use)
-    _query_count_init_store = 15
+    _query_count_init_store = 16
     # Queries for _query_count_init_messaging (in order):
     #   1: insert res_device_log
     #   1: fetch res_users (for current user, first occurence _get_channels_as_member of _init_messaging)
@@ -67,6 +68,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #                   - search hr_employee (_compute_im_status override)
     #                   - fetch hr_employee (_compute_im_status override)
     #                   - search hr_leave (leave_date_to)
+    #                   - search hr_employee(department, designation, workplace)
     #                   - fetch res_users (internal user)
     #           - _bus_last_id (_to_store_defaults)
     #           - search ir_attachment (_compute_avatar_128)
@@ -75,7 +77,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #           - fetch res_groups (authorizedGroupFullName)
     #           - fetch ir_module_category (authorizedGroupFullName)
     #           - search group_ids (group_based_subscription)
-    _query_count_init_messaging = 35
+    _query_count_init_messaging = 36
     # Queries for _query_count_discuss_channels (in order):
     #   1: insert res_device_log
     #   1: fetch res_users (for current user: first occurence current persona, _search_is_member)
@@ -105,6 +107,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #               - search hr_employee (_compute_im_status override)
     #               - fetch hr_employee (_compute_im_status override)
     #               - search hr_leave (leave_date_to)
+    #               - search hr_employee(department, designation, workplace)
+    #               - search hr_leave (out_of_office_date_end)
     #               - fetch res_users (internal user)
     #               - search res_users_settings (livechat username)
     #               - fetch res_users_settings (livechat username)
@@ -142,7 +146,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #       - search user (_author_to_store)
     #       - fetch user (_author_to_store)
     #       - _compute_rating_stats
-    _query_count_discuss_channels = 59
+    _query_count_discuss_channels = 60
 
     def setUp(self):
         super().setUp()
@@ -383,6 +387,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "avatar_128_access_token": limited_field_access_token(
                         self.user_root.partner_id, "avatar_128"
                     ),
+                    "department": False,
+                    "designation": False,
                     "email": "odoobot@example.com",
                     "id": self.user_root.partner_id.id,
                     "im_status": "bot",
@@ -390,7 +396,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "is_company": False,
                     "name": "OdooBot",
                     "leave_date_to": False,
+                    "phone": False,
                     "userId": self.user_root.id,
+                    "workplace": False,
                     "write_date": fields.Datetime.to_string(self.user_root.partner_id.write_date),
                 },
                 {
@@ -1624,6 +1632,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": "e.e@example.com",
                 "id": user.partner_id.id,
                 "im_status": "online",
@@ -1631,7 +1641,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "Ernest Employee",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
             if also_livechat:
@@ -1681,6 +1693,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": "test2@example.com",
                 "id": user.partner_id.id,
                 "im_status": "offline",
@@ -1688,7 +1702,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test2",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[3]:
@@ -1697,6 +1713,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": False,
                 "id": user.partner_id.id,
                 "im_status": "offline",
@@ -1704,7 +1722,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test3",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(self.users[3].partner_id.write_date),
             }
         if user == self.users[12]:
@@ -1713,6 +1733,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": False,
                 "id": user.partner_id.id,
                 "im_status": "offline",
@@ -1720,7 +1742,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test12",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[14]:
@@ -1729,6 +1753,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": False,
                 "id": user.partner_id.id,
                 "im_status": "offline",
@@ -1736,7 +1762,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test14",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[15]:
@@ -1745,6 +1773,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "avatar_128_access_token": limited_field_access_token(
                     user.partner_id, "avatar_128"
                 ),
+                "department": False,
+                "designation": False,
                 "email": False,
                 "id": user.partner_id.id,
                 "im_status": "offline",
@@ -1752,7 +1782,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test15",
                 "leave_date_to": False,
+                "phone": False,
                 "userId": user.id,
+                "workplace": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.user_root:

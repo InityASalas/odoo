@@ -1,4 +1,5 @@
 import { Domain } from "@web/core/domain";
+import { serializeDate } from "@web/core/l10n/dates";
 import { _t } from "@web/core/l10n/translation";
 import { CalendarModel } from '@web/views/calendar/calendar_model';
 
@@ -72,5 +73,18 @@ export class ProjectTaskCalendarModel extends CalendarModel {
             limit,
             offset,
         });
+    }
+
+    _getPlanTaskVals(date, timeSlotSelected = false) {
+        return { date_deadline: serializeDate(date) };
+    }
+
+    async planTask(taskId, date, timeSlotSelected = false) {
+        this.tasksToPlan.length -= 1;
+        this.tasksToPlan.records = this.tasksToPlan.records.filter((task) => task.id !== taskId);
+        await this.orm.write(this.meta.resModel, [taskId], this._getPlanTaskVals(date, timeSlotSelected), {
+            context: this.meta.context,
+        });
+        await this.load({ planTask: true });
     }
 }

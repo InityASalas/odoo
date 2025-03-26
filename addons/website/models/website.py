@@ -482,6 +482,10 @@ class Website(models.Model):
         return {'cta_btn_text': False, 'cta_btn_href': '/contactus'}
 
     @api.model
+    def get_requested_homepage(self):
+        return 'homepage'
+
+    @api.model
     def get_theme_configurator_snippets(self, theme_name):
         return {
             **get_manifest('website')['configurator_snippets'],
@@ -724,7 +728,7 @@ class Website(models.Model):
         )
 
         # Generate text for the pages
-        requested_pages = set(pages_views.keys()).union({'homepage'})
+        requested_pages = set(pages_views.keys()).union({website.get_requested_homepage()})
         configurator_snippets = website.get_theme_configurator_snippets(theme_name)
         industry = kwargs['industry_name']
 
@@ -932,7 +936,7 @@ class Website(models.Model):
         # Configure the pages
         for page_code in requested_pages:
             snippet_list = configurator_snippets.get(page_code, [])
-            if page_code == 'homepage':
+            if page_code == self.get_requested_homepage():
                 page_view_id = self.with_context(website_id=website.id).viewref('website.homepage')
             else:
                 page_view_id = self.env['ir.ui.view'].browse(pages_views[page_code])

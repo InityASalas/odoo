@@ -7,17 +7,13 @@ from odoo import Command, api, models
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    @api.depends('order_line.move_dest_ids.group_id.sale_id', 'order_line.move_ids.move_dest_ids.group_id.sale_id')
+    @api.depends('reference_ids', 'reference_ids.sale_ids')
     def _compute_sale_order_count(self):
         super()._compute_sale_order_count()
 
     def _get_sale_orders(self):
-        linked_so = self.order_line.move_dest_ids.group_id.sale_id \
-                  | self.env['stock.move'].browse(self.order_line.move_ids._rollup_move_dests()).group_id.sale_id
-        group_so = self.order_line.group_id.sale_id
-
-        return super()._get_sale_orders() | linked_so | group_so
-
+        sales = self.reference_ids.sale_ids
+        return super()._get_sale_orders() | sales
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
@@ -44,7 +40,7 @@ class PurchaseOrderLine(models.Model):
         return super(PurchaseOrderLine, lines)._find_candidate(product_id, product_qty, product_uom, location_id, name, origin, company_id, values)
 
     @api.model
-    def _prepare_purchase_order_line_from_procurement(self, product_id, product_qty, product_uom, location_dest_id, name, origin, company_id, values, po):
+    def _prepare_purchase_order_line_from_procurement(self, product_id, product_qty, product_uom, location_dest_id, name, origin, company_id, values, po):        
         res = super()._prepare_purchase_order_line_from_procurement(product_id, product_qty, product_uom, location_dest_id, name, origin, company_id, values, po)
         res['sale_line_id'] = values.get('sale_line_id', False)
         return res

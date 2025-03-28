@@ -7,9 +7,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.modules.registry import Registry
 from odoo.osv import expression
-from odoo.sql_db import BaseCursor
 from odoo.tools import float_compare, float_is_zero
 from odoo.tools.misc import split_every
 
@@ -35,6 +33,9 @@ class StockRule(models.Model):
     _order = "sequence, id"
     _check_company_auto = True
 
+    Procurement = namedtuple('Procurement', ['product_id', 'product_qty',
+            'product_uom', 'location_id', 'name', 'origin', 'company_id', 'values'])
+
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -52,7 +53,6 @@ class StockRule(models.Model):
         ('none', 'Leave Empty'),
         ('propagate', 'Propagate'),
         ('fixed', 'Fixed')], string="Propagation of Procurement Group", default='propagate')
-    group_id = fields.Many2one('procurement.group', 'Fixed Procurement Group')
     action = fields.Selection(
         selection=[('pull', 'Pull From'), ('push', 'Push To'), ('pull_push', 'Pull & Push')], string='Action',
         default='pull', required=True, index=True)
@@ -310,17 +310,17 @@ class StockRule(models.Model):
         :param procurement: browse record
         :rtype: dictionary
         '''
-        group_id = False
-        if self.group_propagation_option == 'propagate':
-            group_id = values.get('group_id', False) and values['group_id'].id
-        elif self.group_propagation_option == 'fixed':
-            group_id = self.group_id.id
+        # group_id = False
+        # if self.group_propagation_option == 'propagate':
+        #     group_id = values.get('group_id', False) and values['group_id'].id
+        # elif self.group_propagation_option == 'fixed':
+        #     group_id = self.group_id.id
 
         date_scheduled = fields.Datetime.to_string(
             fields.Datetime.from_string(values['date_planned']) - relativedelta(days=self.delay or 0)
         )
         date_deadline = values.get('date_deadline') and (fields.Datetime.to_datetime(values['date_deadline']) - relativedelta(days=self.delay or 0)) or False
-        partner = self.partner_address_id or (values.get('group_id', False) and values['group_id'].partner_id)
+        partner = self.partner_address_id or values.get('partner', False)
         product_id = product_id.with_context(lang=(partner and partner.lang) or self.env.user.lang)
         picking_description = product_id._get_description(self.picking_type_id)
         if values.get('product_description_variants'):
@@ -359,12 +359,11 @@ class StockRule(models.Model):
             'procure_method': self.procure_method,
             'origin': origin,
             'picking_type_id': self.picking_type_id.id,
-            'group_id': group_id,
             'route_ids': [(4, route.id) for route in values.get('route_ids', [])],
             'never_product_template_attribute_value_ids': values.get('never_product_template_attribute_value_ids'),
             'warehouse_id': self.warehouse_id.id,
             'date': date_scheduled,
-            'date_deadline': False if self.group_propagation_option == 'fixed' else date_deadline,
+            'date_deadline': date_deadline,
             'propagate_cancel': self.propagate_cancel,
             'description_picking': picking_description,
             'priority': values.get('priority', "0"),
@@ -404,47 +403,6 @@ class StockRule(models.Model):
         if global_visibility_days:
             delay_description.append((_('Time Horizon'), _('+ %d day(s)', int(global_visibility_days))))
         return delays, delay_description
-
-
-class ProcurementGroup(models.Model):
-    """
-    The procurement group class is used to group products together
-    when computing procurements. (tasks, physical products, ...)
-
-    The goal is that when you have one sales order of several products
-    and the products are pulled from the same or several location(s), to keep
-    having the moves grouped into pickings that represent the sales order.
-
-    Used in: sales order (to group delivery order lines like the so), pull/push
-    rules (to pack like the delivery order), on orderpoints (e.g. for wave picking
-    all the similar products together).
-
-    Grouping is made only if the source and the destination is the same.
-    Suppose you have 4 lines on a picking from Output where 2 lines will need
-    to come from Input (crossdock) and 2 lines coming from Stock -> Output As
-    the four will have the same group ids from the SO, the move from input will
-    have a stock.picking with 2 grouped lines and the move from stock will have
-    2 grouped lines also.
-
-    The name is usually the name of the original document (sales order) or a
-    sequence computed if created manually.
-    """
-    _name = 'procurement.group'
-    _description = 'Procurement Group'
-    _order = "id desc"
-
-    Procurement = namedtuple('Procurement', ['product_id', 'product_qty',
-        'product_uom', 'location_id', 'name', 'origin', 'company_id', 'values'])
-    partner_id = fields.Many2one('res.partner', 'Partner')
-    name = fields.Char(
-        'Reference',
-        default=lambda self: self.env['ir.sequence'].next_by_code('procurement.group') or '',
-        required=True)
-    move_type = fields.Selection(
-        [('direct', 'Partial'), ('one', 'All at once')],
-        string='Delivery Type'
-    )
-    stock_move_ids = fields.One2many('stock.move', 'group_id', string="Related Stock Moves")
 
     @api.model
     def _skip_procurement(self, procurement):

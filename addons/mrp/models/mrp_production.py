@@ -22,6 +22,20 @@ from odoo.addons.stock.models.stock_move import PROCUREMENT_PRIORITIES
 SIZE_BACK_ORDER_NUMERING = 3
 
 
+class MrpProductionGroup(models.Model):
+    _name= 'mrp.production.group'
+    _description = 'Production Group'
+
+    name = fields.Char('Name', required=True)
+    production_ids = fields.One2many('mrp.production', 'group_id',string='Productions')
+    child_group_ids = fields.Many2many(
+        'mrp.production.group', 'mrp_production_group_rel', 'parent_group_id', 'child_group_id',
+        string='Child Manufacturing Orders')
+    parent_group_ids = fields.Many2many(
+        'mrp.production.group', 'mrp_production_group_rel', 'child_group_id', 'parent_group_id',
+        string='Parent Manufacturing Orders')
+
+
 class MrpProduction(models.Model):
     """ Manufacturing Orders """
     _name = 'mrp.production'
@@ -208,9 +222,6 @@ class MrpProduction(models.Model):
         index=True, required=True)
 
     qty_produced = fields.Float(compute="_get_produced_qty", string="Quantity Produced")
-    procurement_group_id = fields.Many2one(
-        'procurement.group', 'Procurement Group',
-        copy=False)
     reference_ids = fields.Many2many(
         'stock.reference', 'stock_reference_production_rel', 'production_id', 'reference_id', 'References'
     )

@@ -87,7 +87,8 @@ class TestReturnPicking(TestStockCommon):
         picking.action_confirm()
         picking.action_assign()
         picking.move_ids.move_line_ids.quantity = 1
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         picking.move_ids.picked = True
         picking.button_validate()
         customer_stock = self.env['stock.quant']._gather(product_serial, self.customer_location, lot_id=serial1)

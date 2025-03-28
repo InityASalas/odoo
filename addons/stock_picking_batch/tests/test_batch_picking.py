@@ -341,7 +341,8 @@ class TestBatchPicking(TransactionCase):
         wizard_values = self.batch.action_put_in_pack()
         wizard = self.env[(wizard_values.get('res_model'))].browse(wizard_values.get('res_id'))
         wizard.location_dest_id = self.customer_location.id
-        package = wizard.action_done()
+        pack_wizard = Form.from_action(self.env, wizard.action_done()).save()
+        package = pack_wizard.action_put_in_pack()
 
         # a new package is made and done quantities should be in same package
         self.assertTrue(package)
@@ -700,6 +701,7 @@ class TestBatchPicking02(TransactionCase):
         })
         self.package_type = self.env['stock.package.type'].create({
             'name': 'Big box',
+            'identification_method': 'manual',
             'base_weight': 10,
             'packaging_length': 500,
             'width': 500,

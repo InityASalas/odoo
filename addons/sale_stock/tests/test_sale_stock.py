@@ -1447,7 +1447,8 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick_picking = so_1.picking_ids.filtered(lambda p: p.picking_type_id == warehouse.pick_type_id)
 
         pick_picking.move_ids.write({'quantity': 2, 'picked': True})
-        pick_picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, pick_picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         Form.from_action(self.env, pick_picking.button_validate()).save().process()
 
         pack_picking = so_1.picking_ids.filtered(lambda p: p.picking_type_id == warehouse.pack_type_id)
@@ -1462,7 +1463,8 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick_picking_2 = so_1.picking_ids.filtered(lambda x: x.picking_type_id == warehouse.pick_type_id and x.state != 'done')
 
         pick_picking_2.move_ids.write({'quantity': 2, 'picked': True})
-        package_2 = pick_picking_2.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, pick_picking_2.action_put_in_pack()).save()
+        package_2 = pack_wizard.action_put_in_pack()
         Form.from_action(self.env, pick_picking_2.button_validate()).save().process()
 
         self.assertEqual(out_picking.move_line_ids.package_id.id, False)

@@ -859,7 +859,8 @@ class StockQuant(TransactionCase):
 
         return_pick = self.env['stock.picking'].browse(stock_return_picking_action['res_id'])
         return_pick.move_ids.move_line_ids.quantity = 1.0
-        return_pick.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, return_pick.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         return_pick.move_ids.picked = True
         return_pick._action_done()
 

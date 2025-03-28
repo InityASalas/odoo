@@ -302,11 +302,12 @@ class TestOldRules(TestStockCommon):
 
         picking, moveA, moveB = create_picking(pick_type, pick_type.default_location_src_id, pick_type.default_location_dest_id)
         moveA.picked = True
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         moveB.picked = True
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         picking.button_validate()
-        delivery_type.show_entire_packs = True
         picking, _, _ = create_picking(delivery_type, delivery_type.default_location_src_id, customer_location)
         packB = picking.package_level_ids[1]
         picking.package_level_ids_details[0].is_done = True
@@ -348,7 +349,8 @@ class TestOldRules(TestStockCommon):
 
         picking = pick_move.picking_id
         picking.action_confirm()
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertTrue(picking.move_line_ids.result_package_id)
         picking.button_validate()
         self.assertEqual(pack_move.move_line_ids.result_package_id, picking.move_line_ids.result_package_id)

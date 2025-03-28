@@ -1185,6 +1185,7 @@ class StockMove(TransactionCase):
         """
         package_type = self.env['stock.package.type'].create({
             'name': 'Super Package Type',
+            'identification_method': 'manual',
         })
 
         child_loc = self.stock_location.child_ids[:1]
@@ -5722,7 +5723,9 @@ class StockMove(TransactionCase):
         picking.action_assign()
         self.assertEqual(self.env['stock.quant']._get_available_quantity(self.product, self.stock_location), 0)
         move1.quantity = 1
-        picking.action_put_in_pack()
+
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         picking.action_assign()
 
         self.assertEqual(self.env['stock.quant']._get_available_quantity(self.product, self.stock_location), 0)
@@ -5730,7 +5733,9 @@ class StockMove(TransactionCase):
         not_packed_ml = picking.move_line_ids.filtered(lambda ml: not ml.result_package_id)
         self.assertEqual(not_packed_ml.quantity_product_uom, 1)
         not_packed_ml.quantity = 1
-        picking.action_put_in_pack()
+
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertEqual(len(picking.move_line_ids), 2)
         self.assertNotEqual(picking.move_line_ids[0].result_package_id, picking.move_line_ids[1].result_package_id)
         self.assertEqual(self.env['stock.quant']._get_available_quantity(self.product, self.stock_location), 0)
@@ -5777,7 +5782,8 @@ class StockMove(TransactionCase):
         picking.action_assign()
         self.assertEqual(self.env['stock.quant']._get_available_quantity(self.product, self.stock_location), 0)
         self.assertEqual(self.env['stock.quant']._get_available_quantity(product1, self.stock_location), 0)
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertEqual(len(picking.move_line_ids), 2)
         self.assertEqual(picking.move_line_ids[0].quantity, 1, "Stock move line should have 1 quantity as a done quantity.")
         self.assertEqual(picking.move_line_ids[1].quantity, 2, "Stock move line should have 2 quantity as a done quantity.")
@@ -5828,10 +5834,12 @@ class StockMove(TransactionCase):
         self.assertEqual(self.env['stock.quant']._get_available_quantity(product1, self.stock_location), 0)
         move1.quantity = 1
         move1.picked = True
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         move2.quantity = 2
         move2.picked = True
-        picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertEqual(len(picking.move_line_ids), 2)
         line1_result_package = picking.move_line_ids[0].result_package_id
         line2_result_package = picking.move_line_ids[1].result_package_id
@@ -6108,14 +6116,19 @@ class StockMove(TransactionCase):
         move1.quantity = 5
         self.assertEqual(len(picking.move_line_ids), 1)
 
-        picking.action_put_in_pack()  # Create a first package
+        # Create a first package
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         picking.action_assign()
         self.assertEqual(len(picking.move_line_ids), 2)
 
         unpacked_ml = picking.move_line_ids.filtered(lambda ml: not ml.result_package_id)
         self.assertEqual(unpacked_ml.quantity_product_uom, 10)
         unpacked_ml.quantity = 10
-        picking.action_put_in_pack()  # Create a second package
+
+        # Create a second package
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertEqual(len(picking.move_line_ids), 2)
 
         picking.move_ids.picked = True
@@ -6125,11 +6138,11 @@ class StockMove(TransactionCase):
 
         aggregate_values1 = picking.move_line_ids[0]._get_aggregated_product_quantities(strict=True)
         aggregated_val = aggregate_values1[f'{self.product.id}_{self.product.name}__{self.product.uom_id.id}']
-        self.assertEqual(aggregated_val['qty_ordered'], 5)
+        self.assertEqual(aggregated_val['qty_ordered'], 10)
 
         aggregate_values2 = picking.move_line_ids[1]._get_aggregated_product_quantities(strict=True)
         aggregated_val = aggregate_values2[f'{self.product.id}_{self.product.name}__{self.product.uom_id.id}']
-        self.assertEqual(aggregated_val['qty_ordered'], 10)
+        self.assertEqual(aggregated_val['qty_ordered'], 5)
 
     def test_move_line_aggregated_product_quantities_incomplete_package(self):
         """ Test the `stock.move.line` method `_get_aggregated_product_quantities`,
@@ -6154,7 +6167,9 @@ class StockMove(TransactionCase):
         })
         move1.quantity = 5
         move1.picked = True
-        picking.action_put_in_pack()  # Create a package
+
+        pack_wizard = Form.from_action(self.env, picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
 
         delivery_form = Form(picking)
         delivery = delivery_form.save()

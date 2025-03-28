@@ -454,7 +454,8 @@ class TestSaleMrpKitBom(BaseCommon):
         for move in pick.move_ids:
             move.write({'quantity': 1, 'picked': True})
 
-        pick.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, pick.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         pick.button_validate()
 
         ship = so.picking_ids[1]

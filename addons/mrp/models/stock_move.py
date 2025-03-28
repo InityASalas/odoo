@@ -340,7 +340,7 @@ class StockMove(models.Model):
                     defaults['additional'] = True
                 defaults['product_uom_qty'] = 0.0
             elif production_id.state == 'draft':
-                defaults['group_id'] = production_id.procurement_group_id.id
+                defaults['reference_ids'] = production_id.reference_ids.ids
                 defaults['reference'] = production_id.name
         return defaults
 
@@ -366,7 +366,6 @@ class StockMove(models.Model):
                     mo_id_to_mo[mo_id] = mo
                 values['name'] = mo.name
                 values['origin'] = mo._get_origin()
-                values['group_id'] = mo.procurement_group_id.id
                 values['propagate_cancel'] = mo.propagate_cancel
                 if values.get('raw_material_production_id', False):
                     product = product_id_to_product[values['product_id']]

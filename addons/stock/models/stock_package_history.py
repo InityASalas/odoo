@@ -1,6 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import api, fields, models
+from odoo import fields, models
 
 
 class StockPackageHistory(models.Model):
@@ -16,16 +16,7 @@ class StockPackageHistory(models.Model):
     package_name = fields.Char('Package Name', required=True)
     package_type_id = fields.Many2one('stock.package.type', related='package_id.package_type_id')
     parent_orig_id = fields.Many2one('stock.package', 'Origin Container')
+    parent_orig_name = fields.Char('Origin Container Name')
     parent_dest_id = fields.Many2one('stock.package', 'Destination Container')
-    picking_ids = fields.Many2many('stock.picking', string='Transfers', compute='_compute_picking_ids', search="_search_picking_ids")
-
-    @api.depends('move_line_ids.picking_id')
-    def _compute_picking_ids(self):
-        for history in self:
-            history.picking_ids = history.move_line_ids.picking_id
-
-    def _search_picking_ids(self, operator, value):
-        if operator not in ['in', 'not in']:
-            return NotImplemented
-
-        return [('move_line_ids.picking_id', operator, value)]
+    parent_dest_name = fields.Char('Destination Container Name')
+    picking_ids = fields.Many2many('stock.picking', string='Transfers')

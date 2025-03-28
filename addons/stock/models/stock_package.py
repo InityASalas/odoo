@@ -15,7 +15,7 @@ from odoo.tools.float_utils import float_is_zero
 class StockPackage(models.Model):
     """ Packages containing quants and/or other packages """
     _name = 'stock.package'
-    _description = "Packages"
+    _description = "Package"
     _order = 'name'
     _parent_name = 'parent_package_id'
     _parent_store = True
@@ -106,28 +106,21 @@ class StockPackage(models.Model):
 
     @api.depends('child_package_ids')
     def _compute_location_dest_id(self):
-        def get_dest_loc_from_children(package, dest_loc_by_packages):
-            for child_package in package.child_package_ids:
-                if dest_loc_by_packages.get(child_package):
-                    return dest_loc_by_packages[child_package][:1]
-            return False
-
-        all_package_ids = self.ids + self.child_package_ids.ids
-        groups = self.env['stock.move.line']._read_group(
-            domain=[('state', 'in', ['confirmed', 'partially_available', 'assigned']), ('result_package_id', 'in', all_package_ids)],
-            groupby=['result_package_id'], aggregates=['location_dest_id:recordset'])
-        dest_loc_by_packages = dict(groups)
         for package in self:
-            package.location_dest_id = dest_loc_by_packages.get(package, [])[:1] or \
-                                       get_dest_loc_from_children(package, dest_loc_by_packages)
+            package.location_dest_id = package.move_line_ids.location_dest_id[:1] or False
 
+    @api.depends('child_package_dest_ids')
     def _compute_move_line_ids(self):
+        children_by_dest_pack, all_pack_ids = self._get_all_children_package_dest_ids()
         groups = self.env['stock.move.line']._read_group(
-            domain=[('state', 'not in', ['done', 'cancel']), ('result_package_id', 'in', self.ids)],
+            domain=[('state', 'not in', ['done', 'cancel']), ('result_package_id', 'in', all_pack_ids)],
             groupby=['result_package_id'], aggregates=['id:array_agg'])
-        move_lines_by_package = dict(groups)
+        move_lines_by_package = {package.id: move_line_ids for package, move_line_ids in groups}
+
         for package in self:
-            package.move_line_ids = [Command.set(move_lines_by_package.get(package, []))]
+            move_line_ids = {line_id for child_id in children_by_dest_pack[package] for line_id in move_lines_by_package.get(child_id, [])}
+            move_line_ids.update(move_lines_by_package.get(package.id, []))
+            package.move_line_ids = [Command.set(list(move_line_ids))]
 
     @api.depends('child_package_ids', 'contained_quant_ids.location_id', 'contained_quant_ids.company_id')
     def _compute_package_info(self):
@@ -191,8 +184,9 @@ class StockPackage(models.Model):
         move_lines = self.env['stock.move.line'].search_fetch(
             domain=[('state', 'not in', ['done', 'cancel']), ('id', operator, value)],
             field_names=['result_package_id'])
+        all_package_ids = move_lines.result_package_id._get_all_package_dest_ids()
 
-        return [('id', 'in', move_lines.result_package_id.ids)]
+        return [('id', 'in', all_package_ids)]
 
     def _search_owner(self, operator, value):
         if operator in expression.NEGATIVE_TERM_OPERATORS:

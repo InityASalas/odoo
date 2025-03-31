@@ -604,6 +604,38 @@ class Properties(Field):
                 property_definition.pop('value', None)
         return values_list
 
+    def expression_getter(self, field_expr):
+        _fname, property_name = parse_field_expr(field_expr)
+        if not property_name:
+            raise ValueError(f"Missing property name for {self}")
+
+        def expression_property(record):
+            # TODO the implementation is slow for relational fields
+            values = self.__get__(record)
+            for definition in self._get_properties_definition(record) or ():
+                if definition.get('name') == property_name:
+                    break
+            else:
+                # definition not found
+                return values.get(property_name, False)
+            value_dict = {**definition, 'value': values.get(property_name)}
+            env = record.env
+            res_ids_per_model = self._get_res_ids_per_model(env, [[value_dict]])
+            self._parse_json_types([value_dict], env, res_ids_per_model)
+            return value_dict['value']
+        return expression_property
+
+    def filter_function(self, records, field_expr, operator, value):
+        getter = self.expression_getter(field_expr)
+        domain = None
+        if operator == 'any' or isinstance(value, Domain):
+            domain = Domain(value).optimize(records)
+        elif operator == 'in' and isinstance(value, COLLECTION_TYPES) and isinstance(getter(records.browse()), BaseModel):
+            domain = Domain('id', 'in', value).optimize(records)
+        if domain is not None:
+            return lambda rec: domain.filter_records(getter(rec))
+        return super().filter_function(records, field_expr, operator, value)
+
     def property_to_sql(self, field_sql: SQL, property_name: str, model: BaseModel, alias: str, query: Query) -> SQL:
         check_property_field_value_name(property_name)
         return SQL("(%s -> %s)", field_sql, property_name)

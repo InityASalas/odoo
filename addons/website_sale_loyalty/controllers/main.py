@@ -11,13 +11,13 @@ from odoo.addons.website_sale.controllers import main
 
 class WebsiteSale(main.WebsiteSale):
 
-    @route()
-    def pricelist(self, promo, **post):
+    @route('/shop/promo', type='http', auth='public', website=True, sitemap=False)
+    def promo(self, promo, **post):
         if not (order_sudo := request.cart):
             return request.redirect('/shop')
         coupon_status = order_sudo._try_apply_code(promo)
         if coupon_status.get('not_found'):
-            return super().pricelist(promo, **post)
+            return request.redirect("%s?code_not_available=1" % post.get('r', '/shop/cart'))
         elif coupon_status.get('error'):
             request.session['error_promo_code'] = coupon_status['error']
         elif 'error' not in coupon_status:

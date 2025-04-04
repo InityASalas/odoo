@@ -234,19 +234,19 @@
                                     <div class="oe_structure"/>
                                 </t>
                             </div>
-                            <div id="payment_term" class="clearfix overflow-auto">
-                                <div class="justify-text">
+                            <div id="payment_term" class="clearfix">
+                                <div class="justify-text avoid-page-break-inside">
                                     <p t-if="not is_html_empty(o.fiscal_position_id.note)" name="note" class="mb-2">
                                         <span t-field="o.fiscal_position_id.note"/>
                                     </p>
                                 </div>
-                                <div class="justify-text">
+                                <div class="justify-text avoid-page-break-inside">
                                     <p t-if="not is_html_empty(o.taxes_legal_notes)" name="taxes_legal_notes" class="mb-2">
                                         <span t-field="o.taxes_legal_notes"/>
                                     </p>
                                 </div>
                                 <t t-set="payment_term_details" t-value="o.payment_term_details"/>
-                                <div class="mb-3">
+                                <div class="mb-3 avoid-page-break-inside">
                                     <span id="payment_terms_note_id"
                                           t-if="o.invoice_payment_term_id.note"
                                           t-field="o.invoice_payment_term_id.note"
@@ -273,7 +273,7 @@
                                         </div>
                                     </t>
                                 </div>
-                                <div class="mb-3" t-if="o.move_type in ('out_invoice', 'in_refund') and o.payment_reference">
+                                <div class="mb-3 avoid-page-break-inside" t-if="o.move_type in ('out_invoice', 'in_refund') and o.payment_reference">
                                     <p name="payment_communication">
                                         Payment Communication: <span class="fw-bold" t-field="o.payment_reference">INV/2023/00001</span>
                                         <t t-if="o.partner_bank_id">

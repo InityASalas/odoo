@@ -2250,6 +2250,3 @@ class SaleOrder(models.Model):
         :return: None
         """
         self.with_context(send_email=True).action_confirm()
-
-    def _get_edi_builders(self):
-        return []

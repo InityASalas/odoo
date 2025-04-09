@@ -7,6 +7,7 @@ import {
     serializeDate,
     serializeDateTime,
 } from "@web/core/l10n/dates";
+import { orderByToString } from "@web/search/utils/order_by";
 import { ensureArray, intersection, isIterable, unique } from "@web/core/utils/arrays";
 import { deepCopy, isObject, pick } from "@web/core/utils/objects";
 import * as fields from "./mock_fields";
@@ -1168,6 +1169,36 @@ const viewNotFoundError = (modelName, viewType, viewId, consequence) => {
         message += `: ${consequence}`;
     }
     return new MockServerError(message);
+};
+
+const getReadGroupOrder = (forcedOrder, groupby, aggregates) => {
+    if (!forcedOrder) {
+        return groupby.join(", ");
+    }
+    groupby = groupby.slice();
+    const orderSpecs = [];
+    for (const orderSpec of forcedOrder) {
+        const { name: fname, asc } = orderSpec;
+        const direction = asc ? "ASC" : "DESC";
+        if (fname == "__count") {
+            orderSpecs.push(`${fname} ${direction}`);
+            continue;
+        }
+        for (const groupbySpec of groupby) {
+            if (fname === groupbySpec || groupbySpec.startsWith(`${fname}:`)) {
+                groupby.splice(groupby.indexOf(groupbySpec), 1);
+                orderSpecs.push(`${groupbySpec} ${direction}`);
+                break;
+            }
+        }
+        for (const agg of aggregates) {
+            if (fname === agg || agg.startsWith(`${fname}:`)) {
+                orderSpecs.push(`${agg} ${direction}`);
+                break;
+            }
+        }
+    }
+    return [...orderSpecs, ...groupby].join(", ");
 };
 
 // Other constants
@@ -2495,6 +2526,201 @@ export class Model extends Array {
         const groups = this.formatted_read_group(kwargs);
         const allGroups = this.formatted_read_group(domain, groupby, []);
         return { groups, length: allGroups.length };
+    }
+
+    /**
+     * @param {DomainListRepr} domain
+     * @param {Record<string, any>} fields
+     * @param {string[]} groupby
+     * @param {number} [limit]
+     * @param {number} [offset]
+     * @param {string} [orderby]
+     * @param {boolean} [lazy]
+     */
+    web_read_group_unity(
+        domain,
+        groupby,
+        aggregates,
+        limit,
+        offset,
+        forced_order,
+        unfolded_group_limit,
+        current_group_info,
+        unfold_read_specification,
+        unfold_read_default_limit,
+        groupby_read_specification
+    ) {
+        const kwargs = getKwArgs(
+            arguments,
+            "domain",
+            "groupby",
+            "aggregates",
+            "limit",
+            "offset",
+            "forced_order",
+            "unfolded_group_limit",
+            "current_group_info",
+            "unfold_read_specification",
+            "unfold_read_default_limit",
+            "groupby_read_specification"
+        );
+        ({
+            domain,
+            groupby,
+            aggregates,
+            limit,
+            offset,
+            forced_order,
+            unfolded_group_limit,
+            current_group_info,
+            unfold_read_specification,
+            unfold_read_default_limit,
+            groupby_read_specification,
+        } = kwargs);
+
+        // FIXME:
+        // - forced_order not take in account for the formatted read group
+        aggregates = ["__count", ...aggregates];
+        const order = getReadGroupOrder(forced_order, [groupby[0]], aggregates);
+        let groups = this.formatted_read_group(
+            domain,
+            [groupby[0]],
+            aggregates,
+            [],
+            null,
+            null,
+            order
+        );
+        const length = groups.length;
+        groups = groups.slice(offset ? offset - 1 : 0, limit);
+
+        this._openGroups(
+            groups,
+            domain,
+            groupby,
+            aggregates,
+            forced_order,
+            current_group_info,
+            unfolded_group_limit,
+            {
+                specification: unfold_read_specification,
+                offset: 0,
+                limit: unfold_read_default_limit,
+                order: orderByToString(forced_order),
+            },
+            groupby_read_specification
+        );
+
+        return { groups, length };
+    }
+
+    _openGroups(
+        groups,
+        mainDomain,
+        remainingGroupby,
+        aggregates,
+        forcedOrder,
+        infoOpening,
+        unfoldedGroupLimit,
+        webSearchArgs,
+        groupbyReadSpecification
+    ) {
+        let groupInfos = {};
+        if (infoOpening) {
+            groupInfos = Object.fromEntries(infoOpening.map((info) => [info["value"], info]));
+        }
+        const previousGroupby = remainingGroupby[0];
+        const field = this._fields[previousGroupby.split(":")[0]];
+
+        if (groupbyReadSpecification && Object.hasOwn(groupbyReadSpecification, previousGroupby)) {
+            const readSpec = groupbyReadSpecification[previousGroupby];
+            for (const group of groups) {
+                const id = group[previousGroupby][0];
+                group.__values = this.web_read([id], readSpec);
+            }
+        }
+
+        if (remainingGroupby.length < 2) {
+            // Open records
+            for (const group of groups) {
+                let groupValue = group[previousGroupby];
+                if (Array.isArray(groupValue)) {
+                    groupValue = groupValue[0];
+                }
+                const groupDomain = [...group.__extra_domain, ...mainDomain];
+                const argsRead = { ...webSearchArgs };
+                if (infoOpening && infoOpening.length) {
+                    if (!Object.hasOwn(groupInfos, groupValue)) {
+                        continue;
+                    }
+                    const groupInfo = groupInfos[groupValue];
+                    if (groupInfo.folded) {
+                        continue;
+                    }
+                    if (Array.isArray(groupInfo.extra_domain)) {
+                        groupDomain.push(...groupInfo.extra_domain);
+                    }
+                    argsRead.limit = groupInfo.limit;
+                    argsRead.offset = groupInfo.offset;
+                } else {
+                    // First load
+                    if (field.relation && !groupValue) {
+                        continue;
+                    }
+                    if (Object.hasOwn(group, "__fold") && group.__fold) {
+                        continue;
+                    }
+                }
+                if ((!infoOpening || !infoOpening.length) && !unfoldedGroupLimit) {
+                    continue;
+                }
+                // Open groups
+                unfoldedGroupLimit -= 1;
+                group.__records = this.web_search_read(
+                    groupDomain,
+                    ...Object.values(argsRead)
+                ).records;
+            }
+        } else if (infoOpening) {
+            // Open subgroups
+            for (const group of groups) {
+                let groupValue = group[previousGroupby];
+                if (Array.isArray(groupValue)) {
+                    groupValue = groupValue[0];
+                }
+                if (!infoOpening) {
+                    continue;
+                }
+                if (!Object.hasOwn(groupInfos, groupValue)) {
+                    continue;
+                }
+                const groupInfo = groupInfos[groupValue];
+                if (groupInfo.folded) {
+                    continue;
+                }
+
+                const groupDomain = [...group.__extra_domain, ...mainDomain];
+                group.groups = this.formatted_read_group(
+                    groupDomain,
+                    [remainingGroupby[1]],
+                    aggregates,
+                    [],
+                    groupInfo.offset,
+                    groupInfo.limit,
+                    getReadGroupOrder(forcedOrder, [remainingGroupby[1]], aggregates)
+                );
+                this._openGroups(
+                    group.groups,
+                    groupDomain,
+                    remainingGroupby.slice(1),
+                    aggregates,
+                    groupInfo.groups,
+                    unfoldedGroupLimit,
+                    webSearchArgs,
+                    groupbyReadSpecification
+                );
+            }
+        }
     }
 
     /**

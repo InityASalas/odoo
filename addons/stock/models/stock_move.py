@@ -669,6 +669,11 @@ Please change the quantity done or the rounding precision in your settings.""",
                 move.product_id.code and '%s: ' % move.product_id.code or '',
                 move.location_id.name, move.location_dest_id.name)
 
+    def _set_references(self):
+        for move in self:
+            if not move.reference_ids and move.picking_id:
+                move.reference_ids = move.picking_id.reference_ids
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -679,7 +684,9 @@ Please change the quantity done or the rounding precision in your settings.""",
                 vals['state'] = 'done'
             if vals.get('state') == 'done':
                 vals['picked'] = True
-        return super().create(vals_list)
+        moves = super().create(vals_list)
+        moves._set_references()
+        return moves
 
     def write(self, vals):
         # Handle the write on the initial demand by updating the reserved quantity and logging
@@ -738,6 +745,8 @@ Please change the quantity done or the rounding precision in your settings.""",
                 moves.warehouse_id = warehouse.id
         if receipt_moves_to_reassign:
             receipt_moves_to_reassign._action_assign()
+        if 'picking_id' in vals:
+            self._set_references()
         return res
 
     def _delay_alert_get_documents(self):
@@ -1433,7 +1442,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         quantities = move_create_proc._prepare_procurement_qty()
         for move, quantity in zip(move_create_proc, quantities):
             values = move._prepare_procurement_values()
-            origin = move.picking_id.display_name
+            origin = move.origin or move.picking_id.display_name
             procurement_requests.append(self.env['stock.rule'].Procurement(
                 move.product_id, quantity, move.product_uom,
                 move.location_id, move.rule_id and move.rule_id.name or "/",
@@ -1538,12 +1547,6 @@ Please change the quantity done or the rounding precision in your settings.""",
         be used in move/po creation.
         """        
         self.ensure_one()
-        # group_id = self.group_id or False
-        # if self.rule_id:
-        #     if self.rule_id.group_propagation_option == 'fixed' and self.rule_id.group_id:
-        #         group_id = self.rule_id.group_id
-        #     elif self.rule_id.group_propagation_option == 'none':
-        #         group_id = False
 
         product_id = self.product_id.with_context(lang=self._get_lang())
         dates_info = {'date_planned': self._get_mto_procurement_date()}

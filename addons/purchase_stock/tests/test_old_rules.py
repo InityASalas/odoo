@@ -35,7 +35,7 @@ class TestPurchaseOldRules(PurchaseTestCommon):
     def setUpClass(cls):
         super().setUpClass()
         cls.customer = cls.env['res.partner'].create({'name': 'abc'})
-        cls.group = cls.env['procurement.group'].create({'partner_id': cls.customer.id, 'name': 'New Group'})
+        cls.group = cls.env['stock.rule'].create({'partner_id': cls.customer.id, 'name': 'New Group'})
         cls.product = cls.env['product.product'].create({
             'name': 'Geyser',
             'is_storable': True,
@@ -248,7 +248,7 @@ class TestPurchaseOldRules(PurchaseTestCommon):
         rule_delay = sum(warehouse.reception_route_id.rule_ids.mapped('delay'))
         date_planned = fields.Datetime.now() + timedelta(days=10)
         # Create procurement order of product_1
-        self.env['procurement.group'].run([self.env['procurement.group'].Procurement(
+        self.env['stock.rule'].run([self.env['stock.rule'].Procurement(
             self.product_1, 5.000, self.uom_unit, warehouse.lot_stock_id, 'Test scheduler for RFQ', '/', self.env.company,
             {
                 'warehouse_id': warehouse,

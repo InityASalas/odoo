@@ -140,6 +140,7 @@ class StockPicking(models.Model):
         for picking in self:
             # TODO later with production fields
             picking.production_ids = self.env['mrp.production']
+            picking.production_count = 0
             # production_ids = picking.group_id.mrp_production_ids | picking.move_ids.move_dest_ids.raw_material_production_id
             # # Filter out unwanted MO types
             # picking.production_ids = production_ids.filtered(lambda p: p.picking_type_id.active)

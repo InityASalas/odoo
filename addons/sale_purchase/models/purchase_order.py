@@ -18,7 +18,7 @@ class PurchaseOrder(models.Model):
 
     @api.depends('order_line.sale_order_id')
     def _compute_sale_order_count(self):
-        for purchase in self:
+        for purchase in self:                
             purchase.sale_order_count = len(purchase._get_sale_orders())
             purchase.has_sale_order = bool(purchase.sale_order_count)
 

@@ -1958,8 +1958,8 @@ class TestPackagePropagation(TestPackingCommon):
             'tracking': 'none',
         })
         self.env['stock.quant']._update_available_quantity(self.productA, self.stock_location, 2)
-        pg = self.env['procurement.group'].create({'name': 'propagation_test'})
-        self.env['procurement.group'].run([
+        pg = self.env['stock.rule'].create({'name': 'propagation_test'})
+        self.env['stock.rule'].run([
             pg.Procurement(
                 self.productA,
                 2.0,

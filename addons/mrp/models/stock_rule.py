@@ -113,10 +113,15 @@ class StockRule(models.Model):
             productions._post_run_manufacture(new_productions_values_by_company[company_id]['procurements'])
         return True
 
+    def _get_stock_move_values(self, product_id, product_qty, product_uom, location_id, name, origin, company_id, values):
+        res = super()._get_stock_move_values(product_id, product_qty, product_uom, location_id, name, origin, company_id, values)
+        res['production_group_id'] = values.get('production_group_id')
+        return res
+
     def _get_moves_to_assign_domain(self, company_id):
-            domain = super()._get_moves_to_assign_domain(company_id)
-            domain = expression.AND([domain, [('production_id', '=', False)]])
-            return domain
+        domain = super()._get_moves_to_assign_domain(company_id)
+        domain = expression.AND([domain, [('production_id', '=', False)]])
+        return domain
 
     def _get_custom_move_fields(self):
         fields = super(StockRule, self)._get_custom_move_fields()
@@ -142,6 +147,7 @@ class StockRule(models.Model):
             ('picking_type_id', '=', self.picking_type_id.id),
             ('company_id', '=', procurement.company_id.id),
             ('user_id', '=', False),
+            ('reference_ids', '=', procurement.values.get('reference_ids', self.env['stock.reference']).ids),
         )
         if procurement.values.get('orderpoint_id'):
             procurement_date = datetime.combine(
@@ -229,6 +235,7 @@ class StockRule(models.Model):
         return delays, delay_description
 
     def _push_prepare_move_copy_values(self, move_to_copy, new_date):
-        new_move_vals = super(StockRule, self)._push_prepare_move_copy_values(move_to_copy, new_date)
+        new_move_vals = super()._push_prepare_move_copy_values(move_to_copy, new_date)
+        new_move_vals['production_group_id'] = move_to_copy.production_group_id.id
         new_move_vals['production_id'] = False
         return new_move_vals

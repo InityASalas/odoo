@@ -538,7 +538,7 @@ class TestCreatePicking(common.TestProductCommon):
                     'action': 'pull_push',
                     'group_id': procurement_group,
                 }
-            return self.env['procurement.group'].run([self.env['procurement.group'].Procurement(
+            return self.env['stock.rule'].run([self.env['stock.rule'].Procurement(
                 product, product_qty, self.uom_unit, vendor.property_stock_customer,
                 product.name, '/', self.env.company, values)
             ])
@@ -566,7 +566,7 @@ class TestCreatePicking(common.TestProductCommon):
             'supplier_taxes_id': [(6, 0, [])],
         })
 
-        procurement_group = self.env['procurement.group'].create({
+        procurement_group = self.env['stock.rule'].create({
             'move_type': 'direct',
             'partner_id': vendor.id
         })

@@ -294,7 +294,7 @@ class PosOrder(models.Model):
     picking_count = fields.Integer(compute='_compute_picking_count')
     failed_pickings = fields.Boolean(compute='_compute_picking_count')
     picking_type_id = fields.Many2one('stock.picking.type', related='session_id.config_id.picking_type_id', string="Operation Type", readonly=False)
-    procurement_group_id = fields.Many2one('procurement.group', 'Procurement Group', copy=False)
+    procurement_group_id = fields.Many2one('stock.rule', 'Procurement Group', copy=False)
     preset_id = fields.Many2one('pos.preset', string='Preset')
     floating_order_name = fields.Char(string='Order Name')
     general_customer_note = fields.Text(string='General Customer Note')
@@ -1609,12 +1609,12 @@ class PosOrderLine(models.Model):
             product_qty = line.qty
 
             procurement_uom = line.product_id.uom_id
-            procurements.append(self.env['procurement.group'].Procurement(
+            procurements.append(self.env['stock.rule'].Procurement(
                 line.product_id, product_qty, procurement_uom,
                 line.order_id.partner_id.property_stock_customer,
                 line.name, line.order_id.name, line.order_id.company_id, values))
         if procurements:
-            self.env['procurement.group'].run(procurements)
+            self.env['stock.rule'].run(procurements)
 
         # This next block is currently needed only because the scheduler trigger is done by picking confirmation rather than stock.move confirmation
         orders = self.mapped('order_id')

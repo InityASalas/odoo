@@ -30,9 +30,7 @@ export class StockOrderpointListController extends ListController {
         this.actionService.doAction('stock.action_orderpoint_snooze', {
             additionalContext: { default_orderpoint_ids: resIds },
             onClose: () => {
-                this.actionService.doAction('stock.action_replenishment', {
-                    stackPosition: 'replaceCurrentAction',
-                });
+                this.actionService.doAction({type: 'ir.actions.client', tag: 'reload'});
             }
         });
     }

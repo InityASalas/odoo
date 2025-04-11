@@ -10,7 +10,7 @@ class TestMoveCancelPropagation(PurchaseTestCommon):
     def setUpClass(cls):
         super().setUpClass()
         cls.customer = cls.env['res.partner'].create({'name': 'abc'})
-        cls.group = cls.env['procurement.group'].create({'partner_id': cls.customer.id, 'name': 'New Group'})
+        cls.group = cls.env['stock.rule'].create({'partner_id': cls.customer.id, 'name': 'New Group'})
         cls.warehouse = cls.env.ref('stock.warehouse0')
         cls.cust_location = cls.env.ref('stock.stock_location_customers')
         seller = cls.env['product.supplierinfo'].create({

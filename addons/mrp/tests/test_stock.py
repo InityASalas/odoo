@@ -170,9 +170,9 @@ class TestWarehouseMrp(common.TestMrpCommon):
         ])]
         warehouse_2.resupply_route_ids.rule_ids.procure_method = 'make_to_order'
         customer_location = self.env.ref('stock.stock_location_customers')
-        pg = self.env['procurement.group'].create({'name': 'Test-pg-mtso-mto'})
+        pg = self.env['stock.rule'].create({'name': 'Test-pg-mtso-mto'})
 
-        self.env['procurement.group'].run([
+        self.env['stock.rule'].run([
             pg.Procurement(
                 self.product_6,
                 5.0,

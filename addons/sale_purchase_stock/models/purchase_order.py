@@ -15,6 +15,7 @@ class PurchaseOrder(models.Model):
         sales = self.reference_ids.sale_ids
         return super()._get_sale_orders() | sales
 
+
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 

@@ -90,6 +90,17 @@ class StockPicking(models.Model):
         for picking in self:
             picking.sale_id = picking.reference_ids.sale_ids[:1]
 
+    @api.depends('move_ids.sale_line_id')
+    def _compute_move_type(self):
+        super()._compute_move_type()
+        for picking in self:
+            sale_orders = picking.move_ids.sale_line_id.order_id
+            if sale_orders:
+                if any(so.picking_policy == "direct" for so in sale_orders):
+                    picking.move_type = "direct"
+                else:
+                    picking.move_type = "one"
+
     def _set_sale_id(self):
         if self.reference_ids:
             self.reference_ids.sale_ids = Command.link(self.sale_id)

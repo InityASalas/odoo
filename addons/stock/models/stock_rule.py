@@ -15,7 +15,7 @@ _logger = logging.getLogger(__name__)
 
 
 class ProcurementException(Exception):
-    """An exception raised by ProcurementGroup `run` containing all the faulty
+    """An exception raised by StockRule `run` containing all the faulty
     procurements.
     """
     def __init__(self, procurement_exceptions):
@@ -310,11 +310,6 @@ class StockRule(models.Model):
         :param procurement: browse record
         :rtype: dictionary
         '''
-        # group_id = False
-        # if self.group_propagation_option == 'propagate':
-        #     group_id = values.get('group_id', False) and values['group_id'].id
-        # elif self.group_propagation_option == 'fixed':
-        #     group_id = self.group_id.id
 
         date_scheduled = fields.Datetime.to_string(
             fields.Datetime.from_string(values['date_planned']) - relativedelta(days=self.delay or 0)

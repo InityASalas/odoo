@@ -39,6 +39,7 @@ import {
 import { browser } from "@web/core/browser/browser";
 import { router, routerBus } from "@web/core/browser/router";
 import { registry } from "@web/core/registry";
+import { PersistentCache } from "@web/core/utils/persistent_cache";
 import { redirect } from "@web/core/utils/urls";
 import { useSetupAction } from "@web/search/action_hook";
 import { listView } from "@web/views/list/list_view";
@@ -756,6 +757,18 @@ test("there is no flickering when switching between views", async () => {
     let def;
     onRpc(() => def);
 
+    //TODO: Discuss with AAB, if we don't have a better way to do this !
+    //Maybe create a utils ? like onRPC ?
+    patchWithCleanup(PersistentCache.prototype, {
+        async read(table) {
+            if (table === "web_read" || table === "web_search_read") {
+                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
+                await def;
+            }
+            return super.read(...arguments);
+        },
+    });
+
     await mountWithCleanup(WebClient);
     await getService("action").doAction(3);
 
@@ -1221,6 +1234,18 @@ test.tags("desktop");
 test("requests for execute_action of type object: disable buttons", async () => {
     let def = undefined;
     onRpc("web_read", () => def); // block the 'read' call
+
+    //TODO: Discuss with AAB, if we don't have a better way to do this !
+    patchWithCleanup(PersistentCache.prototype, {
+        async read(table) {
+            if (table === "web_read") {
+                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
+                await def;
+            }
+            return super.read(...arguments);
+        },
+    });
+
     onRpc("/web/dataset/call_button/*", () => false);
 
     await mountWithCleanup(WebClient);

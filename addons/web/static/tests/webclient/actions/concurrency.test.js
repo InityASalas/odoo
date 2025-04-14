@@ -28,6 +28,7 @@ import { SearchBar } from "@web/search/search_bar/search_bar";
 import { useSetupAction } from "@web/search/action_hook";
 import { WebClient } from "@web/webclient/webclient";
 import { browser } from "@web/core/browser/browser";
+import { PersistentCache } from "@web/core/utils/persistent_cache";
 
 const { ResCompany, ResPartner, ResUsers } = webModels;
 const actionRegistry = registry.category("actions");
@@ -653,7 +654,17 @@ test.tags("desktop");
 test("click multiple times to open a record", async () => {
     const def = new Deferred();
     const defs = [null, def];
-    onRpc("web_read", () => defs.shift());
+
+    //TODO: Discuss with AAB, if we don't have a better way to do this !
+    patchWithCleanup(PersistentCache.prototype, {
+        async read(table) {
+            if (table === "web_read") {
+                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
+                await defs.shift();
+            }
+            return super.read(...arguments);
+        },
+    });
 
     await mountWithCleanup(WebClient);
     await getService("action").doAction(3);

@@ -22,10 +22,22 @@
                     <field name="l10n_ro_edi_document_ids">
                         <list create="false" delete="false" edit="false" no_open="1"
                               decoration-danger="state == 'invoice_sending_failed'"
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                               decoration-warning="state == 'invoice_sent'"
                               decoration-success="state == 'invoice_validated'">
                             <field name="message" column_invisible="1"/>
                             <field name="attachment_id" column_invisible="1"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                              decoration-warning="state == 'invoice_sending'"
+                              decoration-success="state == 'invoice_sent'">
+                            <field name="message" column_invisible="1"/>
+                            <field name="attachment_id" column_invisible="1"/>
+=======
+                              decoration-warning="state == 'invoice_sending'"
+                              decoration-success="state == 'invoice_sent'">
+                            <field name="message" column_invisible="1"/> <!-- TODO: to be removed in master -->
+                            <field name="attachment_id" column_invisible="1"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                             <field name="datetime"/>
                             <field name="state" widget="account_document_state"/>
                             <field name="key_loading" optional="hide"/>

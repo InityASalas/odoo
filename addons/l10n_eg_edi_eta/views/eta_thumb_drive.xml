@@ -4,9 +4,19 @@
             <field name="name">view_l10n_eg_edi_thumb_drive_tree</field>
             <field name="model">l10n_eg_edi.thumb.drive</field>
             <field name="arch" type="xml">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                 <list editable="top">
                     <field name="user_id" column_invisible="True"/>
                     <field name="certificate" column_invisible="True"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                <tree editable="top">
+                    <field name="user_id" column_invisible="True"/>
+                    <field name="certificate" column_invisible="True"/>
+=======
+                <tree editable="top">
+                    <field name="user_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+                    <field name="certificate" column_invisible="True"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                     <field name="company_id"/>
                     <field name="pin" password="True"/>
                     <field name="access_token" password="True"/>

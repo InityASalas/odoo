@@ -10,9 +10,19 @@
                     <page name="latam_checks_page" string="Checks" invisible="payment_method_code not in ['in_third_party_checks', 'out_third_party_checks', 'return_third_party_checks', 'new_third_party_checks', 'own_checks']">
                         <group name="latam_checks" colspan="2">
                             <field name="l10n_latam_new_check_ids" invisible="payment_method_code not in ['new_third_party_checks', 'own_checks']" nolabel="1" colspan="2" readonly="state != 'draft'">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                                 <list name="new_checks" editable="bottom">
                                     <field name="company_id" column_invisible="True"/>
                                     <field name="currency_id" column_invisible="True"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                                <tree name="new_checks" editable="bottom">
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="currency_id" column_invisible="True"/>
+=======
+                                <tree name="new_checks" editable="bottom">
+                                    <field name="company_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+                                    <field name="currency_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                                     <field name="name" />
                                     <field name="bank_id" column_invisible="parent.payment_method_code == 'own_checks'"/>
                                     <field name="issuer_vat" column_invisible="parent.payment_method_code == 'own_checks'"/>
@@ -27,9 +37,19 @@
                                         if payment_type == 'outbound' else
                                     [('payment_method_code', '=', 'new_third_party_checks'), ('current_journal_id', '=', False), ('company_id', '=', company_id)]" options="{'no_create': True}"
                                     nolabel="1" colspan="2" readonly="state != 'draft'">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                                 <list name="existing_checks">
                                     <field name="company_id" column_invisible="True"/>
                                     <field name="currency_id" column_invisible="True"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                                <tree name="existing_checks">
+                                    <field name="company_id" column_invisible="True"/>
+                                    <field name="currency_id" column_invisible="True"/>
+=======
+                                <tree name="existing_checks">
+                                    <field name="company_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+                                    <field name="currency_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                                     <field name="name" />
                                     <field name="bank_id" optional="hide"/>
                                     <field name="issuer_vat" optional="hide"/>

@@ -19,6 +19,20 @@
                     </div>
                 </div>
                 <sheet>
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                    <field name="related_move_id" invisible="1"/>
+                    <field name="related_payment_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="type_name" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+=======
+                    <field name="related_move_id" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="related_payment_id" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="currency_id" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="type_name" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="company_id" invisible="1"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                     <group>
                         <group id="header_left_group">
                             <field name="related_move_id" invisible="1"/> <!-- used to compute the company_id -->
@@ -33,8 +47,18 @@
                     <notebook>
                         <page string="TDS Tax Details">
                             <field name="withhold_line_ids">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                                 <list editable="bottom">
                                     <field name="currency_id" column_invisible="True"/> <!-- used to display the currency symbol -->
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                                <tree editable="bottom">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="l10n_in_tds_tax_type" column_invisible="True"/>
+=======
+                                <tree editable="bottom">
+                                    <field name="currency_id" column_invisible="True"/> <!-- TODO: to be removed in master -->
+                                    <field name="l10n_in_tds_tax_type" column_invisible="True"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                                     <field name="tax_id" domain="[('l10n_in_tds_tax_type', '=', l10n_in_tds_tax_type)]"/>
                                     <field name="base" sum="Total Base" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     <field name="amount" sum="Total Amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>

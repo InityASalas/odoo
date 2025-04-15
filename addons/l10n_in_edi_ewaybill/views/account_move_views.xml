@@ -6,11 +6,25 @@
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
             <xpath expr="//button[@name='button_set_checked']" position="after">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                 <button name="l10n_in_edi_ewaybill_send" string="Send E-waybill" class="oe_highlight" type="object" groups="account.group_account_invoice" invisible="not l10n_in_edi_ewaybill_show_send_button" data-hotkey="e"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                <field name="l10n_in_edi_ewaybill_show_send_button" invisible="1"/>
+                <button name="l10n_in_edi_ewaybill_send" string="Send E-waybill" class="oe_highlight" type="object" groups="account.group_account_invoice" invisible="not l10n_in_edi_ewaybill_show_send_button"/>
+=======
+                <field name="l10n_in_edi_ewaybill_show_send_button" invisible="1"/> <!-- TODO: to be removed in master -->
+                <button name="l10n_in_edi_ewaybill_send" string="Send E-waybill" class="oe_highlight" type="object" groups="account.group_account_invoice" invisible="not l10n_in_edi_ewaybill_show_send_button"/>
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
             </xpath>
             <xpath expr="//notebook/page[@name='other_info']" position="before">
                 <page string="eWayBill" name="l10n_in_edi_ewaybill_page"
                     invisible="move_type in ('entry', 'out_refund') or country_code != 'IN'">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                    <field name="l10n_in_edi_ewaybill_direct_api" invisible="1"/>
+=======
+                    <field name="l10n_in_edi_ewaybill_direct_api" invisible="1"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                     <group name="ewaybill_group">
                         <group string="Transaction Details" name="Transaction_group" 
                             invisible="not l10n_in_edi_ewaybill_direct_api">

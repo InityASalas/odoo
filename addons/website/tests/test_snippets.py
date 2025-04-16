@@ -154,3 +154,6 @@ class TestSnippets(HttpCase):
     @unittest.skip
     def test_custom_popup_snippet(self):
         self.start_tour(self.env["website"].get_client_action_url("/"), "custom_popup_snippet", login="admin")
+
+    def test_snippet_popup_open_on_top(self):
+        self.start_tour(self.env['website'].get_client_action_url('/'), 'snippet_popup_open_on_top', login='admin')

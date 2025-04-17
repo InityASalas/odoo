@@ -15,7 +15,7 @@
         <t t-call="portal.frontend_layout">
             <t t-set="page_title" t-value="'Donation'"/>
             <t t-set="additional_title"><t t-out="page_title"/></t>
-            <div class="wrap">
+            <div id="wrap">
                 <div class="oe_structure" id="oe_structure_website_payment_donation_1"/>
                 <div class="container mb-3">
                     <!-- Portal breadcrumb -->
@@ -39,7 +39,7 @@
     </template>
 
     <template id="website_payment.donation_information" name="Donation Information">
-        <h3 class="o_page_header mt16 mb4">Donation</h3>
+        <h1 class="o_page_header mt16 mb4 h3-fs">Donation</h1>
         <div class="row">
             <div t-attf-class="mb-3 #{error.get('name') and 'o_has_error' or ''} col-lg-12 div_name">
                 <label class="col-form-label fw-bold" for="name">Name

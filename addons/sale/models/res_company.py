@@ -47,6 +47,29 @@ class ResCompany(models.Model):
         ],
         string="Sale onboarding selected payment method")
 
+    property_account_downpayment_categ_id = fields.Many2one(
+        comodel_name='account.account',
+        string="Downpayment Account",
+        domain=[
+            ('account_type', 'not in', ('asset_receivable', 'liability_payable', 'asset_cash', 'liability_credit_card', 'off_balance')),
+        ],
+        help="This account will be used on Downpayment invoices.",
+        compute='_compute_downpayment_account',
+        store=True, readonly=False,
+    )
+
+    @api.depends('chart_template')
+    def _compute_downpayment_account(self):
+        for company in self:
+            if not company.chart_template:
+                continue
+
+            template_data = self.env['account.chart.template']._get_chart_template_data(company.chart_template).get('template_data')
+            if template_data and template_data.get('property_account_downpayment_categ_id'):
+                property_downpayment_account = self.env.ref(f'account.{company.id}_{template_data["property_account_downpayment_categ_id"]}', raise_if_not_found=False)
+                if property_downpayment_account:
+                    company.property_account_downpayment_categ_id = property_downpayment_account
+
     @api.constrains('prepayment_percent')
     def _check_prepayment_percent(self):
         for company in self:

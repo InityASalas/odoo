@@ -6,8 +6,9 @@ class SaleOrder(models.Model):
 
     def _get_order_edi_decoder(self, file_data):
         """ Override of sale to add edi decoder for xml files.
+
         :param dict file_data: File data to decode.
-        :return function: Function with decoding capibility `_import_order_ubl` for different xml
+        :return function: Function with decoding capability `_import_order_ubl` for different xml
         formats.
         """
         if file_data['type'] == 'xml':
@@ -19,7 +20,7 @@ class SaleOrder(models.Model):
 
     @api.model
     def _get_order_ubl_builder_from_xml_tree(self, tree):
-        """ Return sale order ubl builder with decoding capibility to given tree
+        """ Return sale order ubl builder with decoding capability to given tree
 
         :param xml tree: xml tree to find builder.
         :returns: model of builder for given tree if found else none.

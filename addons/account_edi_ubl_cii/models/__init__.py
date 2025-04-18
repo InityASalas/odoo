@@ -11,5 +11,4 @@ from . import account_edi_xml_ubl_sg
 from . import account_move
 from . import account_move_send
 from . import ir_actions_report
-from . import order_edi_xml_ubl_bis3
 from . import res_partner

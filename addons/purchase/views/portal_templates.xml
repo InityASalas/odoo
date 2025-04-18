@@ -136,7 +136,7 @@
                       <h2 t-field="order.amount_total" data-id="total_amount" class="mb-0 text-break"/>
                   </t>
                   <t t-set="entries">
-                      <div class="d-flex flex-column gap-4 mt-3">
+                      <div name="purchase_sidebar_entries" class="d-flex flex-column gap-4 mt-3">
                           <a class="btn btn-secondary o_print_btn o_portal_invoice_print" t-att-href="order.get_portal_url(report_type='pdf')" id="print_invoice_report" title="View Details" role="button" target="_blank"><i class="fa fa-print me-1"/>Download / Print</a>
                           <div class="navspy flex-grow-1 ps-0" t-ignore="true" role="complementary">
                               <ul class="nav flex-column bs-sidenav"></ul>

@@ -127,7 +127,7 @@ export class ProductLabelSectionAndNoteField extends Component {
         return {
             "fw-bold": this.isSection(),
             "fst-italic": this.isNote(),
-            "text-warning": !this.productName && this.props.show_label_warning
+            "text-warning": this.shouldShowWarning(),
         };
     }
 
@@ -148,6 +148,15 @@ export class ProductLabelSectionAndNoteField extends Component {
     isNote(record = null) {
         record = record || this.props.record;
         return record.data.display_type === "line_note";
+    }
+
+    shouldShowWarning() {
+        return (
+            !this.productName &&
+            this.props.show_label_warning &&
+            !this.isSection() &&
+            !this.isNote()
+        );
     }
 
     switchLabelVisibility() {

@@ -7,7 +7,7 @@ class PurchaseOrder(models.Model):
     def _get_order_edi_decoder(self, file_data):
         """ Override of purchase to add edi decoder for xml files.
         :param dict file_data: File data to decode.
-        :return function: Function with decoding capibility `_import_order_ubl` for different xml
+        :return function: Function with decoding capability `_import_order_ubl` for different xml
         formats.
         """
         if file_data['type'] == 'xml':

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="portal_connect_software_modal" name="EDI UBL : portal connect software" inherit_id="sale.sale_order_portal_template" priority="35">
-        <xpath expr="//div[hasclass('o_portal_sale_sidebar')]/t/t[3]/div[hasclass('d-flex') and hasclass('flex-column') and hasclass('gap-4') and hasclass('mt-3')]" position="inside">
+        <xpath expr="//div[@name='sale_sidebar_entries']" position="inside">
             <div>
                 <button id="portal_connect_software_modal_btn" type="button" class="btn btn-primary"
                     data-bs-toggle="modal" data-bs-target="#sale_portal_connect_software_modal">

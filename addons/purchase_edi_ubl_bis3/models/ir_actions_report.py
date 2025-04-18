@@ -11,10 +11,12 @@ class IrActionsReport(models.Model):
         # EXTENDS base
         collected_streams = super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
 
-        if collected_streams \
-                and res_ids \
-                and len(res_ids) == 1 \
-                and self._is_purchase_order_report(report_ref):
+        if (
+            collected_streams
+            and res_ids
+            and len(res_ids) == 1
+            and self._is_purchase_order_report(report_ref)
+        ):
             purchase_order = self.env['purchase.order'].browse(res_ids)
             builder = self.env['purchase.edi.xml.ubl_bis3']
 

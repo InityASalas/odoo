@@ -1,7 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
-from odoo.osv import expression
+from odoo.fields import Domain
 
 
 class MailActivitySchedule(models.TransientModel):
@@ -14,12 +14,12 @@ class MailActivitySchedule(models.TransientModel):
     def _compute_plan_available_ids(self):
         todo = self.filtered(lambda s: s.plan_department_filterable)
         for scheduler in todo:
-            base_domain = scheduler._get_plan_available_base_domain()
+            domain = scheduler._get_plan_available_base_domain()
             if not scheduler.department_id:
-                final_domain = expression.AND([base_domain, [('department_id', '=', False)]])
+                domain &= Domain('department_id', '=', False)
             else:
-                final_domain = expression.AND([base_domain, ['|', ('department_id', '=', False), ('department_id', '=', scheduler.department_id.id)]])
-            scheduler.plan_available_ids = self.env['mail.activity.plan'].search(final_domain)
+                domain &= Domain('department_id', '=', False) | Domain('department_id', '=', scheduler.department_id.id)
+            scheduler.plan_available_ids = self.env['mail.activity.plan'].search(domain)
         super(MailActivitySchedule, self - todo)._compute_plan_available_ids()
 
     @api.depends('res_model')

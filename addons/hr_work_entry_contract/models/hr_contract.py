@@ -8,7 +8,7 @@ import pytz
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
-from odoo.osv import expression
+from odoo.fields import Domain
 from odoo.tools import ormcache, format_list
 from odoo.tools.intervals import Intervals
 from odoo.exceptions import UserError
@@ -74,16 +74,16 @@ class HrContract(models.Model):
         return self.env.ref('hr_work_entry.work_entry_type_leave')
 
     def _get_sub_leave_domain(self):
-        return [('calendar_id', 'in', [False] + self.resource_calendar_id.ids)]
+        return Domain('calendar_id', 'in', [False] + self.resource_calendar_id.ids)
 
     def _get_leave_domain(self, start_dt, end_dt):
-        domain = [
+        domain = Domain([
             ('resource_id', 'in', [False] + self.employee_id.resource_id.ids),
             ('date_from', '<=', end_dt.replace(tzinfo=None)),
             ('date_to', '>=', start_dt.replace(tzinfo=None)),
             ('company_id', 'in', [False, self.company_id.id]),
-        ]
-        return expression.AND([domain, self._get_sub_leave_domain()])
+        ])
+        return domain & self._get_sub_leave_domain()
 
     def _get_resource_calendar_leaves(self, start_dt, end_dt):
         return self.env['resource.calendar.leaves'].search(self._get_leave_domain(start_dt, end_dt))
@@ -423,17 +423,14 @@ class HrContract(models.Model):
     def _cancel_work_entries(self):
         if not self:
             return
-        domain = [('state', '!=', 'validated')]
+        domain = Domain('state', '!=', 'validated')
         for contract in self:
             date_start = fields.Datetime.to_datetime(contract.date_start)
-            contract_domain = [
-                ('contract_id', '=', contract.id),
-                ('date_start', '>=', date_start),
-            ]
+            contract_domain = Domain('contract_id', '=', contract.id) & Domain('date_start', '>=', date_start)
             if contract.date_end:
                 date_end = datetime.combine(contract.date_end, datetime.max.time())
-                contract_domain += [('date_stop', '<=', date_end)]
-            domain = expression.AND([domain, contract_domain])
+                contract_domain &= Domain('date_stop', '<=', date_end)
+            domain &= contract_domain
         work_entries = self.env['hr.work.entry'].sudo().search(domain)
         if work_entries:
             work_entries.sudo().unlink()

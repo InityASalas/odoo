@@ -6,8 +6,8 @@ from datetime import date, datetime, time
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
-from odoo.osv import expression
 from odoo.exceptions import UserError
+from odoo.fields import Domain
 from odoo.tools.intervals import Intervals
 
 
@@ -20,7 +20,7 @@ class HrEmployeePublic(models.Model):
         return super()._get_manager_only_fields() + ['first_contract_date']
 
     def _search_first_contract_date(self, operator, value):
-        if operator in expression.NEGATIVE_TERM_OPERATORS:
+        if Domain.is_negative_operator(operator):
             return NotImplemented
         employees = self.env['hr.employee'].sudo().search([('id', 'child_of', self.env.user.employee_id.ids), ('first_contract_date', operator, value)])
         return [('id', 'in', employees.ids)]
@@ -119,17 +119,15 @@ class HrEmployee(models.Model):
         """
         Returns the contracts of the employee between date_from and date_to
         """
-        state_domain = [('state', 'in', states)]
-        if kanban_state:
-            state_domain = expression.AND([state_domain, [('kanban_state', 'in', kanban_state)]])
-
-        return self.env['hr.contract'].search(
-            expression.AND([[('employee_id', 'in', self.ids)],
-            state_domain,
+        return self.env['hr.contract'].search(Domain.AND([
+            Domain('employee_id', 'in', self.ids),
+            Domain('state', 'in', states),
+            Domain('kanban_state', 'in', kanban_state) if kanban_state else Domain.TRUE,
             [('date_start', '<=', date_to),
                 '|',
                     ('date_end', '=', False),
-                    ('date_end', '>=', date_from)]]))
+                    ('date_end', '>=', date_from)],
+        ]))
 
     def _get_incoming_contracts(self, date_from, date_to):
         return self._get_contracts(date_from, date_to, states=['draft'], kanban_state=['done'])

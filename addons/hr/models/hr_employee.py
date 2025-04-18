@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import re
@@ -11,9 +10,8 @@ from dateutil.relativedelta import relativedelta
 from markupsafe import Markup
 
 from odoo import api, fields, models, _, tools
-from odoo.fields import Domain
 from odoo.exceptions import ValidationError, AccessError, RedirectWarning
-from odoo.osv import expression
+from odoo.fields import Domain
 from odoo.tools import convert, format_date
 
 
@@ -681,9 +679,9 @@ class HrEmployee(models.Model):
             # Empty links to this employees (example: manager, coach, time off responsible, ...)
             employee_fields_to_empty = self._get_employee_m2o_to_empty_on_archived_employees()
             user_fields_to_empty = self._get_user_m2o_to_empty_on_archived_employees()
-            employee_domain = [[(field, 'in', archived_employees.ids)] for field in employee_fields_to_empty]
-            user_domain = [[(field, 'in', archived_employees.user_id.ids) for field in user_fields_to_empty]]
-            employees = self.env['hr.employee'].search(expression.OR(employee_domain + user_domain))
+            employee_domain = Domain.OR(Domain(field, 'in', archived_employees.ids) for field in employee_fields_to_empty)
+            user_domain = Domain.AND(Domain(field, 'in', archived_employees.user_id.ids) for field in user_fields_to_empty)
+            employees = self.env['hr.employee'].search(employee_domain | user_domain)
             for employee in employees:
                 for field in employee_fields_to_empty:
                     if employee[field] in archived_employees:

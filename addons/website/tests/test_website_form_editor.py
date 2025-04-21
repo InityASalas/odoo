@@ -21,8 +21,8 @@ class TestWebsiteFormEditor(HttpCaseWithUserPortal):
             'phone': "+1 555-555-5555",
         })
 
-    @unittest.skip
     def test_tour(self):
+        # TODO: remove any watch=True once the tour is stable
         self.start_tour(self.env['website'].get_client_action_url('/'), 'website_form_editor_tour', login='admin', timeout=120)
         self.start_tour('/', 'website_form_editor_tour_submit')
         self.start_tour('/', 'website_form_editor_tour_results', login="admin")

@@ -15,10 +15,13 @@ class HrSkillType(models.Model):
         return randint(1, 11)
 
     active = fields.Boolean('Active', default=True)
+    sequence = fields.Integer("Sequence")
     name = fields.Char(required=True, translate=True)
     skill_ids = fields.One2many('hr.skill', 'skill_type_id', string="Skills")
     skill_level_ids = fields.One2many('hr.skill.level', 'skill_type_id', string="Levels", copy=True)
     color = fields.Integer('Color', default=_get_default_color)
+    number_of_levels = fields.Integer(compute="_compute_number_of_levels", store=True, readonly=False)
+    is_certification = fields.Boolean('Certification')
 
     @api.constrains('skill_ids', 'skill_level_ids')
     def _check_no_null_skill_or_skill_level(self):
@@ -31,6 +34,23 @@ class HrSkillType(models.Model):
                 _("The following skills type must contain at least one skill and one level: %s",
                   "\n".join(skill_type.name for skill_type in incorrect_skill_type)))
 
+    def _compute_display_name(self):
+        for skill_type in self:
+            if skill_type.is_certification:
+                skill_type.display_name = skill_type.name + u"\U0001F396"  # Military Medal's unicode
+            else:
+                skill_type.display_name = skill_type.name
+
+    @api.depends('skill_level_ids')
+    def _compute_number_of_levels(self):
+        level_count_by_skill_type = dict(self.env['hr.skill.level']._read_group(
+            domain=[('skill_type_id', 'in', self.ids)],
+            groupby=['skill_type_id'],
+            aggregates=['__count']
+        ))
+        for skill_type in self:
+            skill_type.number_of_levels = level_count_by_skill_type.get(skill_type, 0)
+
     @api.onchange('skill_level_ids')
     def _onchange_skill_level_ids(self):
         for level in self.skill_level_ids:
@@ -39,6 +59,15 @@ class HrSkillType(models.Model):
                 # This value need to be set to False, to reset it for the frontend.
                 level.technical_is_new_default = False
                 break
+
+    def _record_to_recompute(self):
+        self.env['hr.employee.skill'].search([('skill_type_id', 'in', self.ids)])._trigger_conflict()
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'is_certification' in vals and not vals['is_certification']:
+            self._record_to_recompute()
+        return res
 
     def copy_data(self, default=None):
         vals_list = super().copy_data(default=default)

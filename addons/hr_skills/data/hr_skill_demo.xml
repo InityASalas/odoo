@@ -12,6 +12,12 @@
     <record id="hr_skill_type_marketing" model="hr.skill.type">
         <field name="name">Marketing</field>
     </record>
+    <record id="hr_skill_type_scrum_master" model="hr.skill.type">
+        <field name="name">Scrum Master</field>
+    </record>
+    <record id="hr_skill_type_odoo" model="hr.skill.type">
+        <field name="name">Odoo</field>
+    </record>
 
     <!--Skill Levels-->
     <!--Programming-->

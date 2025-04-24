@@ -8,11 +8,23 @@ export class EventSlotCalendarModel extends CalendarModel {
      * Save slot date and hours from selected datetimes
      */
     buildRawRecord(partialRecord, options = {}) {
-        const rawRecord = super.buildRawRecord(partialRecord, options)
+        const rawRecord = super.buildRawRecord(partialRecord, options);
         rawRecord["date"] = serializeDate(partialRecord.start);
         rawRecord["start_hour"] = partialRecord.start.hour + partialRecord.start.minute / 60;
-        rawRecord["end_hour"] = partialRecord.end.hour + partialRecord.end.minute / 60;
+        if (partialRecord.end) {
+            rawRecord["end_hour"] = partialRecord.end.hour + partialRecord.end.minute / 60;
+        }
         return rawRecord;
+    }
+
+    /**
+     * @override
+     * Save selected date in context defaults for mobile quick create form.
+     */
+    makeContextDefaults(rawRecord) {
+        const context = super.makeContextDefaults(rawRecord);
+        context["default_date"] = rawRecord["date"];
+        return context;
     }
 
     /**

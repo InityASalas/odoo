@@ -2060,7 +2060,7 @@ class HttpCase(TransactionCase):
     @classmethod
     def http_port(cls):
         if odoo.service.server.server is None:
-            return None
+            raise ValueError("Odoo server must be running.")
         return odoo.service.server.server.httpd.server_port
 
     def setUp(self):

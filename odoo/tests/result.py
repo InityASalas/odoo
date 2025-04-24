@@ -49,7 +49,7 @@ odoo\.addons\.
 \.tests\.
 (?P<class>.+)
 \.
-(?P<method>[^.]+)
+(?P<method>test_[^.]+)
 $
 """, re.VERBOSE)
 

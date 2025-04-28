@@ -515,6 +515,7 @@ class TestSaleProject(TestSaleProjectCommon):
             'price_unit': product_B.list_price,
             'order_id': sale_order.id,
         })
+        sale_order._action_confirm()
 
         def get_project_ids_from_action_domain(action):
             for el in action['domain']:
@@ -1266,3 +1267,38 @@ class TestSaleProject(TestSaleProjectCommon):
         so.action_confirm()
         self.assertFalse(self.product_order_service2.project_id.task_ids)
         self.assertFalse(sol.task_id)
+
+    def test_task_creation_on_so_confirm_with_task_template(self):
+        task_template = self.env['project.task'].create({
+            'name': 'test task template',
+            'project_id': self.project_global.id,
+            'allocated_hours': 20,
+        })
+        task_template.action_convert_to_template()
+        products = self.env['product.product'].create([{
+            'name': 'Test product0',
+            'type': 'service',
+            'service_tracking': 'task_global_project',
+            'project_id': self.project_global.id,
+            'task_template_id': task_template.id,
+        }, {
+            'name': 'Test product1',
+            'type': 'service',
+            'service_tracking': 'task_in_project',
+            'project_template_id': self.project_global.id,
+            'task_template_id': task_template.id,
+        }])
+        order = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'order_line': [
+                Command.create({
+                    'product_id': products[0].id,
+                }),
+                Command.create({
+                    'product_id': products[1].id,
+                })]
+        })
+        order.action_confirm()
+        # If there are multiple products in the Sales Order with the same task template, create only one task from the task template.
+        self.assertEqual(order.tasks_count, 1, msg="Expected 1 tasks to be generated from the task template, but the count does not match.")
+        self.assertEqual(order.tasks_ids.allocated_hours, 40, msg="Expected task's hours to be 40 from the task template, but the hours does not match.")

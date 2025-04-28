@@ -67,7 +67,6 @@
         <field name="res_model">event.slot</field>
         <field name="view_mode">calendar,list,form</field>
         <field name="domain">[('event_id', '=', active_id)]</field>
-        <field name="context">{'default_event_id': active_id}</field>
     </record>
 
 </data></odoo>

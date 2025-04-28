@@ -63,7 +63,12 @@
                                 <field name="is_multi_slots" string="Multiple Slots"/>
                                 <div invisible="not is_multi_slots">
                                     <button name="%(event.act_event_slot_from_event)d"
-                                        type="action" class="btn-link p-0">
+                                        type="action" class="btn-link p-0"
+                                        context="{
+                                            'event_start_date': date_begin,
+                                            'event_end_date': date_end,
+                                            'default_event_id': id,
+                                        }">
                                         <field name="event_slot_count" class="oe_inline"/> Slot(s)
                                     </button>
                                 </div>

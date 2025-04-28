@@ -2,6 +2,7 @@ from datetime import date
 
 from freezegun import freeze_time
 
+from odoo.fields import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import Form, tagged, users
 
@@ -58,6 +59,29 @@ class TestAllocations(TestHrHolidaysCommon):
                     (0, 0, {'name': 'Friday Lunch', 'dayofweek': '4', 'hour_from': 12, 'hour_to': 13, 'day_period': 'lunch'}),
                     (0, 0, {'name': 'Friday Afternoon', 'dayofweek': '4', 'hour_from': 13, 'hour_to': 16, 'day_period': 'afternoon'})
                 ]
+        })
+
+        cls.calendar_0h = cls.env['resource.calendar'].create({
+            'name': 'Calendar - 0H',
+            'company_id': cls.company.id,
+            'attendance_ids': [Command.clear()],
+        })
+
+        cls.employee_0h = cls.env['hr.employee'].create({
+            'name': 'My Employee 0 Hours',
+            'company_id': cls.company.id,
+            'department_id': cls.department.id,
+            'category_ids': [Command.link(cls.category_tag.id)],
+            'resource_calendar_id': cls.calendar_0h.id,
+        })
+
+        cls.paid_time_off_hours = cls.env['hr.leave.type'].create({
+            'name': 'Paid Time Off in Hours',
+            'request_unit': 'hour',
+            'leave_validation_type': 'no_validation',
+            'company_id': cls.company.id,
+            'time_type': 'other',
+            'requires_allocation': 'yes',
         })
 
     def test_allocation_whole_company(self):
@@ -398,3 +422,14 @@ class TestAllocations(TestHrHolidaysCommon):
         allocation_form.holiday_status_id = self.leave_type
         allocation = allocation_form.save()
         self.assertTrue(allocation)
+
+    def test_create_allocation_employee_with_0_hours_week_working_hours(self):
+        """
+            This test makes sure that the Zero Division Error is not raised when creating an allocation
+            for an employee with a 0 hours week working hours.
+        """
+        allocation_form = Form(self.env['hr.leave.allocation'])
+        allocation_form.name = 'Holiday (8 Hours)'
+        with self.assertRaises(ValidationError):
+            allocation_form.employee_id = self.employee_0h
+            allocation_form.holiday_status_id = self.paid_time_off_hours

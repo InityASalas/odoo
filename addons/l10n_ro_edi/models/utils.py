@@ -11,7 +11,10 @@ from odoo.tools.safe_eval import json
 NS_UPLOAD = {"ns": "mfp:anaf:dgti:spv:respUploadFisier:v1"}
 NS_STATUS = {"ns": "mfp:anaf:dgti:efactura:stareMesajFactura:v1"}
 NS_HEADER = {"ns": "mfp:anaf:dgti:efactura:mesajEroriFactuta:v1"}
-NS_DOWNLOAD = {"cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"}
+NS_DOWNLOAD = {
+    "cac": "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2",
+    "cbc": "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
+}
 NS_SIGNATURE = {"ns": "http://www.w3.org/2000/09/xmldsig#"}
 
 
@@ -206,9 +209,71 @@ def _request_ciusro_download_answer(company, key_download, session):
                 extracted_data['invoice'] = {
                     'name': root.findtext('.//cbc:ID', namespaces=NS_DOWNLOAD),
                     'amount_total': root.findtext('.//cbc:TaxInclusiveAmount', namespaces=NS_DOWNLOAD),
-                    'due_date': datetime.strptime(root.findtext('.//cbc:DueDate', namespaces=NS_DOWNLOAD), '%Y-%m-%d').date(),
+                    'buyer_vat': root.findtext('.//cac:AccountingSupplierParty//cbc:CompanyID', namespaces=NS_DOWNLOAD),
+                    'seller_vat': root.findtext('.//cac:AccountingCustomerParty//cbc:CompanyID', namespaces=NS_DOWNLOAD),
+                    'date': datetime.strptime(root.findtext('.//cbc:IssueDate', namespaces=NS_DOWNLOAD), '%Y-%m-%d').date(),
                     'attachment_raw': file_bytes,
                 }
 
     zip_ref.close()
     return extracted_data
+
+
+def _request_ciusro_synchronize_invoices(company, session, nb_days=1):
+    """
+    This method makes a "Fetch Messages" (GET/listaMesajeFactura) request to the Romanian SPV.
+    After processing the response, if messages were indeed fetched, it will fetch the content
+    of said messages.
+
+    Possible returns:
+    - {'error': `str`} if there was a failing response from a bad request;
+    - {'sent_invoices_messages': [`dict`], 'sent_invoices_refused_messages': [`dict`], 'received_bills_messages': [`dict`]}
+    where `dict` is {'data_creare': `str`, 'cif': `str`, 'id_solicitare': `str`, 'detalii': `str`,
+    'tip': 'FACTURA TRIMISA'|'ERORI FACTURA'|'FACTURA PRIMITA', 'id': `str`, answer: <`_request_ciusro_download_answer`>}; representing a message.
+    sent_invoices_messages will contain all message validating an invoice, sent_invoices_refused_messages will contain all messages refusing an invoice
+    and received_bills_messages will contain all message representing received bills.
+
+    :param company: ``res.company`` object
+    :param session: ``requests.Session()`` object
+    :param nb_days(optional,default=1): ``int`` the number of days for which the request should be made, min=1, max=60
+    :return: {'error': `str`} | {'sent_invoices_messages': [`dict`], 'sent_invoices_refused_messages': [`dict`], 'received_bills_messages': [`dict`]}
+    """
+    result = make_efactura_request(
+        session=session,
+        company=company,
+        endpoint='listaMesajeFactura',
+        method='GET',
+        params={'zile': nb_days, 'cif': company.vat.replace('RO', '')},
+    )
+    if 'error' in result:
+        return {'error': result['error']}
+
+    try:
+        msg_content = json.loads(result['content'].decode())
+    except ValueError:
+        return {'error': _("The SPV data could not be parsed.")}
+
+    if eroare := msg_content.get('eroare'):
+        return {'error': eroare}
+
+    received_bills_messages = []
+    sent_invoices_accepted_messages = []
+    sent_invoices_refused_messages = []
+    for message in msg_content.get('mesaje'):
+        message['answer'] = _request_ciusro_download_answer(
+            key_download=message['id'],
+            company=company,
+            session=session,
+        )
+        if message['tip'] == 'FACTURA TRIMISA':
+            sent_invoices_accepted_messages.append(message)
+        if message['tip'] == 'ERORI FACTURA':
+            sent_invoices_refused_messages.append(message)
+        elif message['tip'] == 'FACTURA PRIMITA':
+            received_bills_messages.append(message)
+
+    return {
+        'sent_invoices_accepted_messages': sent_invoices_accepted_messages,
+        'sent_invoices_refused_messages': sent_invoices_refused_messages,
+        'received_bills_messages': received_bills_messages
+    }

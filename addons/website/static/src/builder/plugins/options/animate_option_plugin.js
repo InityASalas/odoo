@@ -4,10 +4,19 @@ import { registry } from "@web/core/registry";
 import { getScrollingElement } from "@web/core/utils/scrolling";
 import { AnimateOption } from "./animate_option";
 import { ANIMATE } from "@website/builder/option_sequence";
+import { _t } from "@web/core/l10n/translation";
+import { AnimateText } from "./animate_text";
+import { ancestors, closestElement, findFurthest } from "@html_editor/utils/dom_traversal";
+import { childNodeIndex, DIRECTIONS, nodeSize } from "@html_editor/utils/position";
 
 class AnimateOptionPlugin extends Plugin {
     static id = "animateOption";
-    static dependencies = ["imageToolOption"];
+    static dependencies = ["imageToolOption", "history", "selection", "split"];
+    animateOptionProps = {
+        getDirectionsItems: this.getDirectionsItems.bind(this),
+        getEffectsItems: this.getEffectsItems.bind(this),
+        canHaveHoverEffect: this.dependencies.imageToolOption.canHaveHoverEffect,
+    };
     resources = {
         builder_options: [
             withSequence(ANIMATE, {
@@ -15,19 +24,31 @@ class AnimateOptionPlugin extends Plugin {
                 selector: ".o_animable, section .row > div, img, .fa, .btn, .o_animated_text",
                 exclude:
                     "[data-oe-xpath], .o_not-animable, .s_col_no_resize.row > div, .s_col_no_resize",
-                props: {
-                    getDirectionsItems: this.getDirectionsItems.bind(this),
-                    getEffectsItems: this.getEffectsItems.bind(this),
-                    canHaveHoverEffect: this.dependencies.imageToolOption.canHaveHoverEffect,
-                },
+                props: this.animateOptionProps,
                 // todo: to implement
                 // textSelector: ".o_animated_text",
             }),
+        ],
+        toolbar_items: [
+            {
+                id: "animateText",
+                groupId: "websiteDecoration",
+                description: _t("Animate Text"),
+                Component: AnimateText,
+                props: {
+                    config: this.config.getAnimateTextConfig(),
+                    prepareElement: this.prepareAnimatedText.bind(this),
+                    isActive: this.isAnimatedTextActive.bind(this),
+                    isDisabled: this.isAnimatedTextDisabled.bind(this),
+                    animateOptionProps: { ...this.animateOptionProps, requireAnimation: true },
+                },
+            },
         ],
         system_classes: ["o_animating"],
         builder_actions: this.getActions(),
         normalize_handlers: this.normalize.bind(this),
         clean_for_save_handlers: this.cleanForSave.bind(this),
+        unsplittable_node_predicates: (node) => node.classList?.contains("o_animated_text"),
     };
 
     setup() {
@@ -236,6 +257,155 @@ class AnimateOptionPlugin extends Plugin {
             // Let the automatic system add the loading attribute
             imgEl.removeAttribute("loading");
         }
+    }
+
+    /**
+     *
+     * @returns {{element: HTMLElement, onReset: Function}?}
+     */
+    prepareAnimatedText() {
+        const resetAnimatedText = (el) => {
+            const cursors = this.dependencies.selection.preserveSelection();
+            el.replaceWith(...el.childNodes);
+            cursors.restore();
+            this.dependencies.history.addStep();
+        };
+        const ancestor = closestElement(
+            this.dependencies.selection.getSelectionData().editableSelection
+                .commonAncestorContainer,
+            ".o_animated_text"
+        );
+        if (ancestor && this.dependencies.selection.isNodeContentsFullySelected(ancestor)) {
+            return { element: ancestor, onReset: resetAnimatedText };
+        }
+        /*
+        We need to create 1 element with the content of the selection to set the
+        text animation. This element must be the only animated text element for
+        the selected text
+
+        To be able to create 1 new element containing the selection, we need to
+        split the elements that are descendants of the common ancestor and that
+        contains one end of the selection.
+
+        To remove any other overlapping animation on text, we need to:
+        - remove the animation on the part of a splitted element that falls
+          inside the selection
+        - split ancestor animated text that fully contains the selection, to
+          remove the animation on the part containing the selection
+        - remove text animation inside of the created element
+
+        If these splits would split an unsplittable node, we abort
+
+        The save point is used in case of abort because of an unsplittable node,
+        and in case the user press reset and no text animations were removed by
+        the creation of this one
+        */
+        let savePoint = this.dependencies.history.makeSavePoint();
+        const selection = this.dependencies.split.splitSelection();
+        const { anchorNode, focusNode, commonAncestorContainer } = selection;
+        let commonAncestor = commonAncestorContainer;
+        for (let [node, forward] of [
+            [anchorNode, true],
+            [focusNode, false],
+        ]) {
+            let needToMeetCommonAncestor =
+                node !== commonAncestor && node.parentNode !== commonAncestor;
+            let needToMeetAnimatedTextAncestor = !!closestElement(node, ".o_animated_text");
+            let updatedCommonAncestor = needToMeetCommonAncestor ? undefined : commonAncestor;
+
+            // Go up to the common ancestor of the selection, or to the
+            // containing animated text (whichever is the furthest)
+            while (needToMeetCommonAncestor || needToMeetAnimatedTextAncestor) {
+                if (
+                    needToMeetAnimatedTextAncestor &&
+                    node.parentNode.classList.contains("o_animated_text")
+                ) {
+                    needToMeetAnimatedTextAncestor = false;
+                }
+                const updatingCommonAncestor = commonAncestor === node.parentNode;
+                const splitIndex = childNodeIndex(node);
+                if (forward ? splitIndex > 0 : splitIndex < node.parentNode.childNodes.length - 1) {
+                    // Split the node if needed, abort if unsplittable (unless it is animated text)
+                    if (
+                        this.dependencies.split.isUnsplittable(node.parentNode) &&
+                        !node.parentNode.classList.contains("o_animated_text")
+                    ) {
+                        savePoint();
+                        this.services.notification.add(
+                            _t(
+                                "Cannot apply this option on current text selection. Try clearing the format and try again."
+                            ),
+                            { type: "danger", sticky: true }
+                        );
+                        return;
+                    }
+                    node = this.dependencies.split.splitElement(
+                        node.parentNode,
+                        splitIndex + (forward ? 0 : 1)
+                    )[forward ? 1 : 0];
+                } else {
+                    node = node.parentNode;
+                }
+                if (updatingCommonAncestor) {
+                    updatedCommonAncestor = node.parentNode;
+                }
+                if (needToMeetCommonAncestor && node.parentNode === commonAncestor) {
+                    needToMeetCommonAncestor = false;
+                }
+            }
+            commonAncestor = updatedCommonAncestor ?? commonAncestor;
+        }
+
+        const { startContainer, endContainer, direction } = selection;
+
+        const range = new Range();
+        range.setStartBefore(
+            findFurthest(startContainer, commonAncestor, () => true) ?? startContainer
+        );
+        range.setEndAfter(findFurthest(endContainer, commonAncestor, () => true) ?? endContainer);
+        const span = this.document.createElement("span");
+        range.surroundContents(span);
+        // Remove animated text inside the span and containing the span (the ancestors have been split so it only contains the span)
+        for (const node of [
+            ...span.querySelectorAll(".o_animated_text"),
+            ...ancestors(span, this.editable).filter((n) =>
+                n.classList.contains("o_animated_text")
+            ),
+        ]) {
+            node.replaceWith(...node.childNodes);
+            savePoint = undefined;
+        }
+        span.classList.add("o_animated_text", "o_animate_preview");
+        span.classList.add("o_animate", "o_anim_fade_in"); // default animation
+        this.dependencies.selection.setSelection(
+            direction === DIRECTIONS.RIGHT
+                ? {
+                      anchorNode: span,
+                      anchorOffset: 0,
+                      focusNode: span,
+                      focusOffset: nodeSize(span),
+                  }
+                : {
+                      anchorNode: span,
+                      anchorOffset: nodeSize(span),
+                      focusNode: span,
+                      focusOffset: 0,
+                  }
+        );
+        this.dependencies.history.addStep();
+
+        return { element: span, onReset: savePoint ?? resetAnimatedText };
+    }
+    isAnimatedTextActive() {
+        const ancestor = closestElement(
+            this.dependencies.selection.getSelectionData().editableSelection
+                .commonAncestorContainer,
+            ".o_animated_text"
+        );
+        return !!(ancestor && this.dependencies.selection.isNodeContentsFullySelected(ancestor));
+    }
+    isAnimatedTextDisabled() {
+        return 2 <= this.dependencies.selection.getTraversedBlocks().size;
     }
 
     normalize(root) {

@@ -306,6 +306,7 @@ export class TicketScreen extends Component {
             !this.pos.doNotAllowRefundAndSales()
                 ? this.props.destinationOrder
                 : this._getEmptyOrder(partner);
+        destinationOrder.refunded_order_id = order;
 
         destinationOrder.is_refund = true;
         // Add orderline for each toRefundDetail to the destinationOrder.

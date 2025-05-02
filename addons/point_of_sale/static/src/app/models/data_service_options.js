@@ -36,7 +36,7 @@ export class DataServiceOptions {
     get databaseIndex() {
         const databaseTable = this.databaseTable;
         const indexes = {
-            "pos.order": ["uuid"],
+            "pos.order": ["uuid", "refunded_order_id"],
             "pos.order.line": ["uuid"],
             "pos.payment": ["uuid"],
             "product.template": ["pos_categ_ids", "write_date"],

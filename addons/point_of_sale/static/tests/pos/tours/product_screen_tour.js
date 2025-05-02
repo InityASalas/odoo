@@ -665,6 +665,60 @@ registry.category("web_tour.tours").add("test_product_create_update_from_fronten
         ].flat(),
 });
 
+<<<<<<< ccb104b1bd8385d1ae0d1260b3219a7dada90626
+||||||| b4a9a870a8154beb89ff763c86d502ea3c2efa18
+registry.category("web_tour.tours").add("test_draft_orders_not_syncing", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm("Open Register"),
+            ProductScreen.orderIsEmpty(),
+            ProductScreen.clickDisplayedProduct("Desk Pad"),
+            Chrome.createFloatingOrder(),
+            ProductScreen.clickDisplayedProduct("Desk Pad"),
+            ProductScreen.clickPayButton(),
+            PaymentScreen.clickPaymentMethod("Bank"),
+            PaymentScreen.clickValidate(),
+            ReceiptScreen.isShown(),
+            Chrome.endTour(),
+        ].flat(),
+});
+
+=======
+registry.category("web_tour.tours").add("test_draft_orders_not_syncing", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm("Open Register"),
+            ProductScreen.orderIsEmpty(),
+            ProductScreen.clickDisplayedProduct("Desk Pad"),
+            Chrome.createFloatingOrder(),
+            ProductScreen.clickDisplayedProduct("Desk Pad"),
+            ProductScreen.clickPayButton(),
+            PaymentScreen.clickPaymentMethod("Bank"),
+            PaymentScreen.clickValidate(),
+            ReceiptScreen.isShown(),
+            Chrome.endTour(),
+        ].flat(),
+});
+
+registry.category("web_tour.tours").add("test_one_attribute_value_scan_barcode", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+            Dialog.confirm("Open Register"),
+
+            scan_barcode("1234567"),
+            ProductScreen.selectedOrderlineHas("Product Test", "1.0", "10", "Large, Red"),
+
+            scan_barcode("1234568"),
+            ProductScreen.selectedOrderlineHas("Product Test", "1.0", "10", "Large, Blue"),
+
+            Chrome.endTour(),
+        ].flat(),
+});
+
+>>>>>>> ddb3be0fc2ed3bfb555f9ec608374c7a0a70caf2
 registry.category("web_tour.tours").add("test_fiscal_position_tax_group_labels", {
     steps: () =>
         [

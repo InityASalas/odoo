@@ -4541,7 +4541,7 @@ class MailThread(models.AbstractModel):
     # THREAD MESSAGE UPDATE
     # ------------------------------------------------------
 
-    def message_change_thread(self, new_thread, new_parent_message=False):
+    def message_change_thread(self, new_thread, new_parent_message=False, remove_subtype=False):
         """
         Transfer the list of the mail thread messages from an model to another
 
@@ -4576,8 +4576,9 @@ class MailThread(models.AbstractModel):
             msg_vals["parent_id"] = new_parent_message.id
         msg_comment.sudo().write(msg_vals)
 
-        # other than comment: reset subtype
-        msg_vals["subtype_id"] = None
+        if remove_subtype:
+            # Ensure subtype is only removed when marked as True.
+            msg_vals["subtype_id"] = None
         msg_not_comment.sudo().write(msg_vals)
         return True
 

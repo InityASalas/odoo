@@ -251,6 +251,9 @@ const threadPatch = {
         if (this.model === "discuss.channel" && this.name) {
             return this.name;
         }
+        if (this.channel_type === "channel" && !this.name) {
+            return _t("This message has been removed");
+        }
         return super.displayName;
     },
     async fetchChannelMembers() {

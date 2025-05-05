@@ -7,3 +7,7 @@
         width: 17px;
     }
 }
+
+.o-overlay-item:has(.o-we-table-menu) {
+    z-index: $zindex-modal - 1;
+}

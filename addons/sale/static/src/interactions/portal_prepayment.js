@@ -30,8 +30,8 @@ export class PortalPrepayment extends Interaction {
         this.amountPrepaymentButton = document.querySelector("button[name='o_sale_portal_amount_prepayment_button']");
 
         const params = new URLSearchParams(window.location.search);
-        this.isPartialPayment = params.has('installment') ? params.get('installment') === 'true' : true;
-        this.showPaymentModal = params.get('showPaymentModal') === 'true';
+        this.isPartialPayment = params.has('downpayment') ? params.get('downpayment') === 'true' : true;
+        this.showPaymentModal = params.has('payment_amount');
     }
 
     start() {
@@ -43,8 +43,7 @@ export class PortalPrepayment extends Interaction {
 
     reloadAmount(isPartialPayment) {
         const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set("installment", isPartialPayment);
-        searchParams.set("showPaymentModal", true);
+        searchParams.set("downpayment", isPartialPayment);
         window.location.search = searchParams.toString();
     }
 }

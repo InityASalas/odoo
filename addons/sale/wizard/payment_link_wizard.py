@@ -32,7 +32,6 @@ class PaymentLinkWizard(models.TransientModel):
         if self.res_model != 'sale.order':
             return res
 
-        values = {'showPaymentModal': 'true'}
-        if self.amount < args[0].amount_total:
-            values.update({'link_amount': self.amount})
-        return values
+        return {
+            'payment_amount': self.amount,
+        }

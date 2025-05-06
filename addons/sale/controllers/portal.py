@@ -123,8 +123,8 @@ class CustomerPortal(payment_portal.PaymentPortal):
         access_token=None,
         message=False,
         download=False,
-        installment=None,
-        link_amount=None,
+        downpayment=False,
+        payment_amount=None,
         **kw
     ):
         try:
@@ -132,8 +132,8 @@ class CustomerPortal(payment_portal.PaymentPortal):
         except (AccessError, MissingError):
             return request.redirect('/my')
 
-        link_amount = self._cast_as_float(link_amount)
-        if link_amount and link_amount < order_sudo._get_prepayment_required_amount(): # or maybe throw an error
+        payment_amount = self._cast_as_float(payment_amount)
+        if payment_amount and payment_amount < order_sudo._get_prepayment_required_amount():
             raise MissingError(_("Amount is lower than required amount."))
 
         if report_type in ('html', 'pdf', 'text'):
@@ -172,17 +172,17 @@ class CustomerPortal(payment_portal.PaymentPortal):
             'report_type': 'html',
             'backend_url': backend_url,
             'res_company': order_sudo.company_id,  # Used to display correct company logo
-            'link_amount': link_amount,
+            'payment_amount': payment_amount,
         }
 
         # Payment values
-        if order_sudo._has_to_be_paid() or link_amount:
+        if order_sudo._has_to_be_paid() or payment_amount:
             values.update(
                 self._get_payment_values(
                     order_sudo,
-                    installment= installment == 'true' if installment \
+                    downpayment= downpayment == 'true' if downpayment is not None \
                         else order_sudo.prepayment_percent < 1.0,
-                    link_amount=link_amount,
+                    payment_amount=payment_amount,
                 )
             )
 
@@ -199,15 +199,15 @@ class CustomerPortal(payment_portal.PaymentPortal):
     def _get_payment_values(
             self,
             order_sudo,
-            installment=False,
-            link_amount=None,
+            downpayment=False,
+            payment_amount=None,
             **kwargs
     ):
         """ Return the payment-specific QWeb context values.
 
         :param sale.order order_sudo: The sales order being paid.
-        :param bool installment: Whether the current payment is an installment.
-        :param float link_amount: Payment amount contained in a link.
+        :param bool downpayment: Whether the current payment is an downpayment. # TODO rename
+        :param float payment_amount: Payment amount contained in a link.
         :param dict kwargs: Locally unused data passed to `_get_compatible_providers` and
                             `_get_available_tokens`.
         :return: The payment-specific values.
@@ -217,9 +217,9 @@ class CustomerPortal(payment_portal.PaymentPortal):
         partner_sudo = request.env.user.partner_id if logged_in else order_sudo.partner_id
         company = order_sudo.company_id
 
-        if link_amount and (installment or order_sudo.state == 'sale'):
-            amount = link_amount
-        elif not link_amount and installment:
+        if payment_amount and (downpayment or order_sudo.state == 'sale'):
+            amount = payment_amount
+        elif not payment_amount and downpayment:
             amount = order_sudo._get_prepayment_required_amount()
         else:
             amount = order_sudo.amount_total
@@ -264,6 +264,7 @@ class CustomerPortal(payment_portal.PaymentPortal):
         }
         payment_context = {
             'amount': amount,
+            'payment_amount': payment_amount,
             'currency': currency,
             'partner_id': partner_sudo.id,
             'providers_sudo': providers_sudo,

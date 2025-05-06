@@ -232,7 +232,6 @@ class SaleOrder(models.Model):
     amount_total = fields.Monetary(string="Total", store=True, compute='_compute_amounts', tracking=4)
     amount_to_invoice = fields.Monetary(string="Un-invoiced Balance", compute='_compute_amount_to_invoice')
     amount_invoiced = fields.Monetary(string="Already invoiced", compute='_compute_amount_invoiced')
-    amount_due = fields.Monetary(string="Amount due to confirm", compute='_compute_amount_due')
 
     invoice_count = fields.Integer(string="Invoice Count", compute='_get_invoiced')
     invoice_ids = fields.Many2many(
@@ -557,11 +556,6 @@ class SaleOrder(models.Model):
             invoices = order.order_line.invoice_lines.move_id.filtered(lambda r: r.move_type in ('out_invoice', 'out_refund'))
             order.invoice_ids = invoices
             order.invoice_count = len(invoices)
-
-    @api.depends('amount_paid', 'prepayment_percent')
-    def _compute_amount_due(self):
-        for order in self:
-            order.amount_due = order._get_prepayment_required_amount() - order.amount_paid
 
     def _search_invoice_ids(self, operator, value):
         if operator in expression.NEGATIVE_TERM_OPERATORS:
@@ -1784,7 +1778,6 @@ class SaleOrder(models.Model):
     def _get_default_payment_link_values(self):
         self.ensure_one()
         amount_max = self.amount_total - self.amount_paid
-
         # Always default to the minimum value needed to confirm the order:
         # - order is not confirmed yet
         # - can be confirmed online
@@ -1793,9 +1786,8 @@ class SaleOrder(models.Model):
         if (
             self.state in ('draft', 'sent')
             and self.require_payment
-            and self.currency_id.compare_amounts(prepayment_amount, self.amount_paid) > 0
         ):
-            amount = prepayment_amount - self.amount_paid
+            amount = prepayment_amount
         else:
             amount = amount_max
 
@@ -1805,6 +1797,7 @@ class SaleOrder(models.Model):
             'amount': amount,
             'amount_max': amount_max,
             'amount_paid': self.amount_paid,
+            'prepayment_amount': prepayment_amount,
         }
 
     # EDI #

@@ -132,6 +132,10 @@ class CustomerPortal(payment_portal.PaymentPortal):
         except (AccessError, MissingError):
             return request.redirect('/my')
 
+        link_amount = self._cast_as_float(link_amount)
+        if link_amount and link_amount < order_sudo._get_prepayment_required_amount(): # or maybe throw an error
+            raise MissingError(_("Amount is lower than required amount."))
+
         if report_type in ('html', 'pdf', 'text'):
             return self._show_report(
                 model=order_sudo,
@@ -161,7 +165,6 @@ class CustomerPortal(payment_portal.PaymentPortal):
                 )
 
         backend_url = f'/odoo/action-{order_sudo._get_portal_return_action().id}/{order_sudo.id}'
-        link_amount = self._cast_as_float(link_amount)
         values = {
             'sale_order': order_sudo,
             'product_documents': order_sudo._get_product_documents(),
@@ -176,7 +179,7 @@ class CustomerPortal(payment_portal.PaymentPortal):
         # Payment values
         if order_sudo._has_to_be_paid() or link_amount:
             installment = installment == 'true' if installment \
-                          else (link_amount != order_sudo.amount_total - order_sudo.amount_paid
+                          else (link_amount != order_sudo.amount_total
                                 or not link_amount and order_sudo.prepayment_percent < 1.0)
             values.update(
                 self._get_payment_values(
@@ -216,12 +219,13 @@ class CustomerPortal(payment_portal.PaymentPortal):
         logged_in = not request.env.user._is_public()
         partner_sudo = request.env.user.partner_id if logged_in else order_sudo.partner_id
         company = order_sudo.company_id
+
         if link_amount and (installment or order_sudo.state == 'sale'):
             amount = link_amount
-        elif not link_amount and installment or link_amount and link_amount < order_sudo.amount_due:
-            amount = order_sudo.amount_due
+        elif not link_amount and installment:
+            amount = order_sudo._get_prepayment_required_amount()
         else:
-            amount = order_sudo.amount_total - order_sudo.amount_paid
+            amount = order_sudo.amount_total
         currency = order_sudo.currency_id
 
         availability_report = {}

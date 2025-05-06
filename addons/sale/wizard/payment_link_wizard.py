@@ -1,8 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import _, api, fields, models
-from odoo.http import request
-from odoo.tools import format_amount
 
 
 class PaymentLinkWizard(models.TransientModel):
@@ -33,9 +31,8 @@ class PaymentLinkWizard(models.TransientModel):
         res = super()._prepare_query_params(*args)
         if self.res_model != 'sale.order':
             return res
-        #pass link amount only if its < 100%
 
-        return {
-            'link_amount': self.amount,
-            'showPaymentModal': 'true',
-        }
+        values = {'showPaymentModal': 'true'}
+        if self.amount < args[0].amount_total:
+            values.update({'link_amount': self.amount})
+        return values

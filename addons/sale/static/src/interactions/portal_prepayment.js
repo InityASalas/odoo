@@ -18,14 +18,14 @@ export class PortalPrepayment extends Interaction {
             "t-att-class": () => ({ "active": !this.isPartialPayment }),
         },
         "span[id='o_sale_portal_use_amount_prepayment']": {
-            "t-att-class": () => ({ "d-none": !this.isPartialPayment}),
+            "t-att-class": () => ({ "d-none": !this.isPartialPayment }),
         },
         "span[id='o_sale_portal_use_amount_total']": {
             "t-att-class": () => ({ "d-none": this.isPartialPayment }),
         },
     };
 
-    setup(){
+    setup() {
         this.amountTotalButton = document.querySelector("button[name='o_sale_portal_amount_total_button']");
         this.amountPrepaymentButton = document.querySelector("button[name='o_sale_portal_amount_prepayment_button']");
 
@@ -35,12 +35,10 @@ export class PortalPrepayment extends Interaction {
     }
 
     start() {
-
         // When updating the amount re-open the modal.
         if (this.showPaymentModal) {
-                document.querySelector("#o_sale_portal_paynow")?.click();
-            }
-
+            document.querySelector("#o_sale_portal_paynow")?.click();
+        }
     }
 
     reloadAmount(isPartialPayment) {

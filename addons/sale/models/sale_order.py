@@ -1778,15 +1778,17 @@ class SaleOrder(models.Model):
     def _get_default_payment_link_values(self):
         self.ensure_one()
         amount_max = self.amount_total - self.amount_paid
+
         # Always default to the minimum value needed to confirm the order:
         # - order is not confirmed yet
         # - can be confirmed online
         # - we have still not paid enough for confirmation.
-        prepayment_amount = self._get_prepayment_required_amount()
+        prepayment_amount = 0
         if (
             self.state in ('draft', 'sent')
             and self.require_payment
         ):
+            prepayment_amount = self._get_prepayment_required_amount()
             amount = prepayment_amount
         else:
             amount = amount_max
@@ -1797,7 +1799,7 @@ class SaleOrder(models.Model):
             'amount': amount,
             'amount_max': amount_max,
             'amount_paid': self.amount_paid,
-            'prepayment_amount': prepayment_amount,
+            'prepayment_amount': prepayment_amount or 0,
         }
 
     # EDI #

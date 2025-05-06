@@ -172,19 +172,16 @@ class CustomerPortal(payment_portal.PaymentPortal):
             'report_type': 'html',
             'backend_url': backend_url,
             'res_company': order_sudo.company_id,  # Used to display correct company logo
-            'installment': installment,
             'link_amount': link_amount,
         }
 
         # Payment values
         if order_sudo._has_to_be_paid() or link_amount:
-            installment = installment == 'true' if installment \
-                          else (link_amount != order_sudo.amount_total
-                                or not link_amount and order_sudo.prepayment_percent < 1.0)
             values.update(
                 self._get_payment_values(
                     order_sudo,
-                    installment=installment,
+                    installment= installment == 'true' if installment \
+                        else order_sudo.prepayment_percent < 1.0,
                     link_amount=link_amount,
                 )
             )

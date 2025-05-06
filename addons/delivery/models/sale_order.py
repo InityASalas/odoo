@@ -134,17 +134,14 @@ class SaleOrder(models.Model):
             if not pickup_locations:
                 return error
 
-            if (
-                not country or
-                any(location['country_code'] != country.code for location in pickup_locations)
-            ):
+            if not country:
                 country = self.env['stock.warehouse'].browse(
                     pickup_locations[0]['id']
                 ).partner_id.country_id
-                pickup_locations = [
-                    location for location in pickup_locations
-                    if location['country_code'] == country.code
-                ]
+            pickup_locations = [
+                location for location in pickup_locations
+                if location['country_code'] == country.code
+            ]
 
             return {
                 'pickup_locations': pickup_locations,

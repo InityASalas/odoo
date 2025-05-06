@@ -19,7 +19,6 @@ export class LocationSelectorDialog extends Component {
     static components = { Dialog, LocationList, MapContainer, SelectMenu };
     static template = 'delivery.locationSelector.dialog';
     static props = {
-        orderId: Number,
         zipCode: { type: String, optional: true},
         countryCode: { type: String, optional: true},
         selectedLocationId: { type: String, optional: true},
@@ -41,7 +40,6 @@ export class LocationSelectorDialog extends Component {
             zipCode: this.props.zipCode,
             // Some APIs like FedEx use strings to identify locations.
             selectedLocationId: String(this.props.selectedLocationId),
-            initialCountryCode: this.props.countryCode,
             isSmall: this.env.isSmall,
         });
 
@@ -64,10 +62,10 @@ export class LocationSelectorDialog extends Component {
         // Fetch new locations when the zip code is updated.
         useEffect(
             (zipCode) => {
-                this._updateLocations()
-                this.state.savedZipCodes[this.state.selectedCountry.code] = zipCode
+                this._updateLocations();
+                this.state.savedZipCodes[this.state.selectedCountry.code] = zipCode;
                 return () => {
-                    this.state.locations = []
+                    this.state.locations = [];
                 };
             },
             () => [this.state.zipCode]
@@ -85,11 +83,20 @@ export class LocationSelectorDialog extends Component {
      * @return {Object} The result values.
      */
     async _getLocations() {
-        return rpc(this.getLocationUrl, {
-            order_id: this.props.orderId,
+        return rpc(this.getLocationUrl, this._getLocationsParams());
+    }
+
+    /**
+     * Fetch the information needed to get the closest pickup locations
+     *
+     * @private
+     * @return {Object} The result values.
+     */
+    _getLocationsParams() {
+        return {
             zip_code: this.state.zipCode,
             country_code: this.state.selectedCountry.code,
-        });
+        };
     }
 
     /**
@@ -99,9 +106,7 @@ export class LocationSelectorDialog extends Component {
      * @return {Object} The result values.
      */
     async _getCountries() {
-        return rpc('/delivery/get_delivery_method_countries', {
-            order_id: this.props.orderId,
-        });
+        return rpc('/delivery/get_delivery_method_countries');
     }
 
     //--------------------------------------------------------------------------
@@ -127,9 +132,6 @@ export class LocationSelectorDialog extends Component {
         } else {
             this.state.locations = pickup_locations;
             this.state.selectedCountry = selected_country;
-            if (!this.state.initialCountryCode) {
-                this.state.initialCountryCode = this.state.selectedCountry.code;
-            }
             if (!this.state.locations.find(l => String(l.id) === this.state.selectedLocationId)) {
                 this.state.selectedLocationId = this.state.locations[0]
                                                 ? String(this.state.locations[0].id)
@@ -138,8 +140,26 @@ export class LocationSelectorDialog extends Component {
         }
     }
 
+    /**
+     * Check if list view is needed to navigating between warehouses, if there's multiple warehouses
+     * or multiple countries.
+     *
+     * @return {Boolean} Whether we need to show list view.
+     */
     get showListView() {
-        return this.state.locations.length !== 1;
+        return this.state.locations.length !== 1 || this.state.countries.length > 1;
+    }
+
+    /**
+     * Check if country was changed.
+     *
+     * @return {Boolean} Whether we need to show tax recomputation warning.
+     */
+    get showTaxRecomputationWarning() {
+        return (
+            this.props.countryCode !== '' &&
+            this.props.countryCode !== this.state.selectedCountry.code
+        );
     }
 
     /**
@@ -163,10 +183,11 @@ export class LocationSelectorDialog extends Component {
 
     /**
      * Set the selectedCountry in the state, and save the zipcode to be displayed,
-     * if a previously selected country is reselected
+     * if a previously selected country is reselected.
      *
-     * @param {String} value of the selected country from the selector
-     * @return {void}
+     * @param {String} country_code - The selected country code.
+     *
+     * @returns {void}
      */
     setSelectedCountry(value) {
         this.state.selectedCountry = value;
@@ -236,7 +257,7 @@ export class LocationSelectorDialog extends Component {
         return _t("Loading...");
     }
 
-    get addressChangeWarning() {
+    get taxRecomputationWarning() {
         return _t("This address may require to recompute taxes.");
     }
 

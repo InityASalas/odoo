@@ -194,10 +194,10 @@ publicWidget.registry.WebsiteSaleCheckout = publicWidget.Widget.extend({
         const editPickupLocationButton = pickupLocation.querySelector(
             'span[name="o_pickup_location_selector"]'
         );
+        editPickupLocationButton.dataset.countryCode = location.country_code;
         editPickupLocationButton.dataset.locationId = location.id;
         editPickupLocationButton.dataset.zipCode = location.zip_code;
         editPickupLocationButton.dataset.pickupLocationData = jsonLocation;
-        editPickupLocationButton.dataset.countryCode = location.country_code;
         pickupLocation.querySelector(
             '[name="o_pickup_location_details"]'
         ).classList.remove('d-none');

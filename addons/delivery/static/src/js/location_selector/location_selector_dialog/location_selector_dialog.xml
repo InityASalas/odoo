@@ -87,8 +87,8 @@
                         selectedLocationId="this.state.selectedLocationId.toString()"
                         setSelectedLocation.bind="setSelectedLocation"
                         validateSelection.bind="validateSelection"
-                        addressChangeWarning="addressChangeWarning"
-                        isCountryChanged="this.state.initialCountryCode !== this.state.selectedCountry.code"
+                        taxRecomputationWarning="taxRecomputationWarning"
+                        showTaxRecomputationWarning="showTaxRecomputationWarning"
                     />
                 </section>
             </div>
@@ -106,9 +106,9 @@
                     />
                     <div
                         class="alert alert-warning mt-3"
-                        t-if="this.state.initialCountryCode !== this.state.selectedCountry.code"
+                        t-if="showShouldTaxRecomputationWarning"
                     >
-                        <span t-out="addressChangeWarning"/>
+                        <span t-out="taxRecomputationWarning"/>
                     </div>
                 </div>
             </t>

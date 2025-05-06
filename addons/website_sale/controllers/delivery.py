@@ -121,7 +121,8 @@ class Delivery(WebsiteSale):
         """ Fetch the order from the request and set the pickup location on the current order.
 
         :param str pickup_location_data: The JSON-formatted pickup location address.
-        :return: None
+        :return: The order summary values.
+        :rtype: dict
         """
         order_sudo = request.cart
         order_sudo._set_pickup_location(pickup_location_data)

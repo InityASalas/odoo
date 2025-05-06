@@ -17,7 +17,7 @@ class LocationSelectorController(Controller):
         order._set_pickup_location(pickup_location_data)
 
     @route('/delivery/get_pickup_locations', type='jsonrpc', auth='user')
-    def delivery_get_pickup_locations(self, order_id, zip_code=None, **kwargs):
+    def delivery_get_pickup_locations(self, order_id, zip_code=None, country_code=None):
         """ Fetch the order and return the pickup locations close to a given zip code.
 
         Determine the country based on GeoIP or fallback on the order's delivery address' country.
@@ -28,25 +28,25 @@ class LocationSelectorController(Controller):
         :rtype: dict
         """
         order = request.env['sale.order'].browse(order_id)
-        if request.geoip.country_code and not kwargs.get('country_code'):
-            kwargs['country_code'] = request.geoip.country_code
-        return order._get_pickup_locations(zip_code, **kwargs)
+        if request.geoip.country_code and not country_code:
+            country_code = request.geoip.country_code
+        return order._get_pickup_locations(zip_code, country_code=None)
 
     @route('/delivery/get_delivery_method_countries', type='jsonrpc', auth='public', website=True)
-    def get_delivery_method_countries(self, order_id=None):
+    def get_delivery_method_countries(self):
         """ Fetch the countries associated with a delivery carrier.
 
         Determine the country based the carrier selected on the order or fallback on the carrier
         of the website.
 
-        :param int order_id: The order id, as a `sale.order` id.
         :return: The available countries to select from.
         :rtype: dict
         """
         countries = None
-        if order_id:
-            carrier_sudo = request.env['sale.order'].sudo().browse(order_id).carrier_id
+        if order_sudo := request.cart:
+            carrier_sudo = order_sudo.carrier_id
         elif website_sudo := request.website.sudo():
+            # If no order was found then we are in click & collect in product page
             carrier_sudo = website_sudo.in_store_dm_id
         if carrier_sudo.country_ids:
             countries = carrier_sudo.country_ids

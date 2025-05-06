@@ -13,6 +13,7 @@ import { getActiveHotkey } from "@web/core/hotkeys/hotkey_service";
 
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
+import { session } from "@web/session";
 import { FileUploader } from "@web/views/fields/file_handler";
 import { MessagingMenu } from "@mail/core/public_web/messaging_menu";
 
@@ -102,6 +103,59 @@ export class Discuss extends Component {
             },
             () => [this.threadActions.actions.find((a) => a.id === "member-list")]
         );
+        useEffect(() => {
+            let intervalId;
+            let timeoutId;
+            const updateParticipantTimezoneInfo = async () => {
+                this.state.shouldDisplayUserTime = false;
+                this.state.otherUserTime = null;
+                this.state.otherUserDate = null;
+                this.state.userTimezone = null;
+                if (!this.thread || this.thread.channel_type !== "chat")
+                    return;
+                const currentPartner = Object.values(session.storeData?.["res.partner"] || {}).find(p => p.active);
+                const currentUserTimezone = currentPartner?.tz || null;
+                const otherUserTimezone = this.thread.correspondent.persona.tz || null;
+                const currentLanguage = (session.bundle_params.lang || "en-US").replace("_", "-");
+                if (otherUserTimezone && currentUserTimezone && otherUserTimezone !== currentUserTimezone) {
+                    const updateDisplayedTime = () => {
+                        const now = new Date();
+                        const otherUserTime = new Intl.DateTimeFormat(currentLanguage, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            timeZone: otherUserTimezone
+                        }).format(now);
+                        const currentUserDate = new Intl.DateTimeFormat(currentLanguage, {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            timeZone: currentUserTimezone
+                        }).format(now);
+                        const otherUserDate = new Intl.DateTimeFormat(currentLanguage, {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            timeZone: otherUserTimezone
+                        }).format(now);
+                        this.state.shouldDisplayUserTime = true;
+                        this.state.otherUserTime = otherUserTime;
+                        this.state.userTimezone = otherUserTimezone;
+                        this.state.otherUserDate = currentUserDate !== otherUserDate ? otherUserDate : null;
+                    };
+                    updateDisplayedTime();
+                    const msUntilNextMinute = 60000 - (Date.now() % 60000);
+                    timeoutId = setTimeout(() => {
+                        updateDisplayedTime();
+                        intervalId = setInterval(updateDisplayedTime, 60000);
+                    }, msUntilNextMinute);
+                }
+            };
+            updateParticipantTimezoneInfo();
+            return () => {
+                if (intervalId) clearInterval(intervalId);
+                if (timeoutId) clearTimeout(timeoutId);
+            };
+        }, () => [this.thread]);
     }
 
     get thread() {

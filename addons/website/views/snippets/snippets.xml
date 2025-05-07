@@ -405,6 +405,9 @@
                 <t t-snippet="website.s_attributes_horizontal" string="Horizontal Attributes" group="products">
                     <keywords>services, icons, features, characteristic, specs, advantages, functionalities, exhibit, details, capabilities, attributes, promotion, overview, specifications</keywords>
                 </t>
+                <t t-snippet="website.s_attributes_vertical" string="Vertical Attributes" group="products">
+                    <keywords>services, icons, features, characteristic, specs, advantages, functionalities, exhibit, details, capabilities, attributes, promotion, overview, specifications</keywords>
+                </t>
                 <t id="sale_products_hook"/>
 
                 <!-- Blogs group -->

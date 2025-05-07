@@ -52,6 +52,7 @@ class HrJob(models.Model):
             position. The Recruiter is automatically added to all meetings with the Applicant.")
     document_ids = fields.One2many('ir.attachment', compute='_compute_document_ids', string="Documents", readonly=True)
     documents_count = fields.Integer(compute='_compute_document_ids', string="Document Count")
+    employee_count = fields.Integer(compute='_compute_employee_count')
     alias_id = fields.Many2one(help="Email alias for this job position. New emails will automatically create new applicants for this job position.")
     color = fields.Integer("Color Index")
     is_favorite = fields.Boolean(compute='_compute_is_favorite', inverse='_inverse_is_favorite')
@@ -184,6 +185,10 @@ class HrJob(models.Model):
         result = {job.id: count for job, count in read_group_result}
         for job in self:
             job.application_count = result.get(job.id, 0)
+
+    def _compute_employee_count(self):
+        for job in self:
+            job.employee_count = len(job.employee_ids)
 
     def _get_first_stage(self):
         self.ensure_one()
@@ -381,4 +386,24 @@ class HrJob(models.Model):
         return {
             "type": "ir.actions.client",
             "tag": "reload",
+        }
+
+    def action_open_employees(self):
+        self.ensure_one()
+        employees = self.employee_ids
+        model = 'hr.employee' if self.env.user.has_group('hr.group_hr_user') else 'hr.employee.public'
+        if len(employees) > 1:
+            return {
+                'name': _('Related Employees'),
+                'type': 'ir.actions.act_window',
+                'res_model': model,
+                'view_mode': 'list,kanban,form',
+                'domain': [('id', 'in', employees.ids)],
+            }
+        return {
+            'name': _('Employee'),
+            'type': 'ir.actions.act_window',
+            'res_model': model,
+            'res_id': employees.id,
+            'view_mode': 'form',
         }

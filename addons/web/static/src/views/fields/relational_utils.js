@@ -353,7 +353,11 @@ export class Many2XAutocomplete extends Component {
     mapRecordToOption(record, request) {
         const label = record.__formatted_display_name || record.display_name;
         return {
-            data: { record },
+            data: {
+                record,
+                slotName: "autoCompleteItem",
+            },
+
             label: label ? highlightText(request, label, "text-primary fw-bold") : _t("Unnamed"),
             onSelect: () => this.props.update([record]),
         };
@@ -364,14 +368,19 @@ export class Many2XAutocomplete extends Component {
             error instanceof RPCError &&
             error.exceptionName === "odoo.exceptions.ValidationError"
         ) {
-            return this.openMany2X({
-                context: this.getCreationContext(request),
-                nextRecordsContext: this.props.context,
-            });
+            this.slowCreate(request);
         } else {
             throw error;
         }
     }
+
+    slowCreate(request) {
+        return this.openMany2X({
+            context: this.getCreationContext(request),
+            nextRecordsContext: this.props.context,
+        });
+    }
+
     async loadOptionsSource(request) {
         if (this.lastProm) {
             this.lastProm.abort(false);
@@ -410,11 +419,6 @@ export class Many2XAutocomplete extends Component {
             }
         }
 
-        const slowCreate = () =>
-            this.openMany2X({
-                context: this.getCreationContext(request),
-                nextRecordsContext: this.props.context,
-            });
         if (request.length) {
             if (this.props.quickCreate) {
                 options.push({
@@ -427,6 +431,10 @@ export class Many2XAutocomplete extends Component {
                             this.onQuickCreateError(e, request);
                         }
                     },
+                    data: {
+                        slotName: "createItem",
+                        input: request,
+                    },
                 });
             }
 
@@ -434,14 +442,16 @@ export class Many2XAutocomplete extends Component {
                 options.push({
                     cssClass: "o_m2o_dropdown_option o_m2o_dropdown_option_create_edit",
                     label: _t("Create and edit..."),
-                    onSelect: slowCreate,
+                    onSelect: () => this.slowCreate(request),
+                    data: { slotName: "createEditItem" },
                 });
             }
         } else if (canCreateEdit && !addSearchMore) {
             options.push({
                 cssClass: "o_m2o_dropdown_option o_m2o_dropdown_option_create_new",
                 label: _t("Create..."),
-                onSelect: slowCreate,
+                onSelect: () => this.slowCreate(request),
+                data: { slotName: "createEditItem" },
             });
         }
 

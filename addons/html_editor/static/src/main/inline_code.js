@@ -12,6 +12,7 @@ export class InlineCodePlugin extends Plugin {
     resources = {
         input_handlers: this.onInput.bind(this),
         beforeinput_handlers: withSequence(1, this.onBeforeInput.bind(this)),
+        normalize_handlers: this.normalize.bind(this),
     };
 
     onBeforeInput(ev) {
@@ -184,5 +185,16 @@ export class InlineCodePlugin extends Plugin {
             }
         }
         this.dependencies.history.addStep();
+    }
+
+    normalize(root) {
+        for (const code of selectElements(root, ".o_inline_code")) {
+            if (!code.previousSibling) {
+                code.before(document.createTextNode("\u200B"));
+            }
+            if (!code.nextSibling) {
+                code.after(document.createTextNode("\u200B"));
+            }
+        }
     }
 }

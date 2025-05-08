@@ -5,6 +5,11 @@
         <field name="model">hr.contract</field>
         <field name="inherit_id" ref="hr_contract.hr_contract_view_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="before">
+                <div class="alert alert-warning mt-2 " role="alert" invisible="not resource_calendar_flexible_hours or work_entry_source != 'calendar'">
+                    Work entries can't be generated automatically with a flexible working schedule, unless the work entry source is Planning or Attendance
+                </div>
+            </xpath>
             <xpath expr="//div[@id='resource_calendar_warning']" position="replace">
                 <div id="resource_calendar_warning" class="d-flex align-items-center">
                     <!-- resource calendar is only required when work_entry_source is set to 'calendar' -->

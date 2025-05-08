@@ -262,8 +262,14 @@ class HrEmployeeBase(models.AbstractModel):
     @api.depends('resource_calendar_id.flexible_hours')
     def _compute_is_flexible(self):
         for employee in self:
-            employee.is_fully_flexible = not employee.resource_calendar_id
-            employee.is_flexible = employee.is_fully_flexible or employee.resource_calendar_id.flexible_hours
+            employee.is_fully_flexible = (
+                not employee.resource_calendar_id
+                or employee.resource_calendar_id.schedule_type == "fully_flexible"
+            )
+            employee.is_flexible = (
+                employee.is_fully_flexible
+                or employee.resource_calendar_id.schedule_type == "flexible"
+            )
 
     @api.model
     def _get_employee_working_now(self):

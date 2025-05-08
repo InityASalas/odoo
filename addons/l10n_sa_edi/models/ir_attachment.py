@@ -1,4 +1,4 @@
-from odoo import api, models, _
+from odoo import _, api, models
 from odoo.exceptions import UserError
 
 
@@ -15,3 +15,20 @@ class IrAttachment(models.Model):
             move = self.env['account.move'].browse(attach.res_id)
             if move.country_code == "SA":
                 raise UserError(_("You can't unlink an attachment being an EDI document refused by the government."))
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_validated_pdf_invoices(self):
+        '''
+        Prevents unlinking of invoice pdfs linked to an invoice where the edi document is sent
+        '''
+        attachments_to_check = self.filtered(lambda attachment: attachment.res_model == 'account.move' and attachment.res_field == 'invoice_pdf_report_file')
+        edi_documents = dict(self.env['account.edi.document']._read_group(domain=[('move_id', 'in', attachments_to_check.mapped('res_id')), ('state', '=', 'sent')],
+                                                                          aggregates=['write_date:min'], groupby=['move_id']))
+
+        for attachment in attachments_to_check:
+            if (document_date := edi_documents.get(self.env['account.move'].browse(attachment.res_id))) and attachment.create_date >= document_date:
+                raise UserError(_("Oops! The PDF cannot be deleted according to ZATCA rules"))
+
+    def _get_posted_pdf_restricted_moves(self):
+        # Extends l10n_sa: to bypass the unlink check in l10n_sa for posted moves
+        return super()._get_posted_pdf_restricted_moves().filtered(lambda rec: not rec.edi_state)

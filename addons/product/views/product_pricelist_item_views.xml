@@ -31,20 +31,20 @@
     </record>
 
     <record id="product_pricelist_item_tree_view" model="ir.ui.view">
-      <field name="name">product.pricelist.item.list</field>
-      <field name="model">product.pricelist.item</field>
-      <field name="priority">10</field>
-      <field name="arch" type="xml">
-        <list string="Price Rules">
-          <field name="pricelist_id"/>
-          <field name="name" string="Applied On"/>
-          <field name="price"/>
-          <field name="min_quantity" colspan="4"/>
-          <field name="date_start" optional="hide"/>
-          <field name="date_end" optional="hide"/>
-          <field name="company_id" groups="base.group_multi_company" optional="show"/>
-        </list>
-      </field>
+        <field name="name">product.pricelist.item.list</field>
+        <field name="model">product.pricelist.item</field>
+        <field name="priority">10</field>
+        <field name="arch" type="xml">
+            <list string="Price Rules">
+                <field name="pricelist_id"/>
+                <field name="name" string="Applied On"/>
+                <field name="price"/>
+                <field name="min_quantity" colspan="4"/>
+                <field name="date_start" optional="hide"/>
+                <field name="date_end" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
+            </list>
+        </field>
     </record>
 
     <record id="product_pricelist_item_tree_view_from_product" model="ir.ui.view">

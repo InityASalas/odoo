@@ -245,7 +245,7 @@ class ProductPricelistItem(models.Model):
         'base', 'compute_price', 'price_discount', 'price_markup', 'price_round', 'price_surcharge',
     )
     def _compute_rule_tip(self):
-        base_selection_vals = {elem[0]: elem[1] for elem in self._fields['base']._description_selection(self.env)}
+        base_selection_vals = dict(self._fields['base']._description_selection(self.env))
         self.rule_tip = False
         for item in self:
             if item.compute_price != 'formula':
@@ -310,9 +310,9 @@ class ProductPricelistItem(models.Model):
         for item in self:
             if item.applied_on == "2_product_category" and not item.categ_id:
                 raise ValidationError(_("Please specify the category for which this rule should be applied"))
-            elif item.applied_on == "1_product" and not item.product_tmpl_id:
+            if item.applied_on == "1_product" and not item.product_tmpl_id:
                 raise ValidationError(_("Please specify the product for which this rule should be applied"))
-            elif item.applied_on == "0_product_variant" and not item.product_id:
+            if item.applied_on == "0_product_variant" and not item.product_id:
                 raise ValidationError(_("Please specify the product variant for which this rule should be applied"))
 
     #=== ONCHANGE METHODS ===#
@@ -329,7 +329,7 @@ class ProductPricelistItem(models.Model):
     def _onchange_base_pricelist_id(self):
         for item in self:
             if item.compute_price == 'percentage':
-                item.base = bool(item.base_pricelist_id) and 'pricelist' or 'list_price'
+                item.base = (bool(item.base_pricelist_id) and 'pricelist') or 'list_price'
 
     @api.onchange('compute_price')
     def _onchange_compute_price(self):
@@ -353,21 +353,19 @@ class ProductPricelistItem(models.Model):
     def _onchange_display_applied_on(self):
         for item in self:
             if not (item.product_tmpl_id or item.categ_id):
-                item.update(dict(
-                    applied_on='3_global',
-                ))
+                item.update({'applied_on': '3_global'})
             elif item.display_applied_on == '1_product':
-                item.update(dict(
-                    applied_on='1_product',
-                    categ_id=None,
-                ))
+                item.update({
+                    'applied_on': '1_product',
+                    'categ_id': None,
+                })
             elif item.display_applied_on == '2_product_category':
-                item.update(dict(
-                    product_id=None,
-                    product_tmpl_id=None,
-                    applied_on='2_product_category',
-                    product_uom_name=None,
-                ))
+                item.update({
+                    'product_id': None,
+                    'product_tmpl_id': None,
+                    'applied_on': '2_product_category',
+                    'product_uom_name': None,
+                })
 
     @api.onchange('product_id')
     def _onchange_product_id(self):
@@ -433,13 +431,13 @@ class ProductPricelistItem(models.Model):
             # Ensure item consistency for later searches.
             applied_on = values['applied_on']
             if applied_on == '3_global':
-                values.update(dict(product_id=None, product_tmpl_id=None, categ_id=None))
+                values.update({'product_id': None, 'product_tmpl_id': None, 'categ_id': None})
             elif applied_on == '2_product_category':
-                values.update(dict(product_id=None, product_tmpl_id=None))
+                values.update({'product_id': None, 'product_tmpl_id': None})
             elif applied_on == '1_product':
-                values.update(dict(product_id=None, categ_id=None))
+                values.update({'product_id': None, 'categ_id': None})
             elif applied_on == '0_product_variant':
-                values.update(dict(categ_id=None))
+                values.update({'categ_id': None})
         return super().create(vals_list)
 
     def write(self, values):
@@ -447,13 +445,13 @@ class ProductPricelistItem(models.Model):
             # Ensure item consistency for later searches.
             applied_on = values['applied_on']
             if applied_on == '3_global':
-                values.update(dict(product_id=None, product_tmpl_id=None, categ_id=None))
+                values.update({'product_id': None, 'product_tmpl_id': None, 'categ_id': None})
             elif applied_on == '2_product_category':
-                values.update(dict(product_id=None, product_tmpl_id=None))
+                values.update({'product_id': None, 'product_tmpl_id': None})
             elif applied_on == '1_product':
-                values.update(dict(product_id=None, categ_id=None))
+                values.update({'product_id': None, 'categ_id': None})
             elif applied_on == '0_product_variant':
-                values.update(dict(categ_id=None))
+                values.update({'categ_id': None})
         return super().write(values)
 
     #=== BUSINESS METHODS ===#
@@ -482,9 +480,8 @@ class ProductPricelistItem(models.Model):
                 and not product.categ_id.parent_path.startswith(self.categ_id.parent_path)
             ):
                 res = False
-        else:
             # Applied on a specific product template/variant
-            if is_product_template:
+        elif is_product_template:
                 if self.applied_on == "1_product" and product.id != self.product_tmpl_id.id:
                     res = False
                 elif self.applied_on == "0_product_variant" and not (
@@ -493,10 +490,14 @@ class ProductPricelistItem(models.Model):
                 ):
                     # product self acceptable on template if has only one variant
                     res = False
-            else:
-                if self.applied_on == "1_product" and product.product_tmpl_id.id != self.product_tmpl_id.id:
-                    res = False
-                elif self.applied_on == "0_product_variant" and product.id != self.product_id.id:
+        elif (
+            (
+                self.applied_on == "1_product"
+                and product.product_tmpl_id.id != self.product_tmpl_id.id
+            )
+            or
+            (self.applied_on == "0_product_variant" and product.id != self.product_id.id)
+        ):
                     res = False
 
         return res

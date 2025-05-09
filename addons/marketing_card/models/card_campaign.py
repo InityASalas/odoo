@@ -322,6 +322,12 @@ class CardCampaign(models.Model):
         }
 
     def _action_share_get_default_body(self):
+        # try to pick a relevant card if users try to visit during preview/test mailings
+        preview_card = self.env['card.card'].search([
+            ('campaign_id', '=', self.id), ('res_id', '=', self.preview_record_ref.id)
+        ], limit=1) or self.env['card.card'].search([
+            ('campaign_id', '=', self.id)
+        ], limit=1)
         return f"""
 <div class="o_layout oe_unremovable oe_unmovable bg-200 o_empty_theme" data-name="Mailing">
 <style id="design-element"></style>
@@ -343,8 +349,8 @@ class CardCampaign(models.Model):
         <tbody>
             <tr>
                 <td align="center">
-                    <a href="/cards/{self.id or 0}/preview" style="padding-left: 3px !important; padding-right: 3px !important">
-                        <img src="/web/image/card.campaign/{self.id or 0}/image_preview" alt="{_("Card Preview")}" class="img-fluid" style="width: 540px;"/>
+                    <a href="/cards/{preview_card.id or 0}/preview" style="padding-left: 3px !important; padding-right: 3px !important">
+                        <img src="/web/image/card.campaign/{self.id}/image_preview" alt="{_("Card Preview")}" class="img-fluid" style="width: 540px;"/>
                     </a>
                 </td>
             </tr>

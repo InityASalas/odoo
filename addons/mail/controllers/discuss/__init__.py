@@ -2,6 +2,7 @@
 
 from . import channel
 from . import gif
+from . import im_status
 from . import mail
 from . import public_page
 from . import rtc

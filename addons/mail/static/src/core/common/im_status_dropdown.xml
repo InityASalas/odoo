@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="mail.ImStatusDropdown">
+        <Dropdown>
+            <button><ImStatus persona='store.self'/> <span t-esc="readableImStatus"/></button>
+            <t t-set-slot="content">
+                <DropdownItem onSelected="() => this.forceImstatus('online')"><i class="fa fa-circle text-success me-1" title="Online" role="img"/> Online</DropdownItem>
+                <hr class="my-1"/>
+                <DropdownItem onSelected="() => this.forceImstatus('away')"><i class="fa fa-circle o-away me-1" title="Online" role="img"/> Away</DropdownItem>
+                <DropdownItem onSelected="() => this.forceImstatus('busy')"><span><i class="fa fa-minus-circle text-danger me-1" title="Online" role="img"/> Do Not Disturb</span></DropdownItem>
+                <DropdownItem onSelected="() => this.forceImstatus('offline')"><i class="fa fa-circle-o text-700 opacity-75 me-1" title="Online" role="img"/> Offline</DropdownItem>
+            </t>
+        </Dropdown>
+    </t>
+</templates>
+    

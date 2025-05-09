@@ -19,7 +19,7 @@ test("update presence if IM status changes to offline while this device is onlin
         im_status: "offline",
         partner_id: serverState.partnerId,
     });
-    await waitForSteps(["update_presence"]);
+    await waitForSteps(["update_presence", "update_presence"]);
 });
 
 test("update presence if IM status changes to away while this device is online", async () => {

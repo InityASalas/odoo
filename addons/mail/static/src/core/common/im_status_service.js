@@ -45,10 +45,11 @@ export const imStatusService = {
                 if (!persona) {
                     return; // Do not store unknown persona's status
                 }
-                persona.debouncedSetImStatus(im_status);
                 if (persona.notEq(store.self)) {
+                    persona.debouncedSetImStatus(im_status);
                     return;
                 }
+                persona.updateImStatus(im_status);
                 const isOnline = presence.getInactivityPeriod() < AWAY_DELAY;
                 if ((presence_status === "away" && isOnline) || presence_status === "offline") {
                     updateBusPresence();

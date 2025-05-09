@@ -85,6 +85,8 @@ export class ColumnPlugin extends Plugin {
         unremovable_node_predicates: isUnremovableColumn,
         power_buttons_visibility_predicates: ({ anchorNode }) =>
             !closestElement(anchorNode, ".o_text_columns"),
+        fill_with_base_container_predicates: (node) =>
+            node.matches(".odoo-editor-editable .o_text_columns div[class^='col-']"),
     };
 
     columnize({ numberOfColumns, addParagraphAfter = true } = {}) {

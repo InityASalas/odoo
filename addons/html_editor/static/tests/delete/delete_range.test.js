@@ -411,7 +411,7 @@ describe("deleteSelection", () => {
                         `<div class="container o_text_columns">
                             <div class="row">
                                 <div class="col-6">a[]</div>
-                                <div class="col-6"><br></div>
+                                <div class="col-6"><p><br></p></div>
                             </div>
                         </div>
                         <p>i</p>`
@@ -420,7 +420,7 @@ describe("deleteSelection", () => {
                         `<div class="container o_text_columns">
                             <div class="row">
                                 <div class="col-6">a[]</div>
-                                <div class="col-6"><br></div>
+                                <div class="col-6"><p><br></p></div>
                             </div>
                         </div>
                         <p>i</p>`

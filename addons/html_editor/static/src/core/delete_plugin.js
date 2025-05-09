@@ -430,10 +430,7 @@ export class DeletePlugin extends Plugin {
 
     fillShrunkBlocks(commonAncestor) {
         const fillBlock = (block) => {
-            if (
-                block.matches("div[contenteditable='true']") &&
-                !block.parentElement.isContentEditable
-            ) {
+            if (this.dependencies.baseContainer.shouldFillWithBaseContainer(block)) {
                 // @todo: not sure we want this when allowInlineAtRoot is true
                 const baseContainer = this.dependencies.baseContainer.createBaseContainer();
                 baseContainer.appendChild(this.document.createElement("br"));

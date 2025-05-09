@@ -39,6 +39,7 @@ class ProductProduct(models.Model):
 
     purchase_order_line_ids = fields.One2many('purchase.order.line', 'product_id', string="PO Lines") # used to compute quantities
     monthly_demand = fields.Float(compute='_compute_monthly_demand')
+    # actual_demand = fields.Float(compute='_compute_actual_demand')
 
     @api.depends_context('monthly_demand_start_date', 'monthly_demand_limit_date', 'warehouse_id')
     def _compute_monthly_demand(self):
@@ -64,6 +65,21 @@ class ProductProduct(models.Model):
         qty_by_product = {product.id: qty for product, qty in move_qty_by_products}
         for product in self:
             product.monthly_demand = qty_by_product.get(product.id, 0)
+
+    # @api.depends_context('number_of_days_for_replenish', 'warehouse_id')
+    # def _compute_actual_demand(self):
+    #     number_of_days = self.env.context.get('number_of_days_for_replenish')
+    #     warehouse_id = self.env.context.get('warehouse_id')
+    #     demand_qty_by_product_domain = Domain([('date', '<=', fields.Datetime.now() + relativedelta(days=number_of_days)), ('state', 'in', ['confirmed', 'partially_available'])])
+    #     if warehouse_id:
+    #         demand_qty_by_product_domain = Domain.AND([
+    #             demand_qty_by_product_domain,
+    #             [('location_id.warehouse_id', '=', warehouse_id)]
+    #         ])
+    #     demand_qty_by_product_list = self.env['stock.move']._read_group(demand_qty_by_product_domain, ['product_id'], ['product_uom_qty:sum'])
+    #     demand_qty_by_product = {product_id.id: actual_demand for product_id, actual_demand in demand_qty_by_product_list}
+    #     for product in self:
+    #         product.actual_demand = demand_qty_by_product.get(product.id, 0)
 
     @api.model
     def _get_monthly_demand_moves_location_domain(self):

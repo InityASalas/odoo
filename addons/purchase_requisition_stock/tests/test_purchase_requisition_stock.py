@@ -33,7 +33,6 @@ class TestPurchaseRequisitionStock(TestPurchaseRequisitionCommon):
         stock_location = self.env.ref('stock.stock_location_stock')
         customer_location = self.env.ref('stock.stock_location_customers')
         move1 = self.env['stock.move'].create({
-            'name': '10 in',
             'procure_method': 'make_to_order',
             'location_id': stock_location.id,
             'location_dest_id': customer_location.id,
@@ -60,7 +59,6 @@ class TestPurchaseRequisitionStock(TestPurchaseRequisitionCommon):
 
         # Second stock move
         move2 = self.env['stock.move'].create({
-            'name': '10 in',
             'procure_method': 'make_to_order',
             'location_id': stock_location.id,
             'location_dest_id': customer_location.id,
@@ -82,7 +80,6 @@ class TestPurchaseRequisitionStock(TestPurchaseRequisitionCommon):
 
         # Second stock move
         move3 = self.env['stock.move'].create({
-            'name': '10 in',
             'procure_method': 'make_to_order',
             'location_id': stock_location.id,
             'location_dest_id': customer_location.id,
@@ -148,7 +145,6 @@ class TestPurchaseRequisitionStock(TestPurchaseRequisitionCommon):
         stock_location = self.env.ref('stock.stock_location_stock')
         customer_location = self.env.ref('stock.stock_location_customers')
         move1 = self.env['stock.move'].create({
-            'name': '10 in',
             'procure_method': 'make_to_order',
             'location_id': stock_location.id,
             'location_dest_id': customer_location.id,
@@ -158,7 +154,6 @@ class TestPurchaseRequisitionStock(TestPurchaseRequisitionCommon):
             'price_unit': 100,
         })
         move2 = self.env['stock.move'].create({
-            'name': '10 in',
             'procure_method': 'make_to_order',
             'location_id': stock_location.id,
             'location_dest_id': customer_location.id,

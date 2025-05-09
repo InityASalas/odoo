@@ -60,7 +60,7 @@ class MailingMailing(models.Model):
         """Update body_arch preview image url to match the selected campaign."""
         for mailing in self.filtered('body_arch').filtered('card_campaign_id'):
             mailing.body_arch = re.sub(CARD_IMAGE_URL, f'src="/web/image/card.campaign/{mailing.card_campaign_id.id}/image_preview"', mailing.body_arch)
-            mailing.body_arch = re.sub(CARD_PREVIEW_URL, f'href="/cards/{mailing.card_campaign_id.id}/preview"', mailing.body_arch)
+            mailing.body_arch = re.sub(CARD_PREVIEW_URL, f'href="/cards/{mailing.card_campaign_id._fetch_or_create_preview_card().id}/preview"', mailing.body_arch)
 
     def action_put_in_queue(self):
         """Detect mismatches before scheduling."""

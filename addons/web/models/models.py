@@ -676,8 +676,13 @@ class Base(models.AbstractModel):
     def _web_read_group_groupby_formatter(self, groupby_spec, values):
         """ Return a formatter method that returns value/label and the domain that the group
         value represent """
-        field_name = groupby_spec.split(':')[0].split('.')[0]
+        field_path = groupby_spec.split(':')[0]
+        field_name, remaining_path = field_path.split('.', 1) if '.' in field_path else (field_path, None)
         field = self._fields[field_name]
+
+        if remaining_path and field.type == 'many2one':
+            model = self.env[field.comodel_name]
+            return model._web_read_group_groupby_formatter(remaining_path, values)
 
         if field.type == 'many2many':
 

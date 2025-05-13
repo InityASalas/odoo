@@ -738,7 +738,7 @@ class AccountEdiXmlUbl_20(models.AbstractModel):
             if invoice.move_type in ('in_invoice', 'out_invoice') or qty_factor == -1
             else 'CreditNoteLine'
         )
-        invoice_line_vals, line_logs = self._import_invoice_lines(invoice, tree, './{*}' + line_tag, qty_factor)
+        invoice_line_vals, line_logs = self._import_lines(invoice, tree, './{*}' + line_tag, document_type=invoice.move_type, tax_type=invoice.journal_id.type, qty_factor=qty_factor)
         line_vals = allowance_charges_line_vals + invoice_line_vals
 
         invoice_values = {

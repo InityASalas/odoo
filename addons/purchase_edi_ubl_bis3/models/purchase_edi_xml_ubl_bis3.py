@@ -76,8 +76,10 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
         lines_vals, line_logs = self._import_lines(order, tree, './{*}OrderLine/{*}LineItem', document_type='order', tax_type='purchase')
         # adapt each line to purchase.order.line
         for line in lines_vals:
-            line['product_qty'] = line['quantity']
-            line.pop('quantity')
+            line['product_qty'] = line.pop('quantity')
+            # remove invoice line fields
+            line.pop('deferred_start_date', False)
+            line.pop('deferred_end_date', False)
         lines_vals += allowance_charges_line_vals
 
         # Update order with lines excluding discounts

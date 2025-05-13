@@ -132,8 +132,10 @@ class CustomerPortal(payment_portal.PaymentPortal):
         except (AccessError, MissingError):
             return request.redirect('/my')
 
-        payment_amount = self._cast_as_float(payment_amount)
-        if payment_amount and payment_amount < order_sudo._get_prepayment_required_amount():
+        if (
+            payment_amount
+            and self._cast_as_float(payment_amount) < order_sudo._get_prepayment_required_amount()
+        ):
             raise MissingError(_("Amount is lower than required amount."))
 
         if report_type in ('html', 'pdf', 'text'):
@@ -218,6 +220,7 @@ class CustomerPortal(payment_portal.PaymentPortal):
         company = order_sudo.company_id
 
         if payment_amount and (downpayment or order_sudo.state == 'sale'):
+            payment_amount = self._cast_as_float(payment_amount)
             amount = payment_amount
         elif not payment_amount and downpayment:
             amount = order_sudo._get_prepayment_required_amount()

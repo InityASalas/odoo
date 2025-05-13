@@ -136,7 +136,7 @@
                                 <div>
                                     Down payment
                                 </div>
-                                <h3>
+                                <h2>
                                     <t
                                         t-out="sale_order._get_prepayment_required_amount()"
                                         data-id="total_amount"
@@ -147,7 +147,7 @@
                                         }"
                                     />
                                     (<b t-esc="sale_order.prepayment_percent * 100"/>%)
-                                </h3>
+                                </h2>
                             </h4>
                         </t>
                     </t>
@@ -291,7 +291,7 @@
                             t-if="
                                 not sale_order._has_to_be_signed()
                                 and sale_order._has_to_be_paid()
-                                or payment_amount
+                                or (payment_amount and sale_order.state != 'cancel')
                             "
                             name="sale_order_modal_validate"
                         >

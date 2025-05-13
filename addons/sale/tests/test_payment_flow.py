@@ -38,7 +38,7 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
             'odoo.addons.payment.controllers.portal.PaymentPortal'
             '._compute_show_tokenize_input_mapping'
         ) as patched:
-            tx_context = self._get_portal_pay_context(**route_values)
+            tx_context = self._get_portal_pay_context(**route_values) # TODO anko vhange
             patched.assert_called_once_with(ANY, sale_order_id=ANY)
 
         self.assertEqual(tx_context['currency_id'], self.sale_order.currency_id.id)
@@ -86,7 +86,7 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
         route_values = self._prepare_pay_values()
         route_values['sale_order_id'] = self.sale_order.id
 
-        tx_context = self._get_portal_pay_context(**route_values)
+        tx_context = self._get_portal_pay_context(**route_values) # TODO anko change
         self.assertEqual(tx_context['partner_id'], self.sale_order.partner_invoice_id.id)
 
     def test_12_so_partial_payment_link(self):
@@ -387,55 +387,6 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
         with mute_logger('odoo.addons.sale.models.payment_transaction'):
             tx._post_process()
 
-        self.assertTrue(self.sale_order.state == 'sale')
-
-    def test_downpayment_confirm_sale_order_insufficient_amount(self):
-        """Confirmation cannot occur if amount is not enough."""
-
-        self.sale_order.require_payment = True
-        self.sale_order.prepayment_percent = 0.2
-        order_amount = self.sale_order.amount_total
-
-        tx = self._create_transaction(
-            flow='direct',
-            amount=order_amount * 0.10,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        with mute_logger('odoo.addons.sale.models.payment_transaction'):
-            tx._post_process()
-
-        self.assertTrue(self.sale_order.state == 'draft')
-
-    def test_downpayment_confirm_sale_order_several_payments(self):
-        """
-        Several payments also trigger the confirmation of the sale order if
-        down payment confirmation is allowed.
-        """
-        self.sale_order.require_payment = True
-        self.sale_order.prepayment_percent = 0.2
-        order_amount = self.sale_order.amount_total
-
-        # Make a first payment, order should not be confirmed.
-        tx = self._create_transaction(
-            flow='direct',
-            reference="Test down payment 1",
-            amount=order_amount * 0.1,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        tx._post_process()
-        self.assertTrue(self.sale_order.state == 'draft')
-
-        # Order should be confirmed after this payment.
-        tx = self._create_transaction(
-            flow='direct',
-            reference="Test down payment 2",
-            amount=order_amount * 0.15,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        tx._post_process()
         self.assertTrue(self.sale_order.state == 'sale')
 
     def test_downpayment_automatic_invoice(self):

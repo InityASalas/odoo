@@ -62,4 +62,10 @@ export class GraphController extends Component {
     loadAll() {
         return this.model.forceLoadAll();
     }
+
+    removeFilter() {
+        this.env.searchModel.facets.forEach((facet) => {
+            this.env.searchModel.deactivateGroup(facet.groupId);
+        });
+    }
 }

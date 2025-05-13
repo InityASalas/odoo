@@ -2090,4 +2090,10 @@ export class ListRenderer extends Component {
             this.toggleRecordSelection(record);
         }
     }
+
+    removeFilter() {
+        this.env.searchModel.facets.forEach((facet) => {
+            this.env.searchModel.deactivateGroup(facet.groupId);
+        });
+    }
 }

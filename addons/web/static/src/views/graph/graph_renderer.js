@@ -921,4 +921,10 @@ export class GraphRenderer extends Component {
         const { cumulated } = this.model.metaData;
         this.model.updateMetaData({ cumulated: !cumulated });
     }
+
+    removeFilter() {
+        this.env.searchModel.facets.forEach((facet) => {
+            this.env.searchModel.deactivateGroup(facet.groupId);
+        });
+    }
 }

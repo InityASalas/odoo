@@ -5,6 +5,12 @@
         <div class="o_view_nocontent">
             <div class="o_nocontent_help">
                 <t t-out="noContentHelp"/>
+                <t t-set="facets" t-value="this.env.searchModel.facets"/>
+                <t t-if="facets and !(facets.length===0)">
+                    <button 
+                        class="btn text-nowrap me-1 btn-primary my-2 o_reset_filter_button"
+                        t-on-click="this.removeFilter">Reset Filters</button>
+                </t>
             </div>
         </div>
     </t>

@@ -694,4 +694,10 @@ export class KanbanRenderer extends Component {
             return true;
         }
     }
+
+    removeFilter() {
+        this.env.searchModel.facets.forEach((facet) => {
+            this.env.searchModel.deactivateGroup(facet.groupId);
+        });
+    }
 }

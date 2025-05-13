@@ -59,4 +59,10 @@ export class PivotController extends Component {
             pivot_row_groupby: this.model.metaData.fullRowGroupBys,
         };
     }
+
+    removeFilter() {
+        this.env.searchModel.facets.forEach((facet) => {
+            this.env.searchModel.deactivateGroup(facet.groupId);
+        });
+    }
 }

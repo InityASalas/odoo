@@ -1,4 +1,4 @@
-import { loadAllImages } from "@point_of_sale/utils";
+import { loadAllImages } from "@base_printer/epson_printer/utils/utils";
 
 import { Reactive } from "@web/core/utils/reactive";
 
@@ -39,7 +39,7 @@ export class PrinterService extends Reactive {
             errorCode: printResult.errorCode,
         };
     }
-    async print(component, props, options = {}) {
+    async print(component, props, options = {}, printerIp = "") {
         this.state.isPrinting = true;
         const el = await this.renderer.toHtml(component, props);
         try {

@@ -33,8 +33,10 @@ class PaymentTransaction(models.Model):
             return res
 
         payload = self._mollie_prepare_payment_request_payload()
-        _logger.info("sending '/payments' request for link creation:\n%s", pprint.pformat(payload))
-        payment_data = self.provider_id._mollie_make_request('/payments', data=payload)
+        _logger.info(
+            "sending '/payments' request for link creation:\n%s", pprint.pformat(payload)
+        )  # todo move to _make_request
+        payment_data = self.provider_id._make_request('/payments', data=payload)  # todo try/except
 
         # The provider reference is set now to allow fetching the payment status after redirection
         self.provider_reference = payment_data.get('id')
@@ -87,10 +89,10 @@ class PaymentTransaction(models.Model):
         :rtype: recordset of `payment.transaction`
         :raise: ValidationError if the data match no transaction
         """
-        tx = super()._get_tx_from_notification_data(provider_code, notification_data)
-        if provider_code != 'mollie' or len(tx) == 1:
-            return tx
+        if provider_code != 'mollie':
+            return super()._get_tx_from_notification_data(provider_code, notification_data)
 
+        _logger.info("OHMAGAD WE MADE A SEARCH!!!")  # Todo: anvchu remove
         tx = self.search(
             [('reference', '=', notification_data.get('ref')), ('provider_code', '=', 'mollie')]
         )

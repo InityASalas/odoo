@@ -173,7 +173,7 @@ class PaymentTransaction(models.Model):
             self.reference, pprint.pformat(payload)
         )
         checkout_session_data = self.provider_id._worldline_make_request(
-            'hostedcheckouts', payload=payload
+            'POST', 'hostedcheckouts', json_payload=payload
         )
         _logger.info(
             "Response of '/hostedcheckouts' request for transaction with reference %s:\n%s",
@@ -217,8 +217,9 @@ class PaymentTransaction(models.Model):
 
         # Make the payment request to Worldline.
         response_content = self.provider_id._worldline_make_request(
+            'POST',
             'payments',
-            payload=payload,
+            json_payload=payload,
             idempotency_key=payment_utils.generate_idempotency_key(
                 self, scope='payment_request_token'
             )

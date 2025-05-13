@@ -273,7 +273,7 @@ class PaymentPortal(portal.CustomerPortal):
         # Check the access token against the transaction values
         amount = amount and float(amount)  # Cast as float in case the JS stripped the '.0'
         if not payment_utils.check_access_token(access_token, partner_id, amount, currency_id):
-            raise ValidationError(_("The access token is invalid."))
+            raise ValidationError(_("The access token is invalid."))  # TODO Forbidden
 
         self._validate_transaction_kwargs(kwargs, additional_allowed_keys=('reference_prefix',))
         tx_sudo = self._create_transaction(
@@ -310,8 +310,9 @@ class PaymentPortal(portal.CustomerPortal):
         :raise UserError: If the flow is invalid.
         """
         # Prepare create values
+        provider_sudo = request.env['payment.provider'].sudo().browse(provider_id)
+        tokenize = False
         if flow in ['redirect', 'direct']:  # Direct payment or payment with redirection
-            provider_sudo = request.env['payment.provider'].sudo().browse(provider_id)
             payment_method_sudo = request.env['payment.method'].sudo().browse(payment_method_id)
             token_id = None
             tokenize = bool(
@@ -331,13 +332,7 @@ class PaymentPortal(portal.CustomerPortal):
             if partner_sudo.commercial_partner_id != token_sudo.partner_id.commercial_partner_id:
                 raise AccessError(_("You do not have access to this payment token."))
 
-            provider_sudo = token_sudo.provider_id
             payment_method_id = token_sudo.payment_method_id.id
-            tokenize = False
-        else:
-            raise ValidationError(
-                _("The payment should either be direct, with redirection, or made by a token.")
-            )
 
         reference = request.env['payment.transaction']._compute_reference(
             provider_sudo.code,
@@ -512,6 +507,6 @@ class PaymentPortal(portal.CustomerPortal):
         whitelist.update(additional_allowed_keys)
         rejected_keys = set(kwargs.keys()) - whitelist
         if rejected_keys:
-            raise ValidationError(
+            raise ValidationError(  # Todo bad request
                 _("The following kwargs are not whitelisted: %s", ', '.join(rejected_keys))
             )

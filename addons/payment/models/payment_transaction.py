@@ -386,7 +386,9 @@ class PaymentTransaction(models.Model):
         return reference
 
     @api.model
-    def _compute_reference_prefix(self, provider_code, separator, **values):
+    def _compute_reference_prefix(
+        self, provider_code, separator, **values
+    ):  # Todo remove provider_code
         """ Compute the reference prefix from the transaction values.
 
         Note: This method should be called in sudo mode to give access to the documents (invoices,
@@ -634,7 +636,7 @@ class PaymentTransaction(models.Model):
         :return: The transaction.
         :rtype: recordset of `payment.transaction`
         """
-        tx = self._get_tx_from_notification_data(provider_code, notification_data)
+        tx = self or self._get_tx_from_notification_data(provider_code, notification_data)
         tx._compare_notification_data(notification_data)
         tx._process_notification_data(notification_data)
         return tx

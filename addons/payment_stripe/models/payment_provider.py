@@ -284,9 +284,8 @@ class PaymentProvider(models.Model):
             # See https://stripe.com/docs/error-codes.
             # If the request originates from an offline operation, don't raise to avoid a cursor
             # rollback and return the response as-is for flow-specific handling.
-            if not response.ok \
-                    and not offline \
-                    and 400 <= response.status_code < 500 \
+            if not offline \
+                and 400 <= response.status_code < 500 \
                     and response.json().get('error'):  # The 'code' entry is sometimes missing
                 try:
                     response.raise_for_status()

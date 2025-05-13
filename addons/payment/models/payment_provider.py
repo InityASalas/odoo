@@ -1,6 +1,9 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import logging
+import pprint
+
+import requests
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -579,6 +582,69 @@ class PaymentProvider(models.Model):
             )
 
         return providers
+
+    # TODO ANVCHU find why we always need to call super first; remove the guideline if possible
+    # TODO ANVCHU move at the right place in the file
+    # todo: add idempotency key
+    # todo: what to do with auth?
+    def _make_request(
+        self, method, endpoint, *, params=None, data=None, json_payload=None, **kwargs
+    ):
+        """ Make a request at mollie endpoint.
+
+        Note: self.ensure_one()
+
+        :param str endpoint: The endpoint to be reached by the request
+        :param dict data: The payload of the request
+        :param str method: The HTTP method of the request
+        :return The JSON-formatted content of the response
+        :rtype: dict
+        :raise: ValidationError if an HTTP error occurs
+        """
+        self.ensure_one()
+
+        url = self._build_request_url(endpoint, **kwargs)
+        headers = self._prepare_request_headers(method=method, endpoint=endpoint, **kwargs)
+        response = None
+        _logger.exception(
+            "Sending %s data %s: %s", url, params or data or json_payload
+        )
+        try:
+            response = requests.request(
+                method, url, params=params, data=data, json=json_payload, headers=headers,
+                timeout=10
+            )
+            response.status_code = 402
+            response.raise_for_status()
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            _logger.exception("Unable to reach endpoint at %s", url)
+            raise ValidationError(_("Could not establish the connection to the API."))
+        except requests.exceptions.HTTPError:
+            # todo check if we want to log response (probably yes)
+            error_msg = self._parse_response_error(response)
+            _logger.exception(
+                "Invalid API request at %s with data:\n%s", url, pprint.pformat(data)
+            )  # todo and if so, remove the pprint here
+            e = ValidationError(
+                _("The API request failed with the following error: %s", error_msg)
+            )
+            e.response = response  # Attach the response here to allow the caller to retrieve it.
+            raise e
+        return self._parse_response_content(response)
+
+    def _build_request_url(self, endpoint, **kwargs):
+        return ''
+
+    def _prepare_request_headers(self, method, **kwargs):
+        """ Prepare the headers for the request."""
+        return {}
+
+    def _parse_response_error(self, response):
+        """ Get the error from the response."""
+        return ''
+
+    def _parse_response_content(self, response):
+        return response.json()
 
     def _get_supported_currencies(self):
         """ Return the supported currencies for the payment provider.

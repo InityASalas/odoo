@@ -77,6 +77,11 @@ class PaymentProvider(models.Model):
 
     #=== BUSINESS METHODS - PAYMENT FLOW ===#
 
+    def _build_request_url(self, endpoint, endpoint_param=None):
+        version = const.API_ENDPOINT_VERSIONS[endpoint]
+        endpoint = endpoint if not endpoint_param else endpoint.format(endpoint_param)
+
+
     def _adyen_make_request(self, endpoint, endpoint_param=None, payload=None, method='POST', idempotency_key=None):
         """ Make a request to Adyen API at the specified endpoint.
 

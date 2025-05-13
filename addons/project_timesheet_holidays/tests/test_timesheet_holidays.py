@@ -243,3 +243,61 @@ class TestTimesheetHolidays(TestCommonTimesheet):
         self.assertEqual(task_count + 1, new_task_count)
         new_timesheet_count = self.env['account.analytic.line'].search_count([('holiday_id', '!=', False)])
         self.assertEqual(timesheet_count + 1, new_timesheet_count)
+<<<<<<< 5965317e05eb1ae42ed4311c34fbe6b9c3243a6e
+||||||| ae09cdf5e70b015d479e5f87e045c046e3f506e9
+
+    def test_timesheet_timeoff_flexible_employee(self):
+        flex_40h_calendar = self.env['resource.calendar'].create({
+            'name': 'Flexible 40h/week',
+            'hours_per_day': 8.0,
+            'flexible_hours': True,
+        })
+
+        self.empl_employee.resource_calendar_id = flex_40h_calendar
+
+        time_off = self.Requests.with_user(self.user_employee).create({
+            'name': 'Test Time off please',
+            'employee_id': self.empl_employee.id,
+            'holiday_status_id': self.hr_leave_type_with_ts.id,
+            'request_date_from': self.leave_start_datetime,
+            'request_date_to': self.leave_end_datetime,
+        })
+        time_off.with_user(SUPERUSER_ID).action_validate()
+
+        timesheet = self.env['account.analytic.line'].search([
+            ('date', '>=', self.leave_start_datetime),
+            ('date', '<=', self.leave_end_datetime),
+            ('employee_id', '=', self.empl_employee.id),
+        ])
+        self.assertEqual(timesheet.unit_amount, 24, "The duration of the timesheet for flexible employee leave "
+                                                        "should be number of days * hours per day")
+=======
+
+    def test_timesheet_timeoff_flexible_employee(self):
+        flex_40h_calendar = self.env['resource.calendar'].create({
+            'name': 'Flexible 40h/week',
+            'hours_per_day': 8.0,
+            'full_time_required_hours': 40.0,
+            'flexible_hours': True,
+        })
+
+        self.empl_employee.resource_calendar_id = flex_40h_calendar
+
+        time_off = self.Requests.with_user(self.user_employee).create({
+            'name': 'Test Time off please',
+            'employee_id': self.empl_employee.id,
+            'holiday_status_id': self.hr_leave_type_with_ts.id,
+            'request_date_from': self.leave_start_datetime,
+            'request_date_to': self.leave_end_datetime,
+        })
+        time_off.with_user(SUPERUSER_ID).action_validate()
+
+        timesheet = self.env['account.analytic.line'].search([
+            ('date', '>=', self.leave_start_datetime),
+            ('date', '<=', self.leave_end_datetime),
+            ('employee_id', '=', self.empl_employee.id),
+        ])
+        self.assertEqual(len(timesheet), 3, "Three timesheets should be created for each leave day")
+        self.assertEqual(sum(timesheet.mapped('unit_amount')), 24, "The duration of the timesheet for flexible employee leave "
+                                                        "should be number of days * hours per day")
+>>>>>>> 22fc8f117d10c48d6da8175f28ef0aed86e251d1

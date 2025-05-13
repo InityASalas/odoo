@@ -723,7 +723,7 @@ class ProjectTask(models.Model):
     def _get_group_pattern(self):
         return {
             'tags_and_users': r'\s([#@]%s[^\s]+)',
-            'priority': r'\s(!)',
+            'priority': r'(?:^|\s)(!{1,3})(?=\s|$)',
         }
 
     def _prepare_pattern_groups(self):
@@ -766,9 +766,11 @@ class ProjectTask(models.Model):
         self.display_name, dummy = re.subn(pattern, '', self.display_name)
 
     def _extract_priority(self):
-        self.priority = "1"
         priority_group = self._get_group_pattern()['priority']
-        self.display_name, dummy = re.subn(priority_group, '', self.display_name)
+        match = re.search(priority_group, self.display_name)
+        if match:
+            self.priority = str(min(len(match.group(1)), 3))
+            self.display_name, _ = re.subn(priority_group, '', self.display_name)
 
     def _get_groups(self):
         return [

@@ -6,6 +6,7 @@ import { isCSSColor } from "@web/core/utils/colors";
 import { isColorGradient } from "@html_editor/utils/color";
 import { GradientPicker } from "./gradient_picker";
 import { toolbarButtonProps } from "@html_editor/main/toolbar/toolbar";
+import { useDropdownAutoClose } from "@html_editor/dropdown_autoclose_hook";
 
 // These colors are already normalized as per normalizeCSSColor in @web/legacy/js/widgets/colorpicker
 const DEFAULT_COLORS = [
@@ -50,6 +51,7 @@ export class ColorSelector extends Component {
         this.dropdown = useDropdownState({
             onClose: () => this.props.applyColorResetPreview(),
         });
+        useDropdownAutoClose(this.props.overlayState, this.dropdown);
 
         this.mode = this.props.type === "foreground" ? "color" : "backgroundColor";
 

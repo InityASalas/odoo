@@ -5,6 +5,8 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { loadLanguages } from "@web/core/l10n/translation";
 import { toolbarButtonProps } from "@html_editor/main/toolbar/toolbar";
 import { user } from "@web/core/user";
+import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
+import { useDropdownAutoClose } from "@html_editor/dropdown_autoclose_hook";
 
 export class LanguageSelector extends Component {
     static template = "html_editor.LanguageSelector";
@@ -20,6 +22,7 @@ export class LanguageSelector extends Component {
         this.state = useState({
             languages: [],
         });
+        this.dropdown = useDropdownState();
         onWillStart(() => {
             if (user.userId) {
                 loadLanguages(this.orm).then((res) => {
@@ -27,6 +30,7 @@ export class LanguageSelector extends Component {
                 });
             }
         });
+        useDropdownAutoClose(this.props.overlayState, this.dropdown);
     }
     onSelected(language) {
         this.props.onSelected(language);

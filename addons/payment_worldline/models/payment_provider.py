@@ -51,14 +51,13 @@ class PaymentProvider(models.Model):
     def _build_request_url(self, endpoint, **kwargs):
         if self.code != 'worldline':
             return super()._build_request_url(endpoint, **kwargs)
-
         api_url = self._worldline_get_api_url()
         return f'{api_url}/v2/{self.worldline_pspid}/{endpoint}'
 
     def _prepare_request_headers(self, method=None, endpoint=None, idempotency_key=None, **kwargs):
         if self.code != 'worldline':
             return super()._prepare_request_headers(
-                method, idempotency_key=idempotency_key, **kwargs
+                method=method, endpoint=endpoint, idempotency_key=idempotency_key, **kwargs
             )
 
         content_type = 'application/json; charset=utf-8' if method == 'POST' else ''
@@ -75,6 +74,12 @@ class PaymentProvider(models.Model):
         if method == 'POST' and idempotency_key:
             headers['X-GCS-Idempotence-Key'] = idempotency_key
         return headers
+
+    def _parse_response_error(self, response):
+        if self.code != 'worldline':
+            return super()._parse_response_error(response)
+        msg = ', '.join([error.get('message', '') for error in response.json().get('errors', [])])
+        return msg
 
     # def _worldline_make_request(self, *args, **kwargs):
     #     try:

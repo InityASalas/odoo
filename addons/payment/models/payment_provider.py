@@ -632,7 +632,7 @@ class PaymentProvider(models.Model):
     def _build_request_url(self, endpoint, **kwargs):
         return ''
 
-    def _prepare_request_headers(self, method, **kwargs):
+    def _prepare_request_headers(self, **kwargs):
         """ Prepare the headers for the request."""
         return {}
 

@@ -46,7 +46,7 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
 
         with patch(
             'odoo.addons.payment_stripe.models.payment_provider.PaymentProvider'
-            '._stripe_make_request',
+            '._make_request',
             return_value={
                 'id': 'pi_3KTk9zAlCFm536g81Wy7RCPH',
                 'status': 'succeeded',
@@ -65,7 +65,7 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
 
         with patch(
             'odoo.addons.payment_stripe.models.payment_provider.PaymentProvider'
-            '._stripe_make_request',
+            '._make_request',
             return_value={
                 'id': 'pi_3KTk9zAlCFm536g81Wy7RCPH',
                 'status': 'canceled',
@@ -104,7 +104,7 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
             '._verify_notification_signature'
         ), patch(
             'odoo.addons.payment_stripe.models.payment_provider.PaymentProvider'
-            '._stripe_make_request',
+            '._make_request',
             return_value=payment_method_response,
         ), patch(
             'odoo.addons.payment_stripe.models.payment_transaction.PaymentTransaction'
@@ -150,14 +150,14 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
     def test_only_create_webhook_if_not_already_done(self):
         """ Test that a webhook is created only if the webhook secret is not already set. """
         self.stripe.stripe_webhook_secret = False
-        with patch.object(type(self.env['payment.provider']), '_stripe_make_request') as mock:
+        with patch.object(type(self.env['payment.provider']), '_make_request') as mock:
             self.stripe.action_stripe_create_webhook()
             self.assertEqual(mock.call_count, 1)
 
     def test_do_not_create_webhook_if_already_done(self):
         """ Test that no webhook is created if the webhook secret is already set. """
         self.stripe.stripe_webhook_secret = 'dummy'
-        with patch.object(type(self.env['payment.provider']), '_stripe_make_request') as mock:
+        with patch.object(type(self.env['payment.provider']), '_make_request') as mock:
             self.stripe.action_stripe_create_webhook()
             self.assertEqual(mock.call_count, 0)
 

@@ -76,15 +76,15 @@ class PaymentProvider(models.Model):
             headers['X-GCS-Idempotence-Key'] = idempotency_key
         return headers
 
-    def _worldline_make_request(self, *args, **kwargs):
-        try:
-            res = self._make_request(*args, **kwargs)
-        except ValidationError as e:
-            if e.response.status_code not in const.VALID_RESPONSE_CODES:
-                raise e
-            else:
-                return self._parse_response_content(e.response)
-        return res
+    # def _worldline_make_request(self, *args, **kwargs):
+    #     try:
+    #         res = self._make_request(*args, **kwargs)
+    #     except ValidationError as e:
+    #         if e.response.status_code not in const.VALID_RESPONSE_CODES:
+    #             raise e
+    #         else:
+    #             return self._parse_response_content(e.response)
+    #     return res
 
     # def _worldline_make_request(self, endpoint, payload=None, method='POST', idempotency_key=None):
     #     """ Make a request to Worldline API at the specified endpoint.

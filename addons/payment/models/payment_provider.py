@@ -585,10 +585,9 @@ class PaymentProvider(models.Model):
 
     # TODO ANVCHU find why we always need to call super first; remove the guideline if possible
     # TODO ANVCHU move at the right place in the file
-    # todo: add idempotency key
     # todo: what to do with auth?
     def _make_request(
-        self, method, endpoint, *, params=None, data=None, json_payload=None, **kwargs
+        self, method, endpoint, *, params=None, data=None, json_payload=None, auth=None, **kwargs
     ):
         """ Make a request at mollie endpoint.
 
@@ -605,6 +604,7 @@ class PaymentProvider(models.Model):
 
         url = self._build_request_url(endpoint, **kwargs)
         headers = self._prepare_request_headers(method=method, endpoint=endpoint, **kwargs)
+        auth = self._prepare_request_auth()
         response = None
         _logger.exception(
             "Sending %s data %s: %s", url, params or data or json_payload
@@ -612,9 +612,8 @@ class PaymentProvider(models.Model):
         try:
             response = requests.request(
                 method, url, params=params, data=data, json=json_payload, headers=headers,
-                timeout=10
+                auth=auth, timeout=10
             )
-            response.status_code = 402
             response.raise_for_status()
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             _logger.exception("Unable to reach endpoint at %s", url)
@@ -622,14 +621,12 @@ class PaymentProvider(models.Model):
         except requests.exceptions.HTTPError:
             # todo check if we want to log response (probably yes)
             error_msg = self._parse_response_error(response)
-            _logger.exception(
-                "Invalid API request at %s with data:\n%s", url, pprint.pformat(data)
-            )  # todo and if so, remove the pprint here
-            e = ValidationError(
-                _("The API request failed with the following error: %s", error_msg)
-            )
-            e.response = response  # Attach the response here to allow the caller to retrieve it.
-            raise e
+            _logger.exception("Invalid API request at %s with response:\n%s", url, response.text)
+            raise ValidationError(_(
+                "The API request failed with the following error: %s", error_msg
+            ))
+            # e.response = response  # Attach the response here to allow the caller to retrieve it.
+            # raise e
         return self._parse_response_content(response)
 
     def _build_request_url(self, endpoint, **kwargs):
@@ -638,6 +635,9 @@ class PaymentProvider(models.Model):
     def _prepare_request_headers(self, method, **kwargs):
         """ Prepare the headers for the request."""
         return {}
+
+    def _prepare_request_auth(self):
+        return None
 
     def _parse_response_error(self, response):
         """ Get the error from the response."""

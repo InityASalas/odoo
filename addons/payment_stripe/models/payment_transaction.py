@@ -81,13 +81,14 @@ class PaymentTransaction(models.Model):
         :rtype: dict
         """
         if self.operation == 'validation':
-            response = self.provider_id._stripe_make_request(
-                'setup_intents', payload=self._stripe_prepare_setup_intent_payload()
+            response = self.provider_id._make_request(
+                'POST', 'setup_intents', data=self._stripe_prepare_setup_intent_payload()
             )
         else:  # 'online_direct', 'online_token', 'offline'.
-            response = self.provider_id._stripe_make_request(
+            response = self.provider_id._make_request(
+                'POST',
                 'payment_intents',
-                payload=self._stripe_prepare_payment_intent_payload(),
+                data=self._stripe_prepare_payment_intent_payload(),
                 offline=self.operation == 'offline',
                 # Prevent multiple offline payments by token (e.g., due to a cursor rollback).
                 idempotency_key=payment_utils.generate_idempotency_key(
@@ -182,8 +183,8 @@ class PaymentTransaction(models.Model):
         :return: The Customer
         :rtype: dict
         """
-        customer = self.provider_id._stripe_make_request(
-            'customers', payload={
+        customer = self.provider_id._make_request(
+            'POST', 'customers', data={
                 'address[city]': self.partner_city or None,
                 'address[country]': self.partner_country_id.code or None,
                 'address[line1]': self.partner_address or None,
@@ -249,8 +250,8 @@ class PaymentTransaction(models.Model):
             return refund_tx
 
         # Make the refund request to stripe.
-        data = self.provider_id._stripe_make_request(
-            'refunds', payload={
+        data = self.provider_id._make_request(
+            'POST', 'refunds', data={
                 'payment_intent': self.provider_reference,
                 'amount': payment_utils.to_minor_currency_units(
                     -refund_tx.amount,  # Refund transactions' amount is negative, inverse it.
@@ -276,8 +277,8 @@ class PaymentTransaction(models.Model):
             return child_capture_tx
 
         # Make the capture request to Stripe
-        payment_intent = self.provider_id._stripe_make_request(
-            f'payment_intents/{self.provider_reference}/capture'
+        payment_intent = self.provider_id._make_request(
+            'POST', f'payment_intents/{self.provider_reference}/capture'
         )
         _logger.info(
             "capture request response for transaction with reference %s:\n%s",
@@ -300,8 +301,8 @@ class PaymentTransaction(models.Model):
             return child_void_tx
 
         # Make the void request to Stripe
-        payment_intent = self.provider_id._stripe_make_request(
-            f'payment_intents/{self.provider_reference}/cancel'
+        payment_intent = self.provider_id._make_request(
+            'POST', f'payment_intents/{self.provider_reference}/cancel'
         )
         _logger.info(
             "void request response for transaction with reference %s:\n%s",
@@ -484,8 +485,8 @@ class PaymentTransaction(models.Model):
             customer_id = notification_data['setup_intent']['customer']
         # Another payment method (e.g., SEPA) might have been generated.
         if not payment_method[payment_method['type']]:
-            payment_methods = self.provider_id._stripe_make_request(
-                f'customers/{customer_id}/payment_methods', method='GET'
+            payment_methods = self.provider_id._make_request(
+                'GET', f'customers/{customer_id}/payment_methods'
             )
             _logger.info("Received payment_methods response:\n%s", pprint.pformat(payment_methods))
             payment_method = payment_methods['data'][0]

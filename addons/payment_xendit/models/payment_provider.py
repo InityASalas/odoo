@@ -55,6 +55,26 @@ class PaymentProvider(models.Model):
             return default_codes
         return const.DEFAULT_PAYMENT_METHOD_CODES
 
+    def _build_request_url(self, endpoint, **kwargs):
+        if self.code != 'xendit':
+            return super()._build_request_url(endpoint, **kwargs)
+        return f'https://api.xendit.co/{endpoint}'
+
+    def _prepare_request_headers(self, method, **kwargs):
+        if self.code != 'xendit':
+            return super()._prepare_request_headers(method, **kwargs)
+        return {}
+
+    def _prepare_request_auth(self):
+        if self.code != 'xendit':
+            return super()._prepare_request_auth()
+        return self.xendit_secret_key, ''
+
+    def _parse_response_error(self, response):
+        if self.code != 'xendit':
+            return super()._parse_response_error(response)
+        return response.json().get('message')
+
     def _xendit_make_request(self, endpoint, payload=None):
         """ Make a request to Xendit API and return the JSON-formatted content of the response.
 

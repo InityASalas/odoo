@@ -2793,9 +2793,12 @@ test("empty pivot view with sample data", async () => {
 
     expect(".o_pivot_view .o_content").toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent .abc").toHaveCount(1);
+    expect(".ribbon").toHaveCount(1);
+    expect(".ribbon").toHaveText("SAMPLE DATA");
     await removeFacet();
     expect(".o_pivot_view .o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent .abc").toHaveCount(0);
+    expect(".ribbon").toHaveCount(0);
     expect("table").toHaveCount(1);
 });
 
@@ -2819,11 +2822,13 @@ test("non empty pivot view with sample data", async () => {
 
     expect(".o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent .abc").toHaveCount(0);
+    expect(".ribbon").toHaveCount(0);
     expect("table").toHaveCount(1);
     await toggleSearchBarMenu();
     await toggleMenuItem("Small Than 0");
     expect(".o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent .abc").toHaveCount(1);
+    expect(".ribbon").toHaveCount(0);
     expect("table").toHaveCount(0);
 });
 

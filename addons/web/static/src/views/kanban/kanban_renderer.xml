@@ -117,6 +117,8 @@
             <t t-if="showNoContentHelper">
                 <t t-if="props.noContentHelp" t-call="web.ActionHelper">
                     <t t-set="noContentHelp" t-value="props.noContentHelp"/>
+                    <t t-set="showWidgetSampleData" t-value="true"/>
+                    <t t-set="useSampleModel" t-value="this.env.model.useSampleModel"/>
                 </t>
                 <t t-else="" t-call="web.NoContentHelper"/>
             </t>

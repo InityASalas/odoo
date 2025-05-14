@@ -34,6 +34,8 @@
                 <t t-if="model.isReady and displayNoContent">
                     <t t-if="props.info.noContentHelp" t-call="web.ActionHelper">
                         <t t-set="noContentHelp" t-value="props.info.noContentHelp"/>
+                        <t t-set="showWidgetSampleData" t-value="true"/>
+                        <t t-set="useSampleModel" t-value="this.model.useSampleModel"/>
                     </t>
                     <t t-else="" t-call="web.NoContentHelper"/>
                 </t>

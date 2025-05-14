@@ -815,7 +815,6 @@ test("SelectCreateDialog empty list, default no content helper", async () => {
         `<div class="o_nocontent_help">
             <p>No record found</p>
             <p>Adjust your filters or create a new record.</p>
-            <button class="btn text-nowrap me-1 btn-primary my-2">Reset Filters</button>
         </div>`
     );
 });
@@ -836,7 +835,6 @@ test("SelectCreateDialog empty kanban, default no content helper", async () => {
         `<div class="o_nocontent_help">
             <p>No record found</p>
             <p>Adjust your filters or create a new record.</p>
-            <button class="btn text-nowrap me-1 btn-primary my-2">Reset Filters</button>
         </div>`
     );
 });
@@ -869,10 +867,7 @@ test("SelectCreateDialog empty list, noContentHelp props", async () => {
     expect(queryOne(".o_dialog .o_list_view .o_view_nocontent")).toHaveInnerHTML(
         `<div class="o_nocontent_help">
             <p class="custom_classname">Hello</p>
-            <p>I'm an helper</p>
-            <button class="btn text-nowrap me-1 btn-primary my-2">
-                Reset Filters
-            </button>    
+            <p>I'm an helper</p>  
         </div>`
     );
 });

@@ -6974,6 +6974,8 @@ test(`empty list with sample data`, async () => {
     expect(`.o_list_table`).toHaveCount(1);
     expect(`.o_data_row`).toHaveCount(10);
     expect(`.o_nocontent_help`).toHaveCount(1);
+    expect(".ribbon").toHaveCount(1);
+    expect(".ribbon").toHaveText("SAMPLE DATA");
 
     // Check list sample data
     expect(`.o_data_row .o_data_cell:eq(0)`).toHaveText("", {
@@ -7002,6 +7004,7 @@ test(`empty list with sample data`, async () => {
     expect(`.o_list_view .o_content`).not.toHaveClass("o_view_sample_data");
     expect(`.o_list_table`).toHaveCount(1);
     expect(`.o_nocontent_help`).toHaveCount(1);
+    expect(".ribbon").toHaveCount(0);
 
     await toggleMenuItem("False Domain");
     await toggleMenuItem("True Domain");
@@ -7009,6 +7012,7 @@ test(`empty list with sample data`, async () => {
     expect(`.o_list_table`).toHaveCount(1);
     expect(`.o_data_row`).toHaveCount(4);
     expect(`.o_nocontent_help`).toHaveCount(0);
+    expect(".ribbon").toHaveCount(0);
 });
 
 test(`refresh empty list with sample data`, async () => {
@@ -7160,6 +7164,7 @@ test(`non empty list with sample data`, async () => {
     expect(`.o_list_table`).toHaveCount(1);
     expect(`.o_data_row`).toHaveCount(4);
     expect(`.o_list_view .o_content`).not.toHaveClass("o_view_sample_data");
+    expect(".ribbon").toHaveCount(0);
 
     await toggleSearchBarMenu();
     await toggleMenuItem("true_domain");
@@ -7167,6 +7172,7 @@ test(`non empty list with sample data`, async () => {
     expect(`.o_list_table`).toHaveCount(1);
     expect(`.o_data_row`).toHaveCount(0);
     expect(`.o_list_view .o_content`).not.toHaveClass("o_view_sample_data");
+    expect(".ribbon").toHaveCount(0);
 });
 
 test(`click on header in empty list with sample data`, async () => {

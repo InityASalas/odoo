@@ -2238,6 +2238,8 @@ test("empty graph view with sample data", async () => {
 
     expect(".o_graph_view .o_content").toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent").toHaveCount(1);
+    expect(".ribbon").toHaveCount(1);
+    expect(".ribbon").toHaveText("SAMPLE DATA");
     expect(".o_graph_canvas_container canvas").toHaveCount(1);
 
     await toggleSearchBarMenu();
@@ -2245,6 +2247,7 @@ test("empty graph view with sample data", async () => {
 
     expect(".o_graph_view .o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent").toHaveCount(0);
+    expect(".ribbon").toHaveCount(0);
     expect(".o_graph_canvas_container canvas").toHaveCount(1);
 });
 
@@ -2269,6 +2272,7 @@ test("non empty graph view with sample data", async () => {
     expect(".o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_view_nocontent").toHaveCount(0);
     expect(".o_graph_canvas_container canvas").toHaveCount(1);
+    expect(".ribbon").toHaveCount(0);
 
     await toggleSearchBarMenu();
     await toggleMenuItem("False Domain");
@@ -2276,6 +2280,7 @@ test("non empty graph view with sample data", async () => {
     expect(".o_content").not.toHaveClass("o_view_sample_data");
     expect(".o_graph_canvas_container canvas").toHaveCount(0);
     expect(".o_view_nocontent").toHaveCount(1);
+    expect(".ribbon").toHaveCount(0);
 });
 
 test("empty graph view without sample data after filter", async () => {

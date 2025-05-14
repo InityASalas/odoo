@@ -66,6 +66,8 @@
                 <t t-if="model.isReady and model.data">
                     <t t-if="!model.hasData() or model.useSampleModel and props.info.noContentHelp" t-call="web.ActionHelper">
                         <t t-set="noContentHelp" t-value="props.info.noContentHelp"/>
+                        <t t-set="showWidgetSampleData" t-value="true"/>
+                        <t t-set="useSampleModel" t-value="this.model.useSampleModel"/>
                     </t>
                     <t t-if="model.data.exceeds">
                         <div class="alert alert-info text-center o_graph_alert" role="status">

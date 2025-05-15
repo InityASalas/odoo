@@ -88,12 +88,13 @@ This should be supported in the framework at all levels.
 
 - `any` works for relational fields and `id` to check if a record matches
   the condition
-  - if value is SQL or Query, bypass record rules
-  - if auto_join is set on the field, bypass record rules
+  - if value is SQL or Query, see `any*`
+  - if auto_join is set on the field, see `any*`
   - if value is a Domain for a many2one (or `id`),
     _search with active_test=False
   - if value is a Domain for a x2many,
     _search on the comodel of the field (with its context)
+- `any*` works like `any` but bypass adding record rules on the comodel
 - `in` for equality checks where the given value is a collection of values
   - the collection is transformed into OrderedSet
   - False value indicates that the value is *not set*
@@ -1132,6 +1133,9 @@ def _optimize_any_domain(condition, model):
     """Make sure the value is an optimized domain (or Query or SQL)"""
     value = condition.value
     if isinstance(value, ANY_TYPES) and not isinstance(value, Domain):
+        if '*' not in condition.operator:
+            # update operator to any*
+            return DomainCondition(condition.field_expr, condition.operator + '*', condition.value)
         return condition
     domain = Domain(value)
     field = condition._field(model)
@@ -1565,6 +1569,7 @@ def _optimize_merge_set_conditions_x2many_not_in(cls: type[DomainNary], conditio
 
 
 @nary_condition_optimization(['any'], ['many2one', 'one2many', 'many2many'])
+@nary_condition_optimization(['any*'], ['many2one', 'one2many', 'many2many'])
 def _optimize_merge_any(cls, conditions, model):
     """Merge domains of 'any' conditions for relational fields.
 
@@ -1580,33 +1585,13 @@ def _optimize_merge_any(cls, conditions, model):
     merge_conditions, other_conditions = partition(lambda c: isinstance(c.value, Domain), conditions)
     if len(merge_conditions) < 2:
         return conditions
-    field_expr = merge_conditions[0].field_expr
+    base = merge_conditions[0]
     sub_domain = cls([c.value for c in merge_conditions])
-    return [DomainCondition(field_expr, 'any', sub_domain), *other_conditions]
-
-
-@nary_condition_optimization(['any*'], ['many2one', 'one2many', 'many2many'])
-def _optimize_merge_any_star(cls, conditions, model):
-    """Merge domains of 'any*' conditions for relational fields.
-
-    This will lead to a smaller number of sub-queries which are equivalent.
-    Example:
-
-        a any* (f = 8) or a any* (g = 5)  <=>  a any* (f = 8 or g = 5)     (for all fields)
-        a any* (f = 8) and a any* (g = 5)  <=>  a any* (f = 8 and g = 5)   (for many2one fields only)
-    """
-    field = conditions[0]._field(model)
-    if field.type != 'many2one' and cls is DomainAnd:
-        return conditions
-    merge_conditions, other_conditions = partition(lambda c: isinstance(c.value, Domain), conditions)
-    if len(merge_conditions) < 2:
-        return conditions
-    field_expr = merge_conditions[0].field_expr
-    sub_domain = cls([c.value for c in merge_conditions])
-    return [DomainCondition(field_expr, 'any*', sub_domain), *other_conditions]
+    return [DomainCondition(base.field_expr, base.operator, sub_domain), *other_conditions]
 
 
 @nary_condition_optimization(['not any'], ['many2one', 'one2many', 'many2many'])
+@nary_condition_optimization(['not any*'], ['many2one', 'one2many', 'many2many'])
 def _optimize_merge_not_any(cls, conditions, model):
     """Merge domains of 'not any' conditions for relational fields.
 
@@ -1622,30 +1607,9 @@ def _optimize_merge_not_any(cls, conditions, model):
     merge_conditions, other_conditions = partition(lambda c: isinstance(c.value, Domain), conditions)
     if len(merge_conditions) < 2:
         return conditions
-    field_expr = merge_conditions[0].field_expr
+    base = merge_conditions[0]
     sub_domain = cls.INVERSE([c.value for c in merge_conditions])
-    return [DomainCondition(field_expr, 'not any', sub_domain), *other_conditions]
-
-
-@nary_condition_optimization(['not any*'], ['many2one', 'one2many', 'many2many'])
-def _optimize_merge_not_any_star(cls, conditions, model):
-    """Merge domains of 'not any*' conditions for relational fields.
-
-    This will lead to a smaller number of sub-queries which are equivalent.
-    Example:
-
-        a not any* (f = 1) or a not any* (g = 5) => a not any* (f = 1 and g = 5)   (for many2one fields only)
-        a not any* (f = 1) and a not any* (g = 5) => a not any* (f = 1 or g = 5)   (for all fields)
-    """
-    field = conditions[0]._field(model)
-    if field.type != 'many2one' and cls is DomainOr:
-        return conditions
-    merge_conditions, other_conditions = partition(lambda c: isinstance(c.value, Domain), conditions)
-    if len(merge_conditions) < 2:
-        return conditions
-    field_expr = merge_conditions[0].field_expr
-    sub_domain = cls.INVERSE([c.value for c in merge_conditions])
-    return [DomainCondition(field_expr, 'not any*', sub_domain), *other_conditions]
+    return [DomainCondition(base.field_expr, base.operator, sub_domain), *other_conditions]
 
 
 @nary_optimization

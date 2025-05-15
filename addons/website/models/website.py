@@ -13,6 +13,7 @@ import threading
 import uuid
 
 from lxml import etree, html
+from psycopg2.errors import SerializationFailure
 from urllib.parse import urlparse
 from werkzeug import urls
 from werkzeug.exceptions import NotFound
@@ -716,6 +717,10 @@ class Website(models.Model):
                     el.attrib['t-value'] = json.dumps(footer_links)
                     view_id.with_context(website_id=website.id).write({'arch_db': etree.tostring(arch_string)})
             except Exception as e:
+                if isinstance(e, SerializationFailure):
+                    # Serialization failure occurred — rollback the current transaction and continue with the next footer_id
+                    logger.warning("Serialization failure occurred while processing footer_id '%s'", footer_id, exc_info=True)
+                    self.env.cr.rollback()
                 # The xml view could have been modified in the backend, we don't
                 # want the xpath error to break the configurator feature
                 logger.warning(e)

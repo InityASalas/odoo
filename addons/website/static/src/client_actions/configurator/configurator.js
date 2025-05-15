@@ -459,16 +459,63 @@ class ThemeSelectionScreen extends ApplyConfiguratorScreen {
         this.themeSVGPreviews = [useRef('ThemePreview1'), useRef('ThemePreview2'), useRef('ThemePreview3')];
 
         onMounted(() => {
-            this.state.themes.forEach((theme, idx) => {
-                const translatedSvg = this.translateSVG(theme.svg);
-                $(this.themeSVGPreviews[idx].el).append(translatedSvg);
-            });
+            this.blockUiDuringImageLoading(this.state.themes, this.themeSVGPreviews);
+        });
+
+        useEffect(
+            () => this.blockUiDuringImageLoading(this.state.extraThemes, this.extraThemeSVGPreviews),
+            () => [this.state.extraThemes]
+        );
+    }
+
+    /**
+     * The button should be shown if we never tried to load the extra themes and
+     * if they are enough main themes already displayed. If this last condition
+     * is not fulfilled, there is no need to display the button as no more will
+     * be displayed.
+     */
+    get showViewMoreThemesButton() {
+        return !this.state.extraThemesLoaded
+            && this.state.themes.length === MAX_NBR_DISPLAY_MAIN_THEMES;
+    }
+
+    /**
+     * Transforms text svgs into svg elements and adds a loading effect that
+     * blocks the UI during the loading of the images inside those svg elements.
+     *
+     * @param {Array<Object>} themes - The text svgs.
+     * @param {Array} themeSVGPreviews - A reference to the svg elements.
+     */
+    blockUiDuringImageLoading(themes, themeSVGPreviews) {
+        if (!themes.length) {
+            // There is no svg to transform
+            return;
+        }
+        const proms = [];
+        this.uiService.block({delay: 700});
+        themes.forEach((theme, idx) => {
+            const parsedSvg = new DOMParser().parseFromString(theme.svg, "image/svg+xml");
+            const svgEl = this.translateSVG(parsedSvg).documentElement;
+            for (const imgEl of svgEl.querySelectorAll("image")) {
+                proms.push(new Promise((resolve, reject) => {
+                    imgEl.addEventListener("load", () => {
+                        resolve(imgEl);
+                    }, {once: true});
+                    imgEl.addEventListener("error", () => {
+                        reject(imgEl);
+                    }, {once: true});
+                }));
+            }
+            themeSVGPreviews[idx].el.appendChild(svgEl);
+        });
+        // When all the images inside the svgs are loaded then remove the
+        // loading effect.
+        Promise.allSettled(proms).then(() => {
+            this.uiService.unblock();
         });
     }
 
-    translateSVG(svg) {
-        const domParser = new DOMParser();
-        const doc = domParser.parseFromString(svg, "image/svg+xml");
+    translateSVG(doc) {
         doc.querySelectorAll("text").forEach((elem) => {
             const sanitizedTextContent = elem.textContent
                 .trim()
@@ -583,7 +630,7 @@ class ThemeSelectionScreen extends ApplyConfiguratorScreen {
                 }
             }
         });
-        return doc.getElementsByTagNameNS("http://www.w3.org/2000/svg", "svg").item(0);
+        return doc;
     }
 
     async chooseTheme(themeName) {

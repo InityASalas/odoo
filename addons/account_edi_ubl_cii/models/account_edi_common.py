@@ -395,7 +395,7 @@ class AccountEdiCommon(models.AbstractModel):
                 partner.vat, _country_code = self.env['res.partner']._run_vat_checks(country, vat, validation='setnull')
             logs.append(_("Could not retrieve a partner corresponding to '%s'. A new partner was created.", name))
         elif not partner and not logs:
-            logs.append(_("Could not retrieve Partner with Details: Name: %(name)s, Vat: %(vat)s, Phone: %(phone)s, Email: %(email)s",
+            logs.append(_("Could not retrieve partner with details: Name: %(name)s, Vat: %(vat)s, Phone: %(phone)s, Email: %(email)s",
                   name=name, vat=vat, phone=phone, email=email))
         if not partner.country_id and not partner.street and not partner.street2 and not partner.city and not partner.zip and not partner.state_id:
             partner.write({

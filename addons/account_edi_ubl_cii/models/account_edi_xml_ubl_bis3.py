@@ -448,6 +448,10 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
                 })
         return partner_vals
 
+    # -------------------------------------------------------------------------
+    # Sale/Purchase Order
+    # -------------------------------------------------------------------------
+
     def _get_line_item_vals(self, product, description, customer, supplier, taxes):
         vals = super()._get_line_item_vals(product, description, customer, supplier, taxes)
         vals['standard_item_identification'] = product.barcode
@@ -469,23 +473,28 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
             }
         return super()._get_line_xpaths(document_type=document_type, qty_factor=qty_factor)
 
-    # -------------------------------------------------------------------------
-    # Sale/Purchase Order
-    # -------------------------------------------------------------------------
-
     def _get_order_line_item_price_vals(self, price_unit, discount, currency, uom):
         """ Return the unit price of the line item discounts applied but before taxes.
         Source: https://docs.peppol.eu/poacc/upgrade-3/syntax/Order/cac-OrderLine/cac-LineItem/cac-Price/ """
-        net_price_unit = currency.round(price_unit * (1 - discount))
+        net_price_unit = currency.round(price_unit * (1 - (discount / 100)))
         uom_code = self._get_uom_unece_code(uom)
 
-        return {
+        vals = {
             'currency': currency,
             'currency_dp': self._get_currency_decimal_places(currency),
             'price_amount': net_price_unit,
             'base_quantity': 1,
             'base_quantity_unit_code': uom_code,
         }
+        if discount:
+            vals['item_allowance_charge_vals'] = {
+                'currency_name': currency.name,
+                'currency_dp': self._get_currency_decimal_places(currency),
+                'charge_indicator': 'false',
+                'base_amount': price_unit,
+                'amount': price_unit - net_price_unit,
+            }
+        return vals
 
     def _get_anticipated_monetary_total_vals(self, order_line_vals, currency, amount_total, amount_paid=0):
         """ Source: https://docs.peppol.eu/poacc/upgrade-3/syntax/Order/cac-AnticipatedMonetaryTotal/ """
@@ -580,10 +589,8 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
         order_vals, logs = self._retrieve_order_vals(order, tree)
         if order:
             order.write(order_vals)
-            body = Markup("<strong>%s</strong>") % _("Format used to import the invoice: %s", self._description)
+            order.message_post(body=Markup("<strong>%s</strong>") % _("Format used to import the document: %s", self._description))
             if logs:
-                order._create_activity_set_details()
-                body += Markup("<ul>%s</ul>") % Markup().join(Markup("<li>%s</li>") % l for l in logs)
-            order.message_post(body=body)
+                order._create_activity_set_details(Markup("<ul>%s</ul>") % Markup().join(Markup("<li>%s</li>") % l for l in logs))
 
         return True

@@ -35,6 +35,11 @@
                 <cbc:BaseQuantity
                     t-att-unitCode="price_vals.get('base_quantity_unit_code')"
                     t-out="price_vals.get('base_quantity')" />
+                <cac:AllowanceCharge>
+                    <t t-call="{{AllowanceChargeType_template}}">
+                        <t t-set="vals" t-value="price_vals.get('item_allowance_charge_vals', {})"/>
+                    </t>
+                </cac:AllowanceCharge>
             </cac:Price>
             <cac:Item>
                 <t t-call="{{ItemType_template}}">

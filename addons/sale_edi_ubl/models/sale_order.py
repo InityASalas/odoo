@@ -32,12 +32,13 @@ class SaleOrder(models.Model):
                 return self.env['sale.edi.xml.ubl_bis3']
         return None
 
-    def _create_activity_set_details(self):
+    def _create_activity_set_details(self, body):
         """ Create activity on sale order to set details.
 
         :return: None.
         """
-        activity_message = _("Some information could not be imported")
+        activity_message = _("Some information could not be imported:")
+        activity_message += body
         self.activity_schedule(
             'mail.mail_activity_data_todo',
             user_id=self.env.user.id,

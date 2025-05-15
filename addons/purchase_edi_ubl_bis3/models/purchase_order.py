@@ -28,11 +28,12 @@ class PurchaseOrder(models.Model):
             if customization_id.text == 'urn:fdc:peppol.eu:poacc:trns:order:3':
                 return self.env['purchase.edi.xml.ubl_bis3']
 
-    def _create_activity_set_details(self):
+    def _create_activity_set_details(self, body):
         """ Create activity on purchase order to set details.
         :return: None.
         """
-        activity_message = _("Some information could not be imported")
+        activity_message = _("Some information could not be imported:")
+        activity_message += body
         self.activity_schedule(
             'mail.mail_activity_data_todo',
             user_id=self.env.user.id,

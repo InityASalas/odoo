@@ -4,6 +4,9 @@ from odoo import _, api, models, Command
 class PurchaseOrder(models.Model):
     _inherit = "purchase.order"
 
+    def _get_edi_builders(self):
+        return super()._get_edi_builders() + [self.env['purchase.edi.xml.ubl_bis3']]
+
     def _get_order_edi_decoder(self, file_data):
         """ Override of purchase to add edi decoder for xml files.
         :param dict file_data: File data to decode.

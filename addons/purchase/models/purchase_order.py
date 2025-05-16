@@ -1277,7 +1277,12 @@ class PurchaseOrder(models.Model):
         self.ensure_one()
         return self.state == 'cancel'
 
-    # EDI #
+    # ------------------------------------------------------------
+    # EDI
+    # ------------------------------------------------------------
+
+    def _get_edi_builders(self):
+        return []
 
     def create_document_from_attachment(self, attachment_ids):
         """ Create the purchase orders from given attachment_ids

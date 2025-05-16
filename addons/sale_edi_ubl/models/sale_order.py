@@ -4,6 +4,9 @@ from odoo import _, api, models, Command
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    def _get_edi_builders(self):
+        return super()._get_edi_builders() + [self.env['sale.edi.xml.ubl_bis3']]
+
     def _get_order_edi_decoder(self, file_data):
         """ Override of sale to add edi decoder for xml files.
 

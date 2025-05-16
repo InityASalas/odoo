@@ -1803,6 +1803,9 @@ class SaleOrder(models.Model):
 
     # EDI #
 
+    def _get_edi_builders(self):
+        return []
+
     def create_document_from_attachment(self, attachment_ids):
         """ Create the sale orders from given attachment_ids and redirect newly create order view.
 

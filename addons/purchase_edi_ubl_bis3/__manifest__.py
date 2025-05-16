@@ -8,10 +8,6 @@ When generating the PDF on the order, the PDF will be embedded inside the xml fo
 receiver to retrieve the PDF with only the xml file.
     """,
     'depends': ['purchase', 'account_edi_ubl_cii'],
-    'data': [
-        'report/purchase_documents_edi_ubl_connect_software.xml',
-        'views/portal_templates_edi_ubl_connect_software.xml',
-    ],
     'installable': True,
     'auto_install': True,
     'author': 'Odoo S.A.',

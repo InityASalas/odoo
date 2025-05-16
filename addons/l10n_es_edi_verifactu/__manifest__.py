@@ -17,7 +17,10 @@
         'views/res_config_settings_views.xml',
         'data/ir_cron.xml',
     ],
-    'demo': ['demo/demo_certificate.xml'],
+    'demo': [
+        'demo/demo_certificate.xml',
+        'demo/demo_company.xml',
+    ],
     'assets': {
         'web.assets_backend': [
             'l10n_es_edi_verifactu/static/src/css/warning.scss',

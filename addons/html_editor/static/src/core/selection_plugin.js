@@ -661,7 +661,9 @@ export class SelectionPlugin extends Plugin {
         range.setEnd(selection.endContainer, selection.endOffset);
         const isNodeFullySelected = (node) =>
             // Custom rules
-            this.getResource("fully_selected_node_predicates").some((cb) => cb(node, selection)) ||
+            this.getResource("fully_selected_node_predicates").some((cb) =>
+                cb(node, selection, range)
+            ) ||
             // Default rule
             (range.isPointInRange(node, 0) && range.isPointInRange(node, nodeSize(node)));
         return this.getTraversedNodes().filter(isNodeFullySelected);
@@ -676,8 +678,11 @@ export class SelectionPlugin extends Plugin {
         const firstLeafNode = firstLeaf(node);
         const lastLeafNode = lastLeaf(node);
         return (
-            range.isPointInRange(firstLeafNode, 0) &&
-            range.isPointInRange(lastLeafNode, nodeSize(lastLeafNode))
+            this.getResource("fully_selected_node_predicates").some((cb) =>
+                cb(node, selection, range)
+            ) ||
+            (range.isPointInRange(firstLeafNode, 0) &&
+                range.isPointInRange(lastLeafNode, nodeSize(lastLeafNode)))
         );
     }
 

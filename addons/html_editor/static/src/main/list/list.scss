@@ -5,6 +5,8 @@ li p {
 .odoo-editor-editable {
     ol, ul {
         padding-inline-start: 2rem;
+        color: $body-color;
+        font-size: $font-size-base;
     }
 }
 

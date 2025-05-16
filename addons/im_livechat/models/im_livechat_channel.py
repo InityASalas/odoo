@@ -53,6 +53,7 @@ class Im_LivechatChannel(models.Model):
         string="Maximum Sessions",
         help="Maximum number of concurrent sessions per operator.",
     )
+    review_link = fields.Char("Review Link", help="Visitors who leave a positive review will be redirected to this optional link.")
 
     # computed fields
     web_page = fields.Char('Web Page', compute='_compute_web_page_link', store=False, readonly=True,
@@ -419,6 +420,7 @@ class Im_LivechatChannel(models.Model):
             'default_message': self.default_message,
             "channel_name": self.name,
             "channel_id": self.id,
+            "review_link": self.review_link,
         }
 
     def get_livechat_info(self, username=None):

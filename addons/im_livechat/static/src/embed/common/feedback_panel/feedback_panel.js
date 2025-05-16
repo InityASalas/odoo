@@ -44,6 +44,13 @@ export class FeedbackPanel extends Component {
         this.state.rating = rating;
     }
 
+    openExternalReviewLink() {
+        const link = this.livechatService.options.review_link;
+        if (link) {
+            window.open(link, "_blank");
+        }
+    }
+
     onClickSendFeedback() {
         rpc("/im_livechat/feedback", {
             reason: this.state.feedback,
@@ -51,5 +58,8 @@ export class FeedbackPanel extends Component {
             channel_id: this.props.thread.id,
         });
         this.state.step = this.STEP.THANKS;
+        if (this.state.rating == this.RATING.GOOD) {
+            this.openExternalReviewLink();
+        }
     }
 }

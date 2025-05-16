@@ -82,7 +82,7 @@ export class ProjectTaskCalendarModel extends CalendarModel {
     async planTask(taskId, date, timeSlotSelected = false) {
         this.tasksToPlan.length -= 1;
         this.tasksToPlan.records = this.tasksToPlan.records.filter((task) => task.id !== taskId);
-        await this.orm.write(this.meta.resModel, [taskId], this._getPlanTaskVals(date, timeSlotSelected), {
+        await this.orm.call(this.meta.resModel, "plan_task_in_calendar", [[taskId], this._getPlanTaskVals(date, timeSlotSelected)], {
             context: this.meta.context,
         });
         await this.load({ planTask: true });

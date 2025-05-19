@@ -358,6 +358,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
 
     @api.model
     def _get_zeep_operations(self, operation):
+        """The creation of the zeep client may raise (in case of networking issues)."""
         company = self.env.company
 
         session = requests.Session()
@@ -392,19 +393,25 @@ class L10nEsEdiVerifactuDocument(models.Model):
         errors = info['errors']
         record_info = info['record_info']
 
-        register, get_last_sent = self._get_zeep_registration_operations()
+        try:
+            register, get_last_sent = self._get_zeep_registration_operations()
+        except (zeep.exceptions.Error, requests.exceptions.RequestException) as error:
+            errors.append(_("Networking error:\n%s", error))
+            return info
 
         try:
             res = register(batch_dict['Cabecera'], batch_dict['RegistroFactura'])
             # `res` is of type 'zeep.client.SerialProxy'
         except requests.exceptions.SSLError:
             errors.append(_("The SSL certificate could not be validated."))
-        except (zeep.exceptions.TransportError, requests.exceptions.ConnectionError) as error:
+        except zeep.exceptions.TransportError as error:
             certificate_error = "No autorizado. Se ha producido un error al verificar el certificado presentado"
             if certificate_error in error.message:
                 errors.append(_("The document could not be sent; the access was denied due to a problem with the certificate."))
             else:
-                errors.append(_("Networking error:\n%s", error))
+                errors.append(_("Networking error while sending the document:\n%s", error))
+        except requests.exceptions.RequestException as error:
+            errors.append(_("Networking error while sending the document:\n%s", error))
         except zeep.exceptions.Fault as soapfault:
             info['state'] = 'rejected'
             errors.append(f"[{soapfault.code}] {soapfault.message}")
@@ -413,7 +420,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 xml = etree.tostring(sent_xml_node, xml_declaration=True, encoding='UTF-8', pretty_print=True).decode()
             # TODO: log the xml and the error
         except zeep.exceptions.Error as error:
-            errors.append(_("Error sending the document:\n%s", error))
+            errors.append(_("Error while sending the document:\n%s", error))
             sent_xml_node = get_last_sent()
             if sent_xml_node is not None:
                 xml = etree.tostring(sent_xml_node, xml_declaration=True, encoding='UTF-8', pretty_print=True).decode()

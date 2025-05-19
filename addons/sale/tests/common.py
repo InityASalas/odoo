@@ -3,6 +3,7 @@
 from odoo.fields import Command
 
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon, TestTaxCommon
+from odoo.addons.payment.tests.http_common import PaymentHttpCommon
 from odoo.addons.product.tests.common import ProductCommon
 from odoo.addons.sales_team.tests.common import SalesTeamCommon
 
@@ -252,3 +253,12 @@ class TestTaxCommonSale(TestSaleCommon, TestTaxCommon):
         if 'total_amount_currency' in expected_values:
             expected_amounts['amount_total'] = expected_values['total_amount_currency']
         self.assertRecordValues(sale_order, [expected_amounts])
+
+
+class SaleHttpCommon(PaymentHttpCommon):
+
+    def _link_payment(self, sale_order, route_kwargs):
+        """/my/orders payment context feedback
+        """
+        route = f'/my/orders/{sale_order.id}'
+        return self._make_http_get_request(route, route_kwargs)

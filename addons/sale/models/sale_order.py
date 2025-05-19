@@ -1799,7 +1799,7 @@ class SaleOrder(models.Model):
             'amount': amount,
             'amount_max': amount_max,
             'amount_paid': self.amount_paid,
-            'prepayment_amount': prepayment_amount or 0,
+            'prepayment_amount': prepayment_amount,
         }
 
     # EDI #

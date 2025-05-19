@@ -126,7 +126,10 @@
                 <t t-call="portal.portal_back_in_edit_mode"/>
             </t>
 
-            <div class="row o_portal_sale_sidebar">
+            <div
+                class="row o_portal_sale_sidebar"
+                t-att-data-amount="sale_order.amount_total"
+            >
                 <!-- Sidebar -->
                 <t t-call="portal.portal_record_sidebar" id="sale_order_portal_sidebar">
                     <t t-set="classes" t-value="'col-lg-4 col-xxl-3 d-print-none'"/>
@@ -259,6 +262,7 @@
 
                 <!-- Page content -->
                 <div id="quote_content" class="col-12 col-lg-8 col-xxl-9 mt-5 mt-lg-0">
+
                     <!-- modal relative to the actions sign and pay -->
                     <div role="dialog" class="modal fade" id="modalaccept" name="sale_order_modal_sign_and_pay">
                         <div
@@ -297,7 +301,12 @@
                         >
                             <div class="modal-content">
                                 <header class="modal-header">
-                                    <h4 class="modal-title">Validate Order</h4> <!-- TODO ANKO change this-->
+                                    <t t-if="sale_order.state != 'sale'">
+                                        <h4 class="modal-title">Validate Order</h4>
+                                    </t>
+                                    <t t-else="">
+                                        <h4 class="modal-title">Pay Order</h4>
+                                    </t>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </header>
                                 <main class="modal-body" id="sign-dialog">
@@ -309,7 +318,6 @@
                                             and sale_order.prepayment_percent != 1.0
                                         "
                                     />
-                                    <!-- Display choices only if a pre payment can confirm the order. -->
                                     <div
                                         t-if="
                                             sale_order._has_to_be_paid() and prepayment_available
@@ -320,7 +328,7 @@
                                     >
                                         <button name="o_sale_portal_amount_prepayment_button" class="btn btn-light active">
                                             Down payment <br/>
-                                            <t t-if="not payment_amount">
+                                            <t t-if="not payment_amount or payment_amount == sale_order.amount_total">
                                                 <span
                                                     t-esc="prepayment_amount"
                                                     class="fw-bold"

@@ -4761,7 +4761,13 @@ class BaseModel(metaclass=MetaModel):
             if fname not in self._fields or self._fields[fname].type != 'properties':
                 continue
             field_converter = self._fields[fname].convert_to_cache
+<<<<<<< 59da4ce31994b5b1a582f9b7f2f00018d316d6fa
             to_write[fname] = dict(self[fname]._values, **field_converter(values.pop(fname), self, validate=False))
+||||||| a694101fc6805e9e94c76dfb864b665dce36be45
+            to_write[fname] = dict(self[fname], **field_converter(values.pop(fname), self, validate=False))
+=======
+            to_write[fname] = dict(self[fname] or {}, **field_converter(values.pop(fname), self, validate=False))
+>>>>>>> be5cd8db99374eaba1a7674b10d2a943dd3152ce
 
         self.write(values)
         if to_write:

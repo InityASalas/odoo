@@ -793,20 +793,35 @@ class L10nEsEdiVerifactuDocument(models.Model):
 
         verifactu_state = vals['verifactu_state']
         submission_rejected_before = vals['rejected_before']
-        # `record_exists_at_AEAT` means the move / pos order is known at the AEAT
-        record_exists_at_AEAT = verifactu_state in ('registered_with_errors', 'accepted')
+        record_identifier_changed = False  # TODO: add a warning / check: record identifier / some qr code values changed
+        verifactu_registered_with_document = verifactu_state in ('registered_with_errors', 'accepted')
+        # In some cases we may not have the document / response which led to the registration
+        verifactu_registered_without_document = bool(
+            # We may not know it is registered due to a timeout (we sent it but did not get / process the response).
+            # But then we will get a duplicate error when re-sending the document.
+            not record_identifier_changed
+            and vals['documents'].filtered(
+                lambda doc: (doc.document_type == 'submission'
+                             and doc.state == 'rejected'
+                             and doc.errors
+                             and "[3000] Registro de facturación duplicado." in doc.errors))
+        )
+        verifactu_registered = verifactu_registered_with_document or verifactu_registered_without_document
+        # The record may be otherwise known to the AEAT;
+        # i.e. when switching to Veri*Factu after the original invoice was created.
+        otherwise_known_to_AEAT = False  # TODO: implement; should probably be taken directly from the record values?
 
         if vals['cancellation']:
             render_vals = {
                 # A cancelled record can e.g. not exist at the AEAT when we switch to Veri*Factu after the original invoice was created
-                'SinRegistroPrevio': 'S' if not record_exists_at_AEAT else 'N',
+                'SinRegistroPrevio': 'S' if not verifactu_registered else 'N',
                 'RechazoPrevio': 'S' if submission_rejected_before else 'N',
             }
         else:
-            substitution = record_exists_at_AEAT  # TODO: case correction of record that does not exist at aeat yet
-            if substitution and not record_exists_at_AEAT:
+            substitution = verifactu_registered or otherwise_known_to_AEAT
+            if substitution and not verifactu_registered:
                 # Cases: ALTA DE SUBSANACIÓN SIN REGISTRO PREVIO, ALTA POR RECHAZO DE SUBSANACIÓN SIN REGISTRO PREVIO
-                # This can i.e. happen when switching to Veri*Factu after the original invoice was created
+                # TODO: This case can only happen after `otherwise_known_to_AEAT` is implemented
                 previously_rejected_state = 'X'
             elif submission_rejected_before:
                 # Cases: ALTA POR RECHAZO, ALTA POR RECHAZO DE SUBSANACIÓN

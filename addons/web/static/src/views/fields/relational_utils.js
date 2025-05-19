@@ -183,7 +183,10 @@ export function useSpecialData(loadFn) {
 
 export class Many2XAutocomplete extends Component {
     static template = "web.Many2XAutocomplete";
-    static components = { AutoComplete };
+    static components = {
+        AutoComplete,
+        CreateDialog: FormViewDialog,
+    };
     static props = {
         activeActions: Object,
         autoSelect: { type: Boolean, optional: true },
@@ -533,7 +536,7 @@ export function useOpenMany2XRecord({
         const readonly = !(resId ? canWrite : canCreate);
 
         addDialog(
-            FormViewDialog,
+            this.constructor.components?.CreateDialog || FormViewDialog,
             {
                 preventCreate: !canCreate,
                 preventEdit: !canWrite,

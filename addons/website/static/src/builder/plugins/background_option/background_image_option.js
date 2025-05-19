@@ -1,9 +1,11 @@
 import { BaseOptionComponent } from "@html_builder/core/utils";
 import { getBgImageURLFromEl, normalizeColor } from "@html_builder/utils/utils_css";
+import { ImageSizeTag } from "@website/builder/plugins/image/image_size_tag";
 
 export class BackgroundImageOption extends BaseOptionComponent {
     static template = "website.BackgroundImageOption";
     static props = {};
+    static components = { ImageSizeTag };
     showMainColorPicker() {
         const editingEl = this.env.getEditingElement();
         const src = new URL(getBgImageURLFromEl(editingEl), window.location.origin);

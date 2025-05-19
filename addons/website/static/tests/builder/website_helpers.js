@@ -38,6 +38,7 @@ import { WebClient } from "@web/webclient/webclient";
 import { patchWithCleanupImg } from "@html_builder/../tests/helpers";
 import { getWebsiteSnippets } from "./snippets_getter.hoot";
 import { mockImageRequests } from "./image_test_helpers";
+import { ImageSizeTag } from "@website/builder/plugins/image/image_size_tag";
 
 class Website extends models.Model {
     _name = "website";
@@ -87,6 +88,11 @@ export async function setupWebsiteBuilder(
         beforeWrapwrapContent = "",
     } = {}
 ) {
+    patchWithCleanup(ImageSizeTag.prototype, {
+        updateImageSize() {
+            this.state.size = 128;
+        },
+    });
     // TODO: fix when the iframe is reloaded and become empty (e.g. discard button)
     if (hasToCreateWebsite) {
         const pyEnv = await startServer();

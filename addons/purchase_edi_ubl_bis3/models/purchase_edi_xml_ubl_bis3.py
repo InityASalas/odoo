@@ -45,6 +45,7 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
 
         vals['vals'].update({
             'order_type_code': 105,
+            'quotation_document_reference': purchase_order.partner_ref,
             'customer_party_vals': self._get_partner_party_vals(customer, role='customer'),
             'supplier_party_vals': self._get_partner_party_vals(supplier, role='supplier'),
             'delivery_party_vals': self._get_partner_party_vals(delivery, role='delivery'),
@@ -71,6 +72,7 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
         if partner:
             order_vals['partner_id'] = partner.id
         order_vals['partner_ref'] = tree.findtext('./{*}ID')
+        order_vals['origin'] = tree.findtext('./{*}OriginatorDocumentReference/{*}ID')
 
         allowance_charges_line_vals, allowance_charges_logs = self._import_document_allowance_charges(tree, order, 'purchase')
         lines_vals, line_logs = self._import_lines(order, tree, './{*}OrderLine/{*}LineItem', document_type='order', tax_type='purchase')

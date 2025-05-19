@@ -533,7 +533,6 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
                 'id': order.name,
                 'issue_date': order.create_date.date(),
                 'note': html2plaintext(order.note) if order.note else False,
-                'originator_document_reference': order.origin,
                 'tax_amount': order.amount_tax,
                 'currency': order.currency_id,
                 'currency_dp': self._get_currency_decimal_places(order.currency_id),  # currency decimal places
@@ -562,7 +561,6 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
 
         order_vals['date_order'] = tree.findtext('./{*}IssueDate')
         order_vals['note'] = self._import_description(tree, xpaths=['./{*}Note'])
-        order_vals['origin'] = tree.findtext('./{*}OriginatorDocumentReference/{*}ID')
         order_vals['payment_term_id'] = self._import_order_payment_terms_id(order.company_id, tree, './/cac:PaymentTerms/cbc:Note')
         order_vals['currency_id'], currency_logs = self._import_currency(tree, './/{*}DocumentCurrencyCode')
 

@@ -60,6 +60,9 @@
             <cbc:IssueDate t-out="vals.get('issue_date')" />
             <cbc:OrderTypeCode t-out="vals.get('order_type_code')" />
             <cbc:Note t-out="vals.get('note')" />
+            <cac:QuotationDocumentReference>
+                <cbc:ID t-out="vals.get('quotation_document_reference')"/>
+            </cac:QuotationDocumentReference>
             <cac:OriginatorDocumentReference>
                 <cbc:ID t-out="vals.get('originator_document_reference')"/>
             </cac:OriginatorDocumentReference>

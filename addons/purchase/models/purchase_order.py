@@ -322,11 +322,10 @@ class PurchaseOrder(models.Model):
                 AND po.id != duplicate_po.id
                 AND duplicate_po.state != 'cancel'
                 AND po.partner_id = duplicate_po.partner_id
-                AND po.date_order = duplicate_po.date_order
-                AND po.partner_ref = duplicate_po.partner_ref
+                AND DATE(po.date_order) = DATE(duplicate_po.date_order)
                 AND (
-                    po.origin = duplicate_po.origin
-                    OR (po.origin IS NULL AND duplicate_po.origin IS NULL)
+                    po.origin = duplicate_po.name
+                    OR po.partner_ref = duplicate_po.partner_ref
                 )
             WHERE po.id IN %(orders)s
             GROUP BY po.id

@@ -45,6 +45,7 @@ class SaleEdiXmlUbl_Bis3(models.AbstractModel):
 
         vals['vals'].update({
             'order_type_code': 220,
+            'originator_document_reference': sale_order.client_order_ref,
             'customer_party_vals': self._get_partner_party_vals(customer, role='customer'),
             'supplier_party_vals': self._get_partner_party_vals(supplier, role='supplier'),
             'delivery_party_vals': self._get_partner_party_vals(delivery, role='delivery'),
@@ -71,6 +72,7 @@ class SaleEdiXmlUbl_Bis3(models.AbstractModel):
         if partner:
             order_vals['partner_id'] = partner.id
         order_vals['client_order_ref'] = tree.findtext('./{*}ID')
+        order_vals['origin'] = tree.findtext('./{*}QuotationDocumentReference/{*}ID')
 
         allowance_charges_line_vals, allowance_charges_logs = self._import_document_allowance_charges(tree, order, 'sale')
         lines_vals, line_logs = self._import_lines(order, tree, './{*}OrderLine/{*}LineItem', document_type='order', tax_type='sale')

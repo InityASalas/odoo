@@ -13,4 +13,10 @@ export class ImageToolOption extends BaseOptionComponent {
         ImageTransformButton,
     };
     static props = {};
+    setup() {
+        super.setup();
+        this.state = useDomState((editingElement) => {
+            return {isImageAnimated: editingElement.classList.contains("o_animate")};
+        });
+    }
 }

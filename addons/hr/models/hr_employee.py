@@ -52,7 +52,6 @@ class HrEmployee(models.Model):
         groups="hr.group_hr_user")
     versions_count = fields.Integer(compute='_compute_versions_count')
     is_last_version = fields.Boolean(compute='_compute_is_last_version')
-    first_version_date = fields.Date(compute='_compute_first_version_date', groups="hr.group_hr_user", store=True)
 
     @api.model
     def _lang_get(self):
@@ -269,6 +268,8 @@ class HrEmployee(models.Model):
 
     def _get_first_version_date(self, no_gap=True):
         self.ensure_one()
+        if not self.env.user.has_group("hr.group_hr_user"):
+            raise AccessError(_("Only HR users can access first version date on an employee."))
 
         def remove_gap(versions):
             # We do not consider a gap of more than 4 days to be a same occupation
@@ -292,11 +293,6 @@ class HrEmployee(models.Model):
         if no_gap:
             versions = remove_gap(versions)
         return min(versions.mapped('date_start')) if versions else False
-
-    @api.depends('version_ids.date_start', 'version_ids.date_end')
-    def _compute_first_version_date(self):
-        for employee in self:
-            employee.first_version_date = employee._get_first_version_date()
 
     @api.depends('name')
     def _compute_legal_name(self):

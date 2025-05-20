@@ -64,7 +64,7 @@ class TestFrenchWorkEntries(TransactionCase):
         self.employee_contract.resource_calendar_id = employee_calendar
 
         # Get the create values for a week of work entries, it should only give us 4 entries ((am+pm) * 2)
-        work_entry_create_vals = self.employee_contract._get_contract_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
+        work_entry_create_vals = self.employee_contract._get_version_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
         self.assertEqual(len(work_entry_create_vals), 4, 'Should have generated 4 work entries.')
 
         leave = self.env['hr.leave'].create({
@@ -79,11 +79,11 @@ class TestFrenchWorkEntries(TransactionCase):
         # Since the gaps have been filled, we should now get 10 work entries
         with self.assertQueryCount(45):
             start_time = time.time()
-            work_entry_create_vals = self.employee_contract._get_contract_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
+            work_entry_create_vals = self.employee_contract._get_version_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 10, 23, 59, 59))
             # --- 0.11486363410949707 seconds ---
             _logger.info("Get Contract Work Entries: --- %s seconds ---", time.time() - start_time)
         self.assertEqual(len(work_entry_create_vals), 10, 'Should have generated 10 work entries.')
 
         # Make sure that the gap filling does not go past the requested date
-        work_entry_create_vals = self.employee_contract._get_contract_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 9, 23, 59, 59))
+        work_entry_create_vals = self.employee_contract._get_version_work_entries_values(datetime(2021, 9, 6), datetime(2021, 9, 9, 23, 59, 59))
         self.assertEqual(len(work_entry_create_vals), 8, 'Should have generated 8 work entries.')

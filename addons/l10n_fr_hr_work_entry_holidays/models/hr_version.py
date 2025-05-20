@@ -9,11 +9,11 @@ from odoo import models
 class HrVersion(models.Model):
     _inherit = 'hr.version'
 
-    def _get_contract_work_entries_values(self, date_start, date_stop):
+    def _get_version_work_entries_values(self, date_start, date_stop):
         # Add the work entries difference for french payroll
         # Work entries by default are not generated on days the employee does not work
         # So we have to fill the gaps with work entries for those periods
-        result = super()._get_contract_work_entries_values(date_start, date_stop)
+        result = super()._get_version_work_entries_values(date_start, date_stop)
         fr_contracts = self.filtered(lambda c: c.company_id.country_id.code == 'FR' and c.resource_calendar_id != c.company_id.resource_calendar_id)
         if not fr_contracts:
             return result

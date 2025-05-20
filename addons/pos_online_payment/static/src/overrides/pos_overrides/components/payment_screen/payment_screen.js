@@ -54,6 +54,14 @@ patch(PaymentScreen.prototype, {
     },
     //@override
     async _isOrderValid(isForceValidate) {
+        if (
+            ["Kiosk", "Self-Order"].some((keyword) =>
+                this.currentOrder.refunded_order_id?.pos_reference.includes(keyword)
+            ) &&
+            this.currentOrder.refunded_order_id?.payment_ids[0].online_account_payment_id
+        ) {
+            return await super._isOrderValid(...arguments);
+        }
         if (!(await super._isOrderValid(...arguments))) {
             return false;
         }

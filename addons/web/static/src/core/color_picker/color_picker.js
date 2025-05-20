@@ -151,8 +151,17 @@ export class ColorPicker extends Component {
     }
 
     getCurrentGradientColor() {
-        if (isColorGradient(this.props.state.selectedColor)) {
-            return this.props.state.selectedColor;
+        let { selectedColor } = this.props.state;
+
+        // Check if it starts with a URL and strip it
+        if (selectedColor.startsWith("url(")) {
+            const urlEnd = selectedColor.indexOf(")") + 1;
+            const commaPosition = selectedColor.indexOf(",", urlEnd);
+            selectedColor = commaPosition > 0 ? selectedColor.substring(commaPosition + 1).trim() : "";
+        }
+
+        if (isColorGradient(selectedColor)) {
+            return selectedColor;
         }
     }
 

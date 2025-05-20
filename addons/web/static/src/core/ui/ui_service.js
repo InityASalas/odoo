@@ -111,8 +111,8 @@ export const MEDIAS_BREAKPOINTS = [
     { minWidth: 576, maxWidth: 767 },
     { minWidth: 768, maxWidth: 991 },
     { minWidth: 992, maxWidth: 1199 },
-    { minWidth: 1200, maxWidth: 1533 },
-    { minWidth: 1534 },
+    { minWidth: 1200, maxWidth: 1399 },
+    { minWidth: 1400 },
 ];
 
 /**

@@ -46,7 +46,8 @@ class StockMove(models.Model):
         # 'real cost' of finished product moves @ build time
         price_unit_map = {
             move.id: (
-                move.unbuild_id.mo_id.move_finished_ids.stock_valuation_layer_ids.filtered(
+                (move.unbuild_id.mo_id.move_finished_ids.stock_valuation_layer_ids
+                    | move.unbuild_id.mo_id.move_raw_ids.stock_valuation_layer_ids).filtered(
                     lambda svl: svl.product_id == move.product_id
                 )[0].unit_cost,
                 move.company_id.currency_id.round,
@@ -80,3 +81,10 @@ class StockMove(models.Model):
             m.bom_line_id.bom_id.type == 'phantom' and
             m.bom_line_id.bom_id == moves.bom_line_id.bom_id
         )
+
+    def _product_price_update_after_done(self):
+        is_unbuild = False
+        for move in self:
+            if move.unbuild_id:
+                is_unbuild = True
+        return super(StockMove, self.with_context(comes_from_unbuild=is_unbuild))._product_price_update_after_done()

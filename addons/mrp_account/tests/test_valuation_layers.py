@@ -610,3 +610,137 @@ class TestMrpStockValuation(TestStockValuationBase):
         ], order='date, id')
         self.assertEqual(out_aml.credit, 100)
         self.assertEqual(in_aml.product_id, self.product1)
+
+    def test_average_cost_unbuild_component_change_move_qty(self):
+        """ Ensures, that change the quantity for a move of a component
+        (with average costing method) of an unbuild, creates a svl with
+        the value of the component as it was at time of the MO (and the unbuild)
+        and that the standard_price is correctly adapted
+        """
+        avco_category = self.env['product.category'].create({
+            'name': 'AVCO',
+            'property_cost_method': 'average',
+            'property_valuation': 'real_time',
+        })
+        comp_1 = self.env['product.product'].create({
+            'name': 'comp_1',
+            'is_storable': True,
+            'standard_price': 0,
+            'categ_id': avco_category.id,
+            })
+        po_1 = self.env['purchase.order'].create({
+                'partner_id': self.partner.id,
+                'order_line': [(0, 0, {
+                    'product_id': comp_1.id,
+                    'product_qty': 2,
+                    'price_unit': 100,
+                })],
+        })
+        po_1.button_confirm()
+        po_1.picking_ids.button_validate()
+        final_product = self.env['product.product'].create({
+            'name': 'final product',
+            'is_storable': True,
+            'standard_price': 0,
+            'categ_id': avco_category.id,
+        })
+        final_product_bom = self.env['mrp.bom'].create({
+            'product_tmpl_id': final_product.product_tmpl_id.id,
+            'type': 'normal',
+            'bom_line_ids': [(0, 0, {
+                'product_id': comp_1.id,
+                'product_qty': 1,
+            })],
+        })
+        mo = self.env['mrp.production'].create({
+            'product_qty': 1.0,
+            'bom_id': final_product_bom.id,
+        })
+        mo.action_confirm()
+        mo.button_mark_done()
+        po_2 = self.env['purchase.order'].create({
+                'partner_id': self.partner.id,
+                'order_line': [(0, 0, {
+                    'product_id': comp_1.id,
+                    'product_qty': 1,
+                    'price_unit': 200,
+                })],
+        })
+        po_2.button_confirm()
+        po_2.picking_ids.button_validate()
+        action = mo.button_unbuild()
+        wizard = Form(self.env[action['res_model']].with_context(action['context']))
+        wizard.product_qty = 1
+        wizard = wizard.save()
+        wizard.action_validate()
+        # change the quantity on the stock move of the unbuild for the component
+        comp_1_unbuild_stock_move = self.env["mrp.unbuild"].search([('product_id', '=', mo.product_id.id)])\
+            .produce_line_ids.filtered(lambda l: l.product_id.id == comp_1.id)
+        comp_1_unbuild_stock_move.quantity = 0
+        # check that the new stock valuation layer created has a unit_cost of 100 (the value of comp_1
+        # at the time of the MO) and not 133 (the current standard_price)
+        new_svl_unit_cost = comp_1_unbuild_stock_move.stock_valuation_layer_ids\
+            .filtered(lambda l: l.quantity == -1).unit_cost
+        self.assertEqual(new_svl_unit_cost, 100)
+        self.assertEqual(comp_1.standard_price, 150)
+
+    def test_average_cost_unbuild_recompute_standard_price(self):
+        """ Ensures that an unbuild of an avco product creates a svl with
+        the value of the product as it was at time of the MO (and the unbuild)
+        and that the standard_price is correctly adapted
+        """
+        avco_category = self.env['product.category'].create({
+            'name': 'AVCO',
+            'property_cost_method': 'average',
+            'property_valuation': 'real_time',
+        })
+        comp_1 = self.env['product.product'].create({
+            'name': 'comp_1',
+            'standard_price': 100,
+            })
+        final_product = self.env['product.product'].create({
+            'name': 'final product',
+            'is_storable': True,
+            'standard_price': 0,
+            'categ_id': avco_category.id,
+        })
+        po_1 = self.env['purchase.order'].create({
+                'partner_id': self.partner.id,
+                'order_line': [(0, 0, {
+                    'product_id': final_product.id,
+                    'product_qty': 1,
+                    'price_unit': 100,
+                })],
+        })
+        po_1.button_confirm()
+        po_1.picking_ids.button_validate()
+        final_product_bom = self.env['mrp.bom'].create({
+            'product_tmpl_id': final_product.product_tmpl_id.id,
+            'type': 'normal',
+            'bom_line_ids': [(0, 0, {
+                'product_id': comp_1.id,
+                'product_qty': 1,
+            })],
+        })
+        mo = self.env['mrp.production'].create({
+            'product_qty': 1.0,
+            'bom_id': final_product_bom.id,
+        })
+        mo.action_confirm()
+        mo.button_mark_done()
+        po_2 = self.env['purchase.order'].create({
+                'partner_id': self.partner.id,
+                'order_line': [(0, 0, {
+                    'product_id': final_product.id,
+                    'product_qty': 2,
+                    'price_unit': 200,
+                })],
+        })
+        po_2.button_confirm()
+        po_2.picking_ids.button_validate()
+        action = mo.button_unbuild()
+        wizard = Form(self.env[action['res_model']].with_context(action['context']))
+        wizard.product_qty = 1
+        wizard = wizard.save()
+        wizard.action_validate()
+        self.assertEqual(final_product.standard_price, 166.67)

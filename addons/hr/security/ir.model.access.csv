@@ -14,7 +14,7 @@ access_hr_work_location_manager,access_hr_work_location_manager,model_hr_work_lo
 access_hr_departure_reason,access_hr_departure_reason_user,model_hr_departure_reason,group_hr_user,1,1,1,1
 access_hr_contract_type_manager,hr.contract.type.manager,model_hr_contract_type,group_hr_user,1,1,1,1
 access_hr_contract_hr_employee_manager,hr.contract.hr.employee.manager,model_hr_version,group_hr_contract,1,0,0,0
-access_hr_contract_manager,hr.contract.manager,model_hr_version,group_hr_user,1,1,1,1
+access_hr_contract_manager,hr.contract.manager,model_hr_version,group_hr_manager,1,1,1,1
 access_mail_activity_plan_hr_manager,mail.activity.plan.hr.manager,mail.model_mail_activity_plan,group_hr_manager,1,1,1,1
 access_mail_activity_plan_template_hr_manager,mail.activity.plan.template.hr.manager,mail.model_mail_activity_plan_template,group_hr_manager,1,1,1,1
 access_hr_payroll_structure_type_hr_contract_manager,hr.payroll.structure.type.contract.manager,model_hr_payroll_structure_type,group_hr_manager,1,1,1,1

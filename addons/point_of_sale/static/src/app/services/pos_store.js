@@ -1779,6 +1779,9 @@ export class PosStore extends WithLazyGetterTrap {
             const product = this.models["product.product"].get(change["product_id"]);
             const categoryIds = product.parentPosCategIds;
 
+            if (change.isCombo) {
+                return true;
+            }
             for (const categoryId of categoryIds) {
                 if (categories.includes(categoryId)) {
                     return true;
@@ -2357,10 +2360,20 @@ export class PosStore extends WithLazyGetterTrap {
         if (!list || list.length === 0) {
             return [];
         }
-        const excludedProductIds = this.getExcludedProductIds();
-
+        const excludedProductIds = new Set(this.getExcludedProductIds());
+        const posRestrictedCategIdSet = new Set(
+            (this.config.iface_available_categ_ids || []).map((c) => c.id)
+        );
         list = list
-            .filter((product) => !excludedProductIds.includes(product.id) && product.canBeDisplayed)
+            .filter(
+                (product) =>
+                    !excludedProductIds.has(product.id) &&
+                    product.canBeDisplayed &&
+                    (posRestrictedCategIdSet.size === 0 ||
+                        product.pos_categ_ids?.some((categ) =>
+                            posRestrictedCategIdSet.has(categ.id)
+                        ))
+            )
             .sort((a, b) => {
                 // Sort in the same order as what we receive (look _load_product_with_domain)
                 if (a.sequence !== b.sequence) {

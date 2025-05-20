@@ -135,6 +135,7 @@ export class Thread extends Record {
         },
     });
     followers = fields.Many("mail.followers", {
+
         /** @this {import("models").Thread} */
         onAdd(r) {
             r.thread = this;
@@ -166,7 +167,18 @@ export class Thread extends Record {
             this.isDisplayedOnUpdate();
         },
     });
-    isDisplayedOnUpdate() {}
+    get subscribeToBusOnDisplay() {
+        return true;
+    }
+    isDisplayedOnUpdate() {
+        if (this.subscribeToBusOnDisplay) {
+            if (this.isDisplayed) {
+                this.store.env.services["bus_service"].addChannel(this.busChannel);
+            } else {
+                this.store.env.services["bus_service"].deleteChannel(this.busChannel);
+            }
+        }
+    }
     get isFocused() {
         return this.isFocusedCounter !== 0;
     }
@@ -302,7 +314,7 @@ export class Thread extends Record {
     }
 
     get busChannel() {
-        return `${this.model}_${this.id}`;
+        return `model-${this.model}_${this.id}`;
     }
 
     get followersFullyLoaded() {
@@ -361,12 +373,19 @@ export class Thread extends Record {
     get supportsCustomChannelName() {
         return this.isChatChannel && this.channel_type !== "group";
     }
+    get isChatter() {
+        return this.model !== "discuss.channel";
+    }
+
+    chatterDisplayed = false;
+
     get displayName() {
         return this.display_name;
     }
 
     computeIsDisplayed() {
-        return this.store.ChatWindow.get({ thread: this })?.isOpen;
+        return this.store.ChatWindow.get({ thread: this })?.isOpen ||
+            this.isChatter && this.chatterDisplayed;
     }
 
     get avatarUrl() {
@@ -467,10 +486,6 @@ export class Thread extends Record {
     /** @param {{after: Number, before: Number}} */
     async fetchMessages({ after, around, before } = {}) {
         this.status = "loading";
-        if (!["mail.box", "discuss.channel"].includes(this.model) && !this.id) {
-            this.isLoaded = true;
-            return [];
-        }
         let res;
         try {
             res = await this.fetchMessagesData({ after, around, before });
@@ -732,10 +747,10 @@ export class Thread extends Record {
     }
 
     /** @param {import("models").Message} message */
-    onNewSelfMessage(message) {}
+    onNewSelfMessage(message) { }
 
     /** @param {Object} [options] */
-    open(options) {}
+    open(options) { }
 
     async openChatWindow({ focus = false, fromMessagingMenu, bypassCompact } = {}) {
         const thread = await this.store.Thread.getOrFetch(this);

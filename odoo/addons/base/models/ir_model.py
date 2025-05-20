@@ -2080,7 +2080,6 @@ class IrModelAccess(models.Model):
             group_info = str(ACCESS_ERROR_NOGROUP)
 
         resolution_info = str(ACCESS_ERROR_RESOLUTION)
-        import pdb; pdb.set_trace()
         return AccessError(operation_error + "\n\n" + group_info + "\n\n" + resolution_info)
 
     @api.model

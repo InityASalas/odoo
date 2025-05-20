@@ -401,7 +401,8 @@ class HrEmployee(models.Model):
     @api.depends('address_id.phone')
     def _compute_phones(self):
         for employee in self:
-            employee.work_phone = employee.address_id.phone
+            if employee.address_id.phone:
+                employee.work_phone = employee.address_id.phone
 
     def _create_work_contacts(self):
         if any(employee.work_contact_id for employee in self):

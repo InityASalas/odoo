@@ -108,26 +108,11 @@ class PaymentTransaction(models.Model):
 
         return payload
 
-    def _get_tx_from_notification_data(self, provider_code, notification_data):
-        """ Override of `payment` to find the transaction based on Paypal data.
+    def _get_reference_from_tx_notification_data(self, provider_code, notification_data):
+        if provider_code != 'paypal':
+            return super()._get_reference_from_tx_notification_data(provider_code, notification_data)
 
-        :param str provider_code: The code of the provider that handled the transaction.
-        :param dict notification_data: The notification data sent by the provider.
-        :return: The transaction if found.
-        :rtype: payment.transaction
-        :raise ValidationError: If the data match no transaction.
-        """
-        tx = super()._get_tx_from_notification_data(provider_code, notification_data)
-        if provider_code != 'paypal' or len(tx) == 1:
-            return tx
-
-        reference = notification_data.get('reference_id')
-        tx = self.search([('reference', '=', reference), ('provider_code', '=', 'paypal')])
-        if not tx:
-            raise ValidationError(
-                "PayPal: " + _("No transaction found matching reference %s.", reference)
-            )
-        return tx
+        return notification_data.get('reference_id')
 
     def _compare_notification_data(self, notification_data):
         """ Override of `payment` to compare the transaction based on PayPal data.

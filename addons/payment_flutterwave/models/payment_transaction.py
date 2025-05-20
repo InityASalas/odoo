@@ -119,30 +119,11 @@ class PaymentTransaction(models.Model):
         )
         self._handle_notification_data('flutterwave', response_content['data'])
 
-    def _get_tx_from_notification_data(self, provider_code, notification_data):
-        """ Override of payment to find the transaction based on Flutterwave data.
+    def _get_reference_from_tx_notification_data(self, provider_code, notification_data):
+        if provider_code != 'flutterwave':
+            return super()._get_reference_from_tx_notification_data(provider_code, notification_data)
 
-        :param str provider_code: The code of the provider that handled the transaction.
-        :param dict notification_data: The notification data sent by the provider.
-        :return: The transaction if found.
-        :rtype: recordset of `payment.transaction`
-        :raise ValidationError: If inconsistent data were received.
-        :raise ValidationError: If the data match no transaction.
-        """
-        tx = super()._get_tx_from_notification_data(provider_code, notification_data)
-        if provider_code != 'flutterwave' or len(tx) == 1:
-            return tx
-
-        reference = notification_data.get('tx_ref') or notification_data.get('txRef')
-        if not reference:
-            raise ValidationError("Flutterwave: " + _("Received data with missing reference."))
-
-        tx = self.search([('reference', '=', reference), ('provider_code', '=', 'flutterwave')])
-        if not tx:
-            raise ValidationError(
-                "Flutterwave: " + _("No transaction found matching reference %s.", reference)
-            )
-        return tx
+        return notification_data.get('tx_ref') or notification_data.get('txRef')
 
     def _compare_notification_data(self, notification_data):
         """ Override of `payment` to compare the transaction based on Flutterwave data.

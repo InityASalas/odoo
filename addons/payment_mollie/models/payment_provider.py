@@ -44,9 +44,9 @@ class PaymentProvider(models.Model):
 
         return urls.url_join('https://api.mollie.com/v2/', endpoint.strip('/'))
 
-    def _prepare_request_headers(self, method, **kwargs):
+    def _prepare_request_headers(self, method=None, **kwargs):
         if self.code != 'mollie':
-            return super()._prepare_request_headers(method, **kwargs)
+            return super()._prepare_request_headers(method=method, **kwargs)
 
         odoo_version = service.common.exp_version()['server_version']
         module_version = self.env.ref('base.module_payment_mollie').installed_version
@@ -63,11 +63,6 @@ class PaymentProvider(models.Model):
             return super()._parse_response_error(response)
 
         return response.json().get('detail', '')
-
-    # def _parse_response_content(self, response):  # not needed; DPO will just not return super
-    #     if self.code != 'mollie':
-    #         return super()._parse_response(response)
-    #     return response.json()
 
     # def _mollie_make_request(self, endpoint, data=None, method='POST'):
     #     """ Make a request at mollie endpoint.

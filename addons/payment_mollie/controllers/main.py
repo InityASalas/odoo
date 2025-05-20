@@ -64,8 +64,9 @@ class MollieController(http.Controller):
         try:
             # Verify the notification data.
             verified_data = tx_sudo.provider_id._make_request(
-                f'/payments/{tx_sudo.provider_reference}', method='GET'
+                'GET', f'/payments/{tx_sudo.provider_reference}'
             )
         except ValidationError:
             _logger.exception("Unable to handle the notification data")
-        tx_sudo._handle_notification_data('mollie', verified_data)
+        else:
+            tx_sudo._handle_notification_data('mollie', verified_data)

@@ -232,36 +232,14 @@ class PaymentTransaction(models.Model):
         )
         self._handle_notification_data('worldline', response_content)
 
-    def _get_tx_from_notification_data(self, provider_code, notification_data):
-        """ Override of `payment` to find the transaction based on Worldline data.
-
-        :param str provider_code: The code of the provider that handled the transaction.
-        :param dict notification_data: The notification data sent by the provider.
-        :return: The transaction if found.
-        :rtype: payment.transaction
-        :raise ValidationError: If inconsistent data are received.
-        :raise ValidationError: If the data match no transaction.
-        """
-        tx = super()._get_tx_from_notification_data(provider_code, notification_data)
-        if provider_code != 'worldline' or len(tx) == 1:
-            return tx
+    def _get_reference_from_tx_notification_data(self, provider_code, notification_data):
+        if provider_code != 'worldline':
+            return super()._get_reference_from_tx_notification_data(provider_code, notification_data)
 
         # In case of failed payment, paymentResult could be given as a separate key
         payment_result = notification_data.get('paymentResult', notification_data)
         payment_output = payment_result.get('payment', {}).get('paymentOutput', {})
-        reference = payment_output.get('references', {}).get('merchantReference', '')
-        if not reference:
-            raise ValidationError(
-                "Worldline: " + _("Received data with missing reference %(ref)s.", ref=reference)
-            )
-
-        tx = self.search([('reference', '=', reference), ('provider_code', '=', 'worldline')])
-        if not tx:
-            raise ValidationError(
-                "Worldline: " + _("No transaction found matching reference %s.", reference)
-            )
-
-        return tx
+        return payment_output.get('references', {}).get('merchantReference', '')
 
     def _compare_notification_data(self, notification_data):
         """ Override of `payment` to compare the transaction based on Worldline data.

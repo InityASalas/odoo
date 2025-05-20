@@ -258,7 +258,7 @@ class PaymentProvider(models.Model):
 
     def _prepare_request_headers(self, method=None, idempotency_key=None, **kwargs):
         if self.code != 'stripe':
-            return super()._build_request_url(
+            return super()._prepare_request_headers(
                 method=method, idempotency_key=idempotency_key, **kwargs
             )
         headers = {

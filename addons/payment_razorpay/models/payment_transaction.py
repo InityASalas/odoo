@@ -323,15 +323,16 @@ class PaymentTransaction(models.Model):
         :rtype: recordset of `payment.transaction`
         :raise: ValidationError if the data match no transaction
         """
-        tx = super()._get_tx_from_notification_data(provider_code, notification_data)
-        if provider_code != 'razorpay' or len(tx) == 1:
-            return tx
+        if provider_code != 'razorpay':
+            return super()._get_tx_from_notification_data(provider_code, notification_data)
 
         entity_type = notification_data.get('entity_type', 'payment')
+        tx = self
         if entity_type == 'payment':
             reference = notification_data.get('description')
             if not reference:
-                raise ValidationError("Razorpay: " + _("Received data with missing reference."))
+                _logger.warning("Received data with missing reference.")
+                return tx
             tx = self.search([('reference', '=', reference), ('provider_code', '=', 'razorpay')])
         else:  # 'refund'
             notes = notification_data.get('notes')
@@ -351,11 +352,6 @@ class PaymentTransaction(models.Model):
                     )
                 else:  # The refund was initiated for an unknown source transaction.
                     pass  # Don't do anything with the refund notification.
-        if not tx:
-            raise ValidationError(
-                "Razorpay: " + _("No transaction found matching reference %s.", reference)
-            )
-
         return tx
 
     def _razorpay_create_refund_tx_from_notification_data(self, source_tx, notification_data):

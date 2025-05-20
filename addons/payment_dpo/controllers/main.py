@@ -35,17 +35,18 @@ class DPOController(http.Controller):
         tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_notification_data(
             'dpo', data
         )
-        payload = (
-            f'<?xml version="1.0" encoding="utf-8"?>'
-            f'<API3G>'
-                f'<CompanyToken>{tx_sudo.provider_id.dpo_company_token}</CompanyToken>'
-                f'<Request>verifyToken</Request>'
-                f'<TransactionToken>{data.get("TransID")}</TransactionToken>'
-            f'</API3G>'
-        )
-        # Verify the notification data.
-        verified_data = tx_sudo.provider_id._dpo_make_request(payload=payload)
-        data.update(verified_data)
+        if tx_sudo:
+            payload = (
+                f'<?xml version="1.0" encoding="utf-8"?>'
+                f'<API3G>'
+                    f'<CompanyToken>{tx_sudo.provider_id.dpo_company_token}</CompanyToken>'
+                    f'<Request>verifyToken</Request>'
+                    f'<TransactionToken>{data.get("TransID")}</TransactionToken>'
+                f'</API3G>'
+            )
+            # Verify the notification data.
+            verified_data = tx_sudo.provider_id._dpo_make_request(payload=payload)
+            data.update(verified_data)
 
-        # Handle the notification data.
-        tx_sudo._handle_notification_data('dpo', data)
+            # Handle the notification data.
+            tx_sudo._handle_notification_data('dpo', data)

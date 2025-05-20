@@ -37,7 +37,7 @@ class WorldlineController(http.Controller):
 
         # Fetch the checkout session data from Worldline.
         checkout_session_data = provider_sudo._worldline_make_request(
-            f'hostedcheckouts/{data["hostedCheckoutId"]}', method='GET'
+            'GET', f'hostedcheckouts/{data["hostedCheckoutId"]}'
         )
         _logger.info(
             "Response of '/hostedcheckouts/<hostedCheckoutId>' request:\n%s",

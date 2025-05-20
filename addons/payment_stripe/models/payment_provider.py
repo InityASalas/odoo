@@ -193,8 +193,8 @@ class PaymentProvider(models.Model):
             message = _("You cannot create a Stripe Webhook if your Stripe Secret Key is not set.")
             notification_type = 'danger'
         else:
-            webhook = self._stripe_make_request(
-                'webhook_endpoints', payload={
+            webhook = self._make_request(
+                'POST', 'webhook_endpoints', data={
                     'url': self._get_stripe_webhook_url(),
                     'enabled_events[]': const.HANDLED_WEBHOOK_EVENTS,
                     'api_version': const.API_VERSION,
@@ -230,7 +230,7 @@ class PaymentProvider(models.Model):
         self.ensure_one()
 
         web_domain = url_parse(self.get_base_url()).netloc
-        response_content = self._stripe_make_request('apple_pay/domains', payload={
+        response_content = self._make_request('POST', 'apple_pay/domains', data={
             'domain_name': web_domain
         })
         if not response_content['livemode']:
@@ -252,25 +252,16 @@ class PaymentProvider(models.Model):
 
     # === BUSINESS METHODS - PAYMENT FLOW === #
 
-    def _stripe_make_request(
-        self, endpoint, payload=None, method='POST', offline=False, idempotency_key=None
-    ):
-        """ Make a request to Stripe API at the specified endpoint.
+    def _build_request_url(self, endpoint, **kwargs):
+        if self.code != 'stripe':
+            return super()._build_request_url(endpoint, **kwargs)
+        return url_join('https://api.stripe.com/v1/', endpoint)
 
-        Note: self.ensure_one()
-
-        :param str endpoint: The endpoint to be reached by the request
-        :param dict payload: The payload of the request
-        :param str method: The HTTP method of the request
-        :param bool offline: Whether the operation of the transaction being processed is 'offline'
-        :param str idempotency_key: The idempotency key to pass in the request.
-        :return The JSON-formatted content of the response
-        :rtype: dict
-        :raise: ValidationError if an HTTP error occurs
-        """
-        self.ensure_one()
-
-        url = url_join('https://api.stripe.com/v1/', endpoint)
+    def _prepare_request_headers(self, method=None, idempotency_key=None, **kwargs):
+        if self.code != 'stripe':
+            return super()._prepare_request_headers(
+                method=method, idempotency_key=idempotency_key, **kwargs
+            )
         headers = {
             'AUTHORIZATION': f'Bearer {stripe_utils.get_secret_key(self)}',
             'Stripe-Version': const.API_VERSION,  # SetupIntent requires a specific version.
@@ -278,32 +269,77 @@ class PaymentProvider(models.Model):
         }
         if method == 'POST' and idempotency_key:
             headers['Idempotency-Key'] = idempotency_key
-        try:
-            response = requests.request(method, url, data=payload, headers=headers, timeout=60)
-            # Stripe can send 4XX errors for payment failures (not only for badly-formed requests).
-            # Check if an error code is present in the response content and raise only if not.
-            # See https://stripe.com/docs/error-codes.
-            # If the request originates from an offline operation, don't raise to avoid a cursor
-            # rollback and return the response as-is for flow-specific handling.
-            if not response.ok \
-                    and not offline \
-                    and 400 <= response.status_code < 500 \
-                    and response.json().get('error'):  # The 'code' entry is sometimes missing
-                try:
-                    response.raise_for_status()
-                except requests.exceptions.HTTPError:
-                    _logger.exception("invalid API request at %s with data %s", url, payload)
-                    error_msg = response.json().get('error', {}).get('message', '')
-                    raise ValidationError(
-                        "Stripe: " + _(
-                            "The communication with the API failed.\n"
-                            "Stripe gave us the following info about the problem:\n'%s'", error_msg
-                        )
-                    )
-        except requests.exceptions.ConnectionError:
-            _logger.exception("unable to reach endpoint at %s", url)
-            raise ValidationError("Stripe: " + _("Could not establish the connection to the API."))
-        return response.json()
+        return headers
+
+    def _parse_response_error(self, response):
+        if self.code != 'stripe':
+            return self._parse_response_content(response)
+        return response.json().get('error', {}).get('message', '')
+
+    # def _stripe_make_request(self, *args, **kwargs):
+    #     """ Make a request to Stripe API at the specified endpoint."""
+    #     try:
+    #         res = self._make_request(*args, **kwargs)
+    #     except ValidationError as e:
+    #         if 400 <= e.response.status_code < 500 \
+    #                 and e.response.json().get('error'):  # The 'code' entry is sometimes missing
+    #             return self._parse_response_content(e.response)
+    #         else:
+    #             raise e
+    #     return res
+
+
+    # def _stripe_make_request(
+    #     self, endpoint, payload=None, method='POST', offline=False, idempotency_key=None
+    # ):
+    #     """ Make a request to Stripe API at the specified endpoint.
+    #
+    #     Note: self.ensure_one()
+    #
+    #     :param str endpoint: The endpoint to be reached by the request
+    #     :param dict payload: The payload of the request
+    #     :param str method: The HTTP method of the request
+    #     :param bool offline: Whether the operation of the transaction being processed is 'offline'
+    #     :param str idempotency_key: The idempotency key to pass in the request.
+    #     :return The JSON-formatted content of the response
+    #     :rtype: dict
+    #     :raise: ValidationError if an HTTP error occurs
+    #     """
+    #     self.ensure_one()
+    #
+    #     url = url_join('https://api.stripe.com/v1/', endpoint)
+    #     headers = {
+    #         'AUTHORIZATION': f'Bearer {stripe_utils.get_secret_key(self)}',
+    #         'Stripe-Version': const.API_VERSION,  # SetupIntent requires a specific version.
+    #         **self._get_stripe_extra_request_headers(),
+    #     }
+    #     if method == 'POST' and idempotency_key:
+    #         headers['Idempotency-Key'] = idempotency_key
+    #     try:
+    #         response = requests.request(method, url, data=payload, headers=headers, timeout=60)
+    #         # Stripe can send 4XX errors for payment failures (not only for badly-formed requests).
+    #         # Check if an error code is present in the response content and raise only if not.
+    #         # See https://stripe.com/docs/error-codes.
+    #         # If the request originates from an offline operation, don't raise to avoid a cursor
+    #         # rollback and return the response as-is for flow-specific handling.
+    #         if not offline \
+    #             and 400 <= response.status_code < 500 \
+    #                 and response.json().get('error'):  # The 'code' entry is sometimes missing
+    #             try:
+    #                 response.raise_for_status()
+    #             except requests.exceptions.HTTPError:
+    #                 _logger.exception("invalid API request at %s with data %s", url, payload)
+    #                 error_msg = response.json().get('error', {}).get('message', '')
+    #                 raise ValidationError(
+    #                     "Stripe: " + _(
+    #                         "The communication with the API failed.\n"
+    #                         "Stripe gave us the following info about the problem:\n'%s'", error_msg
+    #                     )
+    #                 )
+    #     except requests.exceptions.ConnectionError:
+    #         _logger.exception("unable to reach endpoint at %s", url)
+    #         raise ValidationError("Stripe: " + _("Could not establish the connection to the API."))
+    #     return response.json()
 
     def _get_stripe_extra_request_headers(self):
         """ Return the extra headers for the Stripe API request.

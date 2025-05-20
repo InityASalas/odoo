@@ -56,10 +56,7 @@ class AdyenController(http.Controller):
             'shopperReference': shopper_reference,
             'channel': 'Web',
         }
-        response_content = provider_sudo._adyen_make_request(
-            endpoint='/paymentMethods', payload=data, method='POST'
-        )
-        _logger.info("paymentMethods request response:\n%s", pprint.pformat(response_content))
+        response_content = provider_sudo._make_request('POST', '/paymentMethods', json_payload=data)
         response_content['country_code'] = partner_country_code
         return response_content
 
@@ -139,15 +136,11 @@ class AdyenController(http.Controller):
         idempotency_key = payment_utils.generate_idempotency_key(
             tx_sudo, scope='payment_request_controller'
         )
-        response_content = provider_sudo._adyen_make_request(
-            endpoint='/payments', payload=data, method='POST', idempotency_key=idempotency_key
+        # Todo: catch?
+        response_content = provider_sudo._make_request(
+            'POST', '/payments', json_payload=data, idempotency_key=idempotency_key
         )
 
-        # Handle the payment request response
-        _logger.info(
-            "payment request response for transaction with reference %s:\n%s",
-            reference, pprint.pformat(response_content)
-        )
         tx_sudo._handle_notification_data(
             'adyen', dict(response_content, merchantReference=reference),  # Match the transaction
         )
@@ -168,15 +161,11 @@ class AdyenController(http.Controller):
         """
         # Make the payment details request to Adyen
         provider_sudo = request.env['payment.provider'].browse(provider_id).sudo()
-        response_content = provider_sudo._adyen_make_request(
-            endpoint='/payments/details', payload=payment_details, method='POST'
+        response_content = provider_sudo._make_request(
+            'POST', '/payments/details', json_payload=payment_details
         )
 
         # Handle the payment details request response
-        _logger.info(
-            "payment details request response for transaction with reference %s:\n%s",
-            reference, pprint.pformat(response_content)
-        )
         request.env['payment.transaction'].sudo()._handle_notification_data(
             'adyen', dict(response_content, merchantReference=reference),  # Match the transaction
         )

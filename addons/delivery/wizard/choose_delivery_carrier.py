@@ -20,6 +20,7 @@ class ChooseDeliveryCarrier(models.TransientModel):
         required=True,
         domain="[('id', 'in', available_carrier_ids)]",
     )
+    is_pickup_carrier = fields.Boolean(related='carrier_id.is_pickup')
     state = fields.Selection(related='order_id.state')
     delivery_type = fields.Selection(related='carrier_id.delivery_type')
     delivery_price = fields.Float()
@@ -92,6 +93,8 @@ class ChooseDeliveryCarrier(models.TransientModel):
         }
 
     def button_confirm(self):
+        if self.is_pickup_carrier and not self.partner_shipping_id:
+            raise UserError(_("Please select a pickup point before adding a shipping method"))
         self.order_id.set_delivery_line(self.carrier_id, self.delivery_price)
         so_vals = {
             'recompute_delivery_price': False,
@@ -101,7 +104,7 @@ class ChooseDeliveryCarrier(models.TransientModel):
             so_vals['partner_shipping_id'] = self.partner_shipping_id.id
         self.order_id.write(so_vals)
 
-    def _set_pickup_location(self, pickup_location_data):
+    def set_pickup_location(self, pickup_location_data):
         super()._set_pickup_location(pickup_location_data)
         # When opening a dialog from another dialog, the first one gets closed
         # We need to return an action to open the first dialog again

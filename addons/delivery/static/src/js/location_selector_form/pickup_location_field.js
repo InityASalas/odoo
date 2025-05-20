@@ -38,10 +38,8 @@ export class PickupLocationField extends Component {
             selectedLocationId: this.selectedLocationId,
             save: async location => {
                 const jsonLocation = JSON.stringify(location);
-                let action = await rpc('/delivery/set_pickup_location', {
+                let action = await this.orm.call(this.parentModel, 'set_pickup_location', [this.parentId], {
                     pickup_location_data: jsonLocation,
-                    res_model: this.parentModel,
-                    res_id: this.parentId
                 });
                 if (action) {
                     this.action.doAction(action);

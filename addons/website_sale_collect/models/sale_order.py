@@ -48,7 +48,7 @@ class SaleOrder(models.Model):
         in_store_orders._compute_fiscal_position_id()
         return res
 
-    def _set_pickup_location(self, pickup_location_data):
+    def set_pickup_location(self, pickup_location_data):
         """ Override `website_sale` to set the pickup location for in-store delivery methods.
         Set account fiscal position depending on selected pickup location to correctly calculate
         taxes.

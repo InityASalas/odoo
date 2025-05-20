@@ -21,7 +21,7 @@ class PickupLocationMixin(models.AbstractModel):
         """ Get the field name to store the delivery address. """
         return 'partner_shipping_id'
 
-    def _set_pickup_location(self, pickup_location_data):
+    def set_pickup_location(self, pickup_location_data):
         """ Set the pickup location on the current record. """
         self.ensure_one()
         if self.carrier_id.is_pickup:

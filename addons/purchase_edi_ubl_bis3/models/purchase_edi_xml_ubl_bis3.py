@@ -1,4 +1,4 @@
-from odoo import models, Command
+from odoo import models, Command, _
 
 
 class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
@@ -74,6 +74,13 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
         order_vals['partner_ref'] = tree.findtext('./{*}ID')
         order_vals['origin'] = tree.findtext('./{*}OriginatorDocumentReference/{*}ID')
 
+        delivery_partner, delivery_logs = self._import_partner(
+            order.company_id,
+            **self._import_retrieve_partner_vals(tree, 'Delivery'),
+        )
+        if delivery_partner:
+            order_vals['dest_address_id'] = delivery_partner.id
+
         allowance_charges_line_vals, allowance_charges_logs = self._import_document_allowance_charges(tree, order, 'purchase')
         lines_vals, line_logs = self._import_lines(order, tree, './{*}OrderLine/{*}LineItem', document_type='order', tax_type='purchase')
         # adapt each line to purchase.order.line
@@ -82,10 +89,12 @@ class PurchaseEdiXmlUbl_Bis3(models.AbstractModel):
             # remove invoice line fields
             line.pop('deferred_start_date', False)
             line.pop('deferred_end_date', False)
+            if not line.get('product_id'):
+                line_logs.append(_("Could not retrieve the product named: %(name)s", name=line['name']))
         lines_vals += allowance_charges_line_vals
 
         # Update order with lines excluding discounts
         order_vals['order_line'] = [Command.create(line_vals) for line_vals in lines_vals]
-        logs += partner_logs + line_logs + allowance_charges_logs
+        logs += partner_logs + delivery_logs + line_logs + allowance_charges_logs
 
         return order_vals, logs

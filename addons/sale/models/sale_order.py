@@ -699,7 +699,6 @@ class SaleOrder(models.Model):
                  AND sale_order.id != duplicate_order.id
                  AND duplicate_order.state != 'cancel'
                  AND sale_order.partner_id = duplicate_order.partner_id
-                 AND DATE(sale_order.date_order) = DATE(duplicate_order.date_order)
                  AND (
                     sale_order.origin = duplicate_order.name
                     OR sale_order.client_order_ref = duplicate_order.client_order_ref

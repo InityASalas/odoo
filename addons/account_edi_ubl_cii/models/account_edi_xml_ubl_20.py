@@ -673,22 +673,22 @@ class AccountEdiXmlUbl_20(models.AbstractModel):
     def _import_retrieve_partner_vals(self, tree, role):
         """ Returns a dict of values that will be used to retrieve the partner """
         return {
-            'vat': self._find_value(f'.//cac:{role}Party/cac:Party//cbc:CompanyID[string-length(text()) > 5]', tree),
-            'phone': self._find_value(f'.//cac:{role}Party/cac:Party//cbc:Telephone', tree),
-            'email': self._find_value(f'.//cac:{role}Party/cac:Party//cbc:ElectronicMail', tree),
-            'name': self._find_value(f'.//cac:{role}Party/cac:Party//cbc:Name', tree) or
-                    self._find_value(f'.//cac:{role}Party/cac:Party//cbc:RegistrationName', tree),
+            'vat': self._find_value(f'.//cac:{role}Party//cbc:CompanyID[string-length(text()) > 5]', tree),
+            'phone': self._find_value(f'.//cac:{role}Party//cac:Contact//cbc:Telephone', tree),
+            'email': self._find_value(f'.//cac:{role}Party//cac:Contact//cbc:ElectronicMail', tree),
+            'name': self._find_value(f'.//cac:{role}Party//cac:Contact//cbc:Name', tree) or
+                    self._find_value(f'.//cac:{role}Party//cbc:RegistrationName', tree),
             'postal_address': self._get_postal_address(tree, role),
         }
 
     def _get_postal_address(self, tree, role):
         return {
-            'country_code': self._find_value(f'.//cac:{role}Party/cac:Party//cac:Country//cbc:IdentificationCode', tree),
-            'street': self._find_value(f'.//cac:{role}Party/cac:Party/cac:PostalAddress/cbc:StreetName', tree),
-            'additional_street': self._find_value(f'.//cac:{role}Party/cac:Party/cac:PostalAddress/cbc:AdditionalStreetName', tree),
-            'city': self._find_value(f'.//cac:{role}Party/cac:Party/cac:PostalAddress/cbc:CityName', tree),
-            'zip': self._find_value(f'.//cac:{role}Party/cac:Party/cac:PostalAddress/cbc:PostalZone', tree),
-            'state_code': self._find_value(f'.//cac:{role}Party/cac:Party/cac:PostalAddress/cbc:CountrySubentityCode', tree),
+            'country_code': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cac:Country/cbc:IdentificationCode', tree),
+            'street': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cbc:StreetName', tree),
+            'additional_street': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cbc:AdditionalStreetName', tree),
+            'city': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cbc:CityName', tree),
+            'zip': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cbc:PostalZone', tree),
+            'state_code': self._find_value(f'.//cac:{role}Party//cac:PostalAddress/cbc:CountrySubentityCode', tree),
         }
 
     def _import_fill_invoice(self, invoice, tree, qty_factor):

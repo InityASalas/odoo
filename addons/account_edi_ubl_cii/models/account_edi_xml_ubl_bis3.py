@@ -564,14 +564,7 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
         order_vals['payment_term_id'] = self._import_order_payment_terms_id(order.company_id, tree, './/cac:PaymentTerms/cbc:Note')
         order_vals['currency_id'], currency_logs = self._import_currency(tree, './/{*}DocumentCurrencyCode')
 
-        delivery_partner, delivery_partner_logs = self._import_partner(
-            order.company_id,
-            **self._import_retrieve_partner_vals(tree, 'Delivery/cac:Delivery'),
-        )
-        if delivery_partner:
-            order_vals['dest_address_id'] = delivery_partner.id
-
-        logs += delivery_partner_logs + currency_logs
+        logs += currency_logs
         return order_vals, logs
 
     def _import_order_ubl(self, order, file_data):

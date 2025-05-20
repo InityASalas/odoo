@@ -123,14 +123,13 @@ class ActivityScheduleHRCase(ActivityScheduleCase):
                                      (cls.employee_2, '2023-09-01'),
                                      (cls.employee_3, '2023-12-01'),
                                      (cls.employee_4, '2024-01-01')):
-            employee.version_ids = [(5, 0, 0), (0, 0, {
-                'employee_id': employee.id,
+            employee.version_id.write({
                 'contract_date_end': fields.Date.from_string('2025-12-31'),
                 'contract_date_start': fields.Date.from_string(date_start),
                 'date_version': fields.Date.from_string(date_start),
                 'name': 'Contract',
                 'wage': 1,
-            })]
+            })
 
 
 @tagged('mail_activity', 'mail_activity_plan')
@@ -286,4 +285,4 @@ class TestActivitySchedule(ActivityScheduleHRCase):
         ])
         with self._instantiate_activity_schedule_wizard(customers) as form:
             form.plan_id = self.plan_party
-            self.assertFalse(form.plan_date)
+            self.assertEqual(form.plan_date, fields.Date.from_string('2023-08-31'))

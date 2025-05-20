@@ -60,7 +60,7 @@ class TestResource(TestHrCommon):
             'wage': 5000.0,
             'employee_id': cls.employee.id,
         })
-        cls.contract_cdi = cls.env['hr.version'].create({
+        cls.contract_cdi = cls.employee.create_version({
             'date_version': Date.to_date('2021-11-01'),
             'contract_date_start': Date.to_date('2021-11-01'),
             'name': 'CDI Contract for Richard',

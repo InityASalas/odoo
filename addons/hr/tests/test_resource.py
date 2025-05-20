@@ -6,6 +6,7 @@ from pytz import utc, timezone
 
 from odoo.tools.intervals import Intervals
 from odoo.fields import Date
+from odoo.tools.date_utils import sum_intervals
 
 from .common import TestHrCommon
 

@@ -121,9 +121,6 @@ class PaymentTransaction(models.Model):
         if self.provider_code != 'xendit':
             return
 
-        if not self.token_id:  # TODO: should we wet tx in error?
-            raise ValidationError("Xendit: " + _("The transaction is not linked to a token."))
-
         self._xendit_create_charge(self.token_id.provider_ref)
 
     def _xendit_create_charge(self, token_ref):

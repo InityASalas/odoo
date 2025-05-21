@@ -54,9 +54,6 @@ class PaymentTransaction(models.Model):
         super()._send_payment_request()
         if self.provider_code != 'stripe':
             return
-        #
-        # if not self.token_id:
-        #     raise UserError("Stripe: " + _("The transaction is not linked to a token."))  # Todo test
 
         # Make the payment request to Stripe
         payment_intent = self._stripe_create_intent()

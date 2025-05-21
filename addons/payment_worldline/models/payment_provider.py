@@ -81,68 +81,6 @@ class PaymentProvider(models.Model):
         msg = ', '.join([error.get('message', '') for error in response.json().get('errors', [])])
         return msg
 
-    # def _worldline_make_request(self, *args, **kwargs):
-    #     try:
-    #         res = self._make_request(*args, **kwargs)
-    #     except ValidationError as e:
-    #         if e.response.status_code not in const.VALID_RESPONSE_CODES:
-    #             raise e
-    #         else:
-    #             return self._parse_response_content(e.response)
-    #     return res
-
-    # def _worldline_make_request(self, endpoint, payload=None, method='POST', idempotency_key=None):
-    #     """ Make a request to Worldline API at the specified endpoint.
-    #
-    #     Note: self.ensure_one()
-    #
-    #     :param str endpoint: The endpoint to be reached by the request.
-    #     :param dict payload: The payload of the request.
-    #     :param str method: The HTTP method of the request.
-    #     :param str idempotency_key: The idempotency key to pass in the request.
-    #     :return: The JSON-formatted content of the response.
-    #     :rtype: dict
-    #     :raise ValidationError: If an HTTP error occurs.
-    #     """
-    #     self.ensure_one()
-    #
-    #     api_url = self._worldline_get_api_url()
-    #     url = f'{api_url}/v2/{self.worldline_pspid}/{endpoint}'
-    #     content_type = 'application/json; charset=utf-8' if method == 'POST' else ''
-    #     dt = format_date_time(Datetime.now().timestamp())  # Datetime in locale-independent RFC1123
-    #     signature = self._worldline_calculate_signature(
-    #         method, endpoint, content_type, dt, idempotency_key=idempotency_key
-    #     )
-    #     authorization_header = f'GCS v1HMAC:{self.worldline_api_key}:{signature}'
-    #     headers = {
-    #         'Authorization': authorization_header,
-    #         'Date': dt,
-    #         'Content-Type': content_type,
-    #     }
-    #     if method == 'POST' and idempotency_key:
-    #         headers['X-GCS-Idempotence-Key'] = idempotency_key
-    #     try:
-    #         response = requests.request(method, url, json=payload, headers=headers, timeout=10)
-    #         try:
-    #             if response.status_code not in const.VALID_RESPONSE_CODES:
-    #                 response.raise_for_status()
-    #         except requests.exceptions.HTTPError:
-    #             _logger.exception(
-    #                 "Invalid API request at %s with data:\n%s", url, pprint.pformat(payload)
-    #             )
-    #             msg = ', '.join(
-    #                 [error.get('message', '') for error in response.json().get('errors', [])]
-    #             )
-    #             raise ValidationError(
-    #                 "Worldline: " + _("The communication with the API failed. Details: %s", msg)
-    #             )
-    #     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-    #         _logger.exception("Unable to reach endpoint at %s", url)
-    #         raise ValidationError(
-    #             "Worldline: " + _("Could not establish the connection to the API.")
-    #         )
-    #     return response.json()
-
     def _worldline_get_api_url(self):
         """ Return the URL of the API corresponding to the provider's state.
 

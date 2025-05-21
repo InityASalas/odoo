@@ -58,15 +58,15 @@ class MollieController(http.Controller):
         :return: None
         """
         tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_notification_data(
-            # Todo see if we need try/except
             'mollie', data
         )
-        try:
-            # Verify the notification data.
-            verified_data = tx_sudo.provider_id._make_request(
-                'GET', f'/payments/{tx_sudo.provider_reference}'
-            )
-        except ValidationError:
-            _logger.exception("Unable to handle the notification data")
-        else:
-            tx_sudo._handle_notification_data('mollie', verified_data)
+        if tx_sudo:
+            try:
+                # Verify the notification data.
+                verified_data = tx_sudo.provider_id._make_request(
+                    'GET', f'/payments/{tx_sudo.provider_reference}'
+                )
+            except ValidationError:
+                _logger.exception("Unable to handle the notification data")
+            else:
+                tx_sudo._handle_notification_data('mollie', verified_data)

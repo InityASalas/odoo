@@ -68,7 +68,13 @@ class PaymentTransaction(models.Model):
                 self.payment_method_code, self.payment_method_code
             ),
         }
-        payment_link_data = self.provider_id._flutterwave_make_request('payments', payload=payload)
+        try:
+            payment_link_data = self.provider_id._make_request(
+                'POST', 'payments', json_payload=payload
+            )
+        except ValidationError as error:
+            self._set_error(str(error))
+            return {}
 
         # Extract the payment link URL and embed it in the redirect form.
         rendering_values = {
@@ -88,10 +94,6 @@ class PaymentTransaction(models.Model):
         if self.provider_code != 'flutterwave':
             return
 
-        # Prepare the payment request to Flutterwave.
-        if not self.token_id:
-            raise UserError("Flutterwave: " + _("The transaction is not linked to a token."))
-
         first_name, last_name = payment_utils.split_partner_name(self.partner_name)
         base_url = self.provider_id.get_base_url()
         data = {
@@ -107,16 +109,15 @@ class PaymentTransaction(models.Model):
             'redirect_url': urls.url_join(base_url, FlutterwaveController._auth_return_url),
         }
 
-        # Make the payment request to Flutterwave.
-        response_content = self.provider_id._flutterwave_make_request(
-            'tokenized-charges', payload=data
-        )
+        try:
+            # Make the payment request to Flutterwave.
+            response_content = self.provider_id._make_request(
+                'POST', 'tokenized-charges', json_payload=data
+            )
+        except ValidationError as error:
+            self._set_error(str(error))
+            return
 
-        # Handle the payment request response.
-        _logger.info(
-            "payment request response for transaction with reference %s:\n%s",
-            self.reference, pprint.pformat(response_content)
-        )
         self._handle_notification_data('flutterwave', response_content['data'])
 
     def _get_reference_from_tx_notification_data(self, provider_code, notification_data):

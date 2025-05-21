@@ -641,7 +641,11 @@ class PaymentTransaction(models.Model):
         :rtype: recordset of `payment.transaction`
         """
         tx = self or self._get_tx_from_notification_data(provider_code, notification_data)
-        if tx:
+        if not tx:  # TODO explain in dev notes why logging instead of raising
+            _logger.warning(
+                "Could not find the transaction for notification data: %s.", notification_data
+            )
+        else:
             tx._compare_notification_data(notification_data)
             tx._process_notification_data(notification_data)
         return tx

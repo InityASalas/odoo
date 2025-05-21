@@ -71,9 +71,6 @@ class PaymentTransaction(models.Model):
         if self.provider_code != 'demo':
             return
 
-        if not self.token_id:
-            raise UserError("Demo: " + _("The transaction is not linked to a token."))
-
         simulated_state = self.token_id.demo_simulated_state
         notification_data = {'reference': self.reference, 'simulated_state': simulated_state}
         self._handle_notification_data('demo', notification_data)

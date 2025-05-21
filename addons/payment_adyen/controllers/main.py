@@ -136,7 +136,7 @@ class AdyenController(http.Controller):
         idempotency_key = payment_utils.generate_idempotency_key(
             tx_sudo, scope='payment_request_controller'
         )
-        # Todo: catch?
+
         response_content = provider_sudo._make_request(
             'POST', '/payments', json_payload=data, idempotency_key=idempotency_key
         )
@@ -193,7 +193,7 @@ class AdyenController(http.Controller):
         )
 
         # Overwrite the operation to force the flow to 'redirect'. This is necessary because even
-        # thought Adyen is implemented as a direct payment provider, it will redirect the user out
+        # though Adyen is implemented as a direct payment provider, it will redirect the user out
         # of Odoo in some cases. For instance, when a 3DS1 authentication is required, or for
         # special payment methods that are not handled by the drop-in (e.g. Sofort).
         tx_sudo.operation = 'online_redirect'
@@ -203,15 +203,16 @@ class AdyenController(http.Controller):
             "handling redirection from Adyen for transaction with reference %s with data:\n%s",
             tx_sudo.reference, pprint.pformat(data)
         )
-        self.adyen_payment_details(
-            tx_sudo.provider_id.id,
-            data['merchantReference'],
-            {
-                'details': {
-                    'redirectResult': data['redirectResult'],
+        if tx_sudo:
+            self.adyen_payment_details(
+                tx_sudo.provider_id.id,
+                data['merchantReference'],
+                {
+                    'details': {
+                        'redirectResult': data['redirectResult'],
+                    },
                 },
-            },
-        )
+            )
 
         # Redirect the user to the status page
         return request.redirect('/payment/status')

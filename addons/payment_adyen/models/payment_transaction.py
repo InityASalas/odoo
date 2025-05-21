@@ -1,10 +1,9 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import logging
-import pprint
 
 from odoo import _, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 from odoo.tools import format_amount
 
 from odoo.addons.payment import utils as payment_utils
@@ -56,11 +55,6 @@ class PaymentTransaction(models.Model):
         """
         super()._send_payment_request()
         if self.provider_code != 'adyen':
-            return
-
-        # Prepare the payment request to Adyen
-        if not self.token_id:
-            self._set_error("The transaction is not linked to a token.")
             return
 
         converted_amount = payment_utils.to_minor_currency_units(
@@ -182,11 +176,11 @@ class PaymentTransaction(models.Model):
             response_content = self.provider_id._make_request(
                 'POST',
                 '/payments/{}/captures',
-                endpoint_param=self.provider_reference,
                 json_payload=data,
+                endpoint_param=self.provider_reference,
             )
         except ValidationError as e:
-            self._set_error(str(e))
+            capture_child_tx._set_error(str(e))
             return capture_child_tx
 
         # Handle the capture request response
@@ -220,11 +214,11 @@ class PaymentTransaction(models.Model):
             response_content = self.provider_id._make_request(
                 'POST',
                 '/payments/{}/cancels',
-                endpoint_param=self.provider_reference,
                 json_payload=data,
+                endpoint_param=self.provider_reference,
             )
         except ValidationError as e:
-            self._set_error(str(e))
+            child_void_tx._set_error(str(e))
             return child_void_tx
 
         # Handle the void request response
@@ -341,14 +335,12 @@ class PaymentTransaction(models.Model):
         :param dict notification_data: The notification data sent by the provider
         :return: The newly created child transaction.
         :rtype: payment.transaction
-        :raise ValidationError: If inconsistent data were received.
         """
         provider_reference = notification_data.get('pspReference')
         amount = notification_data.get('amount', {}).get('value')
         if not provider_reference or amount is None:  # amount == 0 if success == False
-            raise ValidationError(
-                "Adyen: " + _("Received data for child transaction with missing transaction values")
-            )
+            _logger.warning("Received data for child transaction with missing transaction values.")
+            return self.env['payment.transaction']
 
         converted_amount = payment_utils.to_major_currency_units(
             amount,
@@ -372,7 +364,7 @@ class PaymentTransaction(models.Model):
 
         # If the transaction is pending, the amount and currency aren't available yet, so we skip
         # the comparison.
-        if notification_data.get('resultCode') in const.RESULT_CODES_MAPPING['pending']:  # Todo add refusal code and check others
+        if notification_data.get('resultCode') not in const.RESULT_CODES_MAPPING['done']:
             return
 
         amount_data = notification_data.get('amount', {})
@@ -427,7 +419,7 @@ class PaymentTransaction(models.Model):
         payment_state = notification_data.get('resultCode')
         refusal_reason = notification_data.get('refusalReason') or notification_data.get('reason')
         if not payment_state:
-            raise ValidationError("Adyen: " + _("Received data with missing payment state."))
+            self._set_error(_("Received data with missing payment state."))
         if payment_state in const.RESULT_CODES_MAPPING['pending']:
             self._set_pending()
         elif payment_state in const.RESULT_CODES_MAPPING['done']:

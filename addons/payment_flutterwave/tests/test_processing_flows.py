@@ -23,7 +23,7 @@ class TestProcessingFlows(FlutterwaveCommon, PaymentHttpCommon):
         url = self._build_url(FlutterwaveController._return_url)
         with patch(
             'odoo.addons.payment_flutterwave.models.payment_provider.PaymentProvider'
-            '._flutterwave_make_request', return_value=self.verification_data
+            '._make_request', return_value=self.verification_data
         ), patch(
             'odoo.addons.payment.models.payment_transaction.PaymentTransaction'
             '._handle_notification_data'

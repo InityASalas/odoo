@@ -35,13 +35,17 @@ class PaymentTransaction(models.Model):
 
         # Initiate the payment and retrieve the payment link data.
         payload = self._mercado_pago_prepare_preference_request_payload()
-        _logger.info(
-            "Sending '/checkout/preferences' request for link creation:\n%s",
-            pprint.pformat(payload),
-        )
-        api_url = self.provider_id._mercado_pago_make_request(
-            '/checkout/preferences', payload=payload
-        )['init_point' if self.provider_id.state == 'enabled' else 'sandbox_init_point']
+        try:
+            response_content = self.provider_id._make_request(
+                'POST', '/checkout/preferences', json_payload=payload
+            )
+        except ValidationError as error:
+            self._set_error(str(error))
+            return {}
+
+        api_url = response_content[
+            'init_point' if self.provider_id.state == 'enabled' else 'sandbox_init_point'
+        ]
 
         # Extract the payment link URL and params and embed them in the redirect form.
         parsed_url = urls.url_parse(api_url)
@@ -141,7 +145,8 @@ class PaymentTransaction(models.Model):
         # Update the provider reference.
         payment_id = notification_data.get('id')
         if not payment_id:
-            raise ValidationError("Mercado Pago: " + _("Received data with missing payment id."))
+            self._set_error(_("Received data with missing payment id."))
+            return
         self.provider_reference = payment_id
 
         # Update the payment method.
@@ -162,7 +167,8 @@ class PaymentTransaction(models.Model):
         # Update the payment state.
         payment_status = notification_data.get('status')
         if not payment_status:
-            raise ValidationError("Mercado Pago: " + _("Received data with missing status."))
+            self._set_error(_("Received data with missing status"))
+            return
 
         if payment_status in const.TRANSACTION_STATUS_MAPPING['pending']:
             self._set_pending()

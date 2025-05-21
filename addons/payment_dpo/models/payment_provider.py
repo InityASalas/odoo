@@ -45,36 +45,6 @@ class PaymentProvider(models.Model):
 
         return transaction_data
 
-    # def _dpo_make_request(self, payload=None):
-    #     """ Make a request to DPO API to create or verify the Transaction Token.
-    #
-    #     Note: self.ensure_one()
-    #
-    #     :param dict payload: The payload of the request.
-    #     :return: The JSON-formatted content of the response.
-    #     :rtype: dict
-    #     :raise ValidationError: If an HTTP error occurs.
-    #     """
-    #     self.ensure_one()
-    #     api_url = 'https://secure.3gdirectpay.com/API/v6/'
-    #     headers = {'Content-Type': 'application/xml; charset=utf-8'}
-    #     try:
-    #         response = requests.post(url=api_url, data=payload, headers=headers, timeout=10)
-    #         try:
-    #             response.raise_for_status()
-    #         except requests.exceptions.HTTPError:
-    #             _logger.exception(
-    #                 "Invalid API request at %s with data:\n%s", api_url, pprint.pformat(payload)
-    #             )
-    #             raise ValidationError("DPO: " + _("The communication with the API failed."))
-    #     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-    #         _logger.exception("Unable to reach %s", api_url)
-    #         raise ValidationError("DPO: " + _("The communication with the API failed."))
-    #     root = ET.fromstring(response.content.decode('utf-8'))
-    #     transaction_data = {element.tag: element.text for element in root}
-    #
-    #     return transaction_data
-
     def _get_default_payment_method_codes(self):
         """ Override of `payment` to return the default payment method codes. """
         default_codes = super()._get_default_payment_method_codes()

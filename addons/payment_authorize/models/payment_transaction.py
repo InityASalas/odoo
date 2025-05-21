@@ -64,10 +64,6 @@ class PaymentTransaction(models.Model):
         if self.provider_code != 'authorize':
             return
 
-        if not self.token_id.authorize_profile:
-            self._set_error("The transaction is not linked to a token.")
-            return
-
         authorize_API = AuthorizeAPI(self.provider_id)
         if self.provider_id.capture_manually:
             res_content = authorize_API.authorize(self, token=self.token_id)

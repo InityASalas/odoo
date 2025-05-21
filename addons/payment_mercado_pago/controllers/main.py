@@ -52,12 +52,9 @@ class MercadoPagoController(http.Controller):
         # other types of events.
         if data.get('action') in ('payment.created', 'payment.updated'):
             # Handle the notification data.
-            try:
-                self._verify_and_handle_notification_data(
-                    {'external_reference': reference, 'payment_id': data.get('data', {}).get('id')}
-                )  # Use 'external_reference' as the reference key like in the redirect data.
-            except ValidationError:  # Acknowledge the notification to avoid getting spammed.
-                _logger.exception("Unable to handle the notification data; skipping to acknowledge")
+            self._verify_and_handle_notification_data(
+                {'external_reference': reference, 'payment_id': data.get('data', {}).get('id')}
+            )  # Use 'external_reference' as the reference key like in the redirect data.
         return ''  # Acknowledge the notification.
 
     @staticmethod
@@ -70,8 +67,9 @@ class MercadoPagoController(http.Controller):
         tx_sudo = request.env['payment.transaction'].sudo()._get_tx_from_notification_data(
             'mercado_pago', data
         )
-        # Verify the notification data.
-        verified_data = tx_sudo.provider_id._mercado_pago_make_request(
-            f'/v1/payments/{data.get("payment_id")}', method='GET'
-        )
-        tx_sudo._handle_notification_data('mercado_pago', verified_data)
+        if tx_sudo:
+            # Verify the notification data.
+            verified_data = tx_sudo.provider_id._mercado_pago_make_request(
+                f'/v1/payments/{data.get("payment_id")}', method='GET'
+            )
+            tx_sudo._handle_notification_data('mercado_pago', verified_data)

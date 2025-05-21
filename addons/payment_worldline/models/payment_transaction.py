@@ -168,17 +168,10 @@ class PaymentTransaction(models.Model):
                     },
                 }
 
-        _logger.info(
-            "Sending '/hostedcheckouts' request for transaction with reference %s:\n%s",
-            self.reference, pprint.pformat(payload)
-        )
-        checkout_session_data = self.provider_id._worldline_make_request(
+        checkout_session_data = self.provider_id._make_request(
             'POST', 'hostedcheckouts', json_payload=payload
         )
-        _logger.info(
-            "Response of '/hostedcheckouts' request for transaction with reference %s:\n%s",
-            self.reference, pprint.pformat(checkout_session_data)
-        )
+
         return checkout_session_data
 
     def _send_payment_request(self):
@@ -194,9 +187,6 @@ class PaymentTransaction(models.Model):
             return
 
         # Prepare the payment request to Worldline.
-        if not self.token_id:
-            raise UserError("Worldline: " + _("The transaction is not linked to a token."))
-
         payload = {
             'cardPaymentMethodSpecificInput': {
                 'authorizationMode': 'SALE',  # Force the capture.
@@ -215,22 +205,20 @@ class PaymentTransaction(models.Model):
             },
         }
 
-        # Make the payment request to Worldline.
-        response_content = self.provider_id._worldline_make_request(
-            'POST',
-            'payments',
-            json_payload=payload,
-            idempotency_key=payment_utils.generate_idempotency_key(
-                self, scope='payment_request_token'
+        try:
+            # Make the payment request to Worldline.
+            response_content = self.provider_id._make_request(
+                'POST',
+                'payments',
+                json_payload=payload,
+                idempotency_key=payment_utils.generate_idempotency_key(
+                    self, scope='payment_request_token'
+                )
             )
-        )
-
-        # Handle the payment request response.
-        _logger.info(
-            "Response of /payment request for transaction with reference %s:\n%s",
-            self.reference, pprint.pformat(response_content)
-        )
-        self._handle_notification_data('worldline', response_content)
+        except ValidationError as e:
+            self._set_error(str(e))
+        else:
+            self._handle_notification_data('worldline', response_content)
 
     def _get_reference_from_tx_notification_data(self, provider_code, notification_data):
         if provider_code != 'worldline':

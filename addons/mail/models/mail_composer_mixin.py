@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+import logging
 
 from odoo import api, fields, models, tools, _
+
+_logger = logging.getLogger(__name__)
 
 
 class MailComposerMixin(models.AbstractModel):
@@ -198,3 +201,56 @@ class MailComposerMixin(models.AbstractModel):
 
         record = self.sudo() if call_sudo else self
         return super(MailComposerMixin, record)._render_field(field, *args, **kwargs)
+
+    def composer_send_mail(self, records, author_id=None, email_from=None, subject=None, attachment_ids=[], compute_lang=False, **kwargs):
+        total_mail = []
+        subject_by_res_ids = self._render_field(
+            'subject', records.ids, compute_lang=compute_lang)
+        body = self._render_field(
+            'body', records.ids, compute_lang=compute_lang)
+        lang = self._render_lang(records.ids)
+        for rec in records:
+            recipient_data = self._get_recipient_data(rec)
+            record_body = body[rec.id]
+            mail_values = {
+                'attachment_ids': [(4, id) for id in attachment_ids],
+                'author_id': author_id or self.env.user.partner_id.id,
+                'auto_delete': self.template_id.auto_delete if self.template_id else True,
+                'body_html': record_body,
+                'email_from': email_from or self.env.user.email_formatted,
+                'model': None,
+                'res_id': None,
+                'subject': subject or subject_by_res_ids[rec.id],
+                **recipient_data["mail_values"],
+            }
+            email_layout_xmlid = self.env.context.get(
+                'default_email_layout_xmlid', 'mail.mail_notification_layout_non_threaded')
+            if email_layout_xmlid:
+                template_ctx = {
+                    "message": self.env["mail.message"].sudo().new({"body": mail_values["body_html"], "record_name": recipient_data["template_context"].get('record_name')}),
+                    "record": rec,
+                    "show_button": True,
+                    "company": self.env.company,
+                    **recipient_data["template_context"],
+                }
+                record_body = self.env['ir.qweb']._render(
+                    email_layout_xmlid, template_ctx, engine='ir.qweb', minimal_qcontext=True, raise_if_not_found=False, lang=compute_lang and lang[rec.id])
+                if record_body:
+                    mail_values['body_html'] = self.env['mail.render.mixin']._replace_local_links(
+                        record_body)
+                else:
+                    _logger.warning(
+                        'QWeb template %s not found when sending slide channel mails. Sending without layout.', email_layout_xmlid)
+            total_mail.append(mail_values)
+
+        new_mails = self.env['mail.mail'].sudo().create(total_mail)
+        if len(new_mails) < 20:
+            new_mails.send()
+        return new_mails
+
+    def _get_recipient_data(self, record):
+        self.ensure_one()
+        return {
+            "template_context": {},
+            "mail_values": {},
+        }

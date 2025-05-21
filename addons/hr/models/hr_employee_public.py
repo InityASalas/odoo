@@ -1,9 +1,11 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import timedelta
+from pytz import timezone, UTC
 
 from odoo import api, fields, models, tools
 from odoo.addons.base.models.res_partner import _tz_get
+from odoo.tools import format_time
 
 
 class HrEmployeePublic(models.Model):
@@ -44,6 +46,9 @@ class HrEmployeePublic(models.Model):
         ('presence_archive', 'Archived'),
         ('presence_undetermined', 'Undetermined')], compute='_compute_presence_icon')
     show_hr_icon_display = fields.Boolean(compute='_compute_presence_icon')
+    last_activity = fields.Date(compute="_compute_last_activity")
+    last_activity_time = fields.Char(compute="_compute_last_activity")
+    resource_calendar_id = fields.Many2one('resource.calendar', readonly=True)
 
     # Manager-only fields
     is_manager = fields.Boolean(compute='_compute_is_manager')
@@ -78,6 +83,22 @@ class HrEmployeePublic(models.Model):
             employee = employee_per_id[public_employee.id]
             for field_name in field_names:
                 public_employee[field_name] = employee[field_name]
+
+    @api.depends('user_id')
+    def _compute_last_activity(self):
+        for employee in self:
+            tz = employee.tz
+            # sudo: res.users - can access presence of accessible user
+            if last_presence := employee.user_id.sudo().presence_ids.last_presence:
+                last_activity_datetime = last_presence.replace(tzinfo=UTC).astimezone(timezone(tz)).replace(tzinfo=None)
+                employee.last_activity = last_activity_datetime.date()
+                if employee.last_activity == fields.Date.today():
+                    employee.last_activity_time = format_time(self.env, last_presence, time_format='short')
+                else:
+                    employee.last_activity_time = False
+            else:
+                employee.last_activity = False
+                employee.last_activity_time = False
 
     @api.depends_context('uid')
     @api.depends('parent_id')

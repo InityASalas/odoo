@@ -35,9 +35,11 @@ class HrVersion(models.Model):
     display_name = fields.Char(compute='_compute_display_name')
     active = fields.Boolean(default=True)
 
-    date_version = fields.Date(required=True, default=fields.Date.today, tracking=True)
-    last_modified_uid = fields.Many2one('res.users', string='Last Modified by', default=lambda self: self.env.uid, required=True)
-    last_modified_date = fields.Datetime(string='Last Modified on', default=fields.Datetime.now, required=True)
+    date_version = fields.Date(required=True, default=fields.Date.today, tracking=True, groups="hr.group_hr_user")
+    last_modified_uid = fields.Many2one('res.users', string='Last Modified by',
+                                        default=lambda self: self.env.uid, required=True, groups="hr.group_hr_user")
+    last_modified_date = fields.Datetime(string='Last Modified on', default=fields.Datetime.now, required=True,
+                                         groups="hr.group_hr_user")
 
     # Personal Information
     country_id = fields.Many2one(
@@ -93,7 +95,7 @@ class HrVersion(models.Model):
     member_of_department = fields.Boolean("Member of department", compute='_compute_part_of_department', search='_search_part_of_department',
         help="Whether the employee is a member of the active user's department or one of it's child department.")
     job_id = fields.Many2one('hr.job', check_company=True, tracking=True)
-    job_title = fields.Char(related='job_id.name', readonly=False, string="Job Title")
+    job_title = fields.Char(related='job_id.name', readonly=False, string="Job Title", groups="hr.group_hr_user")
     parent_id = fields.Many2one('hr.employee', 'Manager', compute="_compute_parent_id",
                                 store=True, readonly=False, tracking=True,
                                 domain="['|', ('company_id', '=', False), ('company_id', 'in', allowed_company_ids)]")
@@ -116,7 +118,7 @@ class HrVersion(models.Model):
     work_location_type = fields.Selection([
         ("home", "Home"),
         ("office", "Office"),
-        ("other", "Other")], compute="_compute_work_location_name_type")
+        ("other", "Other")], compute="_compute_work_location_name_type", groups="hr.group_hr_user")
 
     departure_reason_id = fields.Many2one("hr.departure.reason", string="Departure Reason",
                                           groups="hr.group_hr_user", copy=False, ondelete='restrict', tracking=True)
@@ -124,38 +126,46 @@ class HrVersion(models.Model):
     departure_date = fields.Date(string="Departure Date", groups="hr.group_hr_user", copy=False, tracking=True)
 
     resource_calendar_id = fields.Many2one('resource.calendar', check_company=True, string="Working Hours", tracking=True)
-    is_flexible = fields.Boolean(compute='_compute_is_flexible', store=True)
-    is_fully_flexible = fields.Boolean(compute='_compute_is_flexible', store=True)
+    is_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
+    is_fully_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
     tz = fields.Selection(
         _tz_get, string='Timezone', required=True,
         default=lambda self: self._context.get('tz') or self.env.user.tz or self.env.ref('base.user_admin').tz or 'UTC',
         help="This field is used in order to define in which timezone the employee will work.")
 
     # Contract Information
-    contract_date_start = fields.Date('Contract Start Date', tracking=True)
+    contract_date_start = fields.Date('Contract Start Date', tracking=True, groups="hr.group_hr_user")
     contract_date_end = fields.Date(
-        'Contract End Date', tracking=True, help="End date of the contract (if it's a fixed-term contract).")
-    trial_date_end = fields.Date('End of Trial Period', help="End date of the trial period (if there is one).")
-    date_start = fields.Date(compute='_compute_dates')
-    date_end = fields.Date(compute='_compute_dates')
-    is_current = fields.Boolean(compute='_compute_state')
-    is_past = fields.Boolean(compute='_compute_state')
-    is_future = fields.Boolean(compute='_compute_state')
-    is_in_contract = fields.Boolean(compute='_compute_state')
+        'Contract End Date', tracking=True, help="End date of the contract (if it's a fixed-term contract).",
+        groups="hr.group_hr_user")
+    trial_date_end = fields.Date('End of Trial Period', help="End date of the trial period (if there is one).",
+                                 groups="hr.group_hr_user")
+    date_start = fields.Date(compute='_compute_dates', groups="hr.group_hr_user")
+    date_end = fields.Date(compute='_compute_dates', groups="hr.group_hr_user")
+    is_current = fields.Boolean(compute='_compute_state', groups="hr.group_hr_user")
+    is_past = fields.Boolean(compute='_compute_state', groups="hr.group_hr_user")
+    is_future = fields.Boolean(compute='_compute_state', groups="hr.group_hr_user")
+    is_in_contract = fields.Boolean(compute='_compute_state', groups="hr.group_hr_user")
 
     contract_template_id = fields.Many2one(
-        'hr.version', string="Contract Template",
+        'hr.version', string="Contract Template", groups="hr.group_hr_user",
         domain="[('company_id', '=', company_id), ('employee_id', '=', False)]",
         help="Select a contract template to auto-fill the contract form with predefined values. You can still edit the fields as needed after applying the template.")
-    structure_type_id = fields.Many2one('hr.payroll.structure.type', string="Salary Structure Type", compute="_compute_structure_type_id", readonly=False, store=True, tracking=True)
-    active_employee = fields.Boolean(related="employee_id.active", string="Active Employee")
+    structure_type_id = fields.Many2one('hr.payroll.structure.type', string="Salary Structure Type",
+                                        compute="_compute_structure_type_id", readonly=False, store=True, tracking=True,
+                                        groups="hr.group_hr_user")
+    active_employee = fields.Boolean(related="employee_id.active", string="Active Employee", groups="hr.group_hr_user")
     currency_id = fields.Many2one(string="Currency", related='company_id.currency_id', readonly=True)
-    wage = fields.Monetary('Wage', tracking=True, help="Employee's monthly gross wage.", aggregator="avg")
-    contract_wage = fields.Monetary('Contract Wage', compute='_compute_contract_wage')
-    notes = fields.Html('Notes')
-    company_country_id = fields.Many2one('res.country', string="Company country", related='company_id.country_id', readonly=True)
-    country_code = fields.Char(related='company_country_id.code', depends=['company_country_id'], readonly=True)
-    contract_type_id = fields.Many2one('hr.contract.type', "Contract Type", tracking=True)
+    wage = fields.Monetary('Wage', tracking=True, help="Employee's monthly gross wage.", aggregator="avg",
+                           groups="hr.group_hr_user")
+    contract_wage = fields.Monetary('Contract Wage', compute='_compute_contract_wage', groups="hr.group_hr_user")
+    notes = fields.Html('Notes', groups="hr.group_hr_user")
+    company_country_id = fields.Many2one('res.country', string="Company country",
+                                         related='company_id.country_id', readonly=True)
+    country_code = fields.Char(related='company_country_id.code', depends=['company_country_id'], readonly=True,
+                               groups="hr.group_hr_user")
+    contract_type_id = fields.Many2one('hr.contract.type', "Contract Type", tracking=True,
+                                       groups="hr.group_hr_user")
 
     def _get_hr_responsible_domain(self):
         return "[('share', '=', False), ('company_ids', 'in', company_id), ('all_group_ids', 'in', %s)]" % self.env.ref('hr.group_hr_user').id
@@ -163,7 +173,7 @@ class HrVersion(models.Model):
     hr_responsible_id = fields.Many2one(
         'res.users', 'HR Responsible', tracking=True,
         help='Person responsible for validating the employee\'s contracts.', domain=_get_hr_responsible_domain,
-        default=lambda self: self.env.user, required=True)
+        default=lambda self: self.env.user, required=True, groups="hr.group_hr_user")
 
     @api.constrains('contract_date_start', 'contract_date_end')
     def _check_dates(self):

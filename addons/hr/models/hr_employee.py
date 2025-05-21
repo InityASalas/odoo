@@ -44,14 +44,15 @@ class HrEmployee(models.Model):
         ondelete='cascade',
         required=True,
         store=False,
-        compute_sudo=True)
+        compute_sudo=True,
+        groups="hr.group_hr_user")
     version_ids = fields.One2many(
         'hr.version',
         'employee_id',
         string='Employee Versions',
         groups="hr.group_hr_user")
-    versions_count = fields.Integer(compute='_compute_versions_count')
-    is_last_version = fields.Boolean(compute='_compute_is_last_version')
+    versions_count = fields.Integer(compute='_compute_versions_count', groups="hr.group_hr_user")
+    is_last_version = fields.Boolean(compute='_compute_is_last_version', groups="hr.group_hr_user")
 
     @api.model
     def _lang_get(self):
@@ -62,7 +63,7 @@ class HrEmployee(models.Model):
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
     resource_id = fields.Many2one('resource.resource')
     # required because the mixin already creates it so it is not related to the version_id
-    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False, store=False)
+    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False, store=False, groups="hr.group_hr_user")
     user_id = fields.Many2one(
         'res.users', 'User',
         related='resource_id.user_id',
@@ -73,10 +74,10 @@ class HrEmployee(models.Model):
         index='btree_not_null',
         ondelete='restrict')
     user_partner_id = fields.Many2one(related="user_id.partner_id", related_sudo=False, string="User's partner")
-    share = fields.Boolean(related="user_id.share")
-    phone = fields.Char(related="user_id.phone")
-    im_status = fields.Char(related="user_id.im_status")
-    email = fields.Char(related="user_id.email")
+    share = fields.Boolean(related="user_id.share", groups="hr.group_hr_user")
+    phone = fields.Char(related="user_id.phone", groups="hr.group_hr_user")
+    im_status = fields.Char(related="user_id.im_status", groups="hr.group_hr_user")
+    email = fields.Char(related="user_id.email", groups="hr.group_hr_user")
     hr_presence_state = fields.Selection([
         ('present', 'Present'),
         ('absent', 'Absent'),
@@ -435,14 +436,16 @@ class HrEmployee(models.Model):
 
     @api.model
     def _get_employee_working_now(self):
+        """ Sudo needed to get resource_calendar_id as its normally only accessible by hr_users on version model
+        (accessible on employee by inherits)."""
         working_now = []
         # We loop over all the employee tz and the resource calendar_id to detect working hours in batch.
         all_employee_tz = set(self.mapped('tz'))
         for tz in all_employee_tz:
             employee_ids = self.filtered(lambda e: e.tz == tz)
-            resource_calendar_ids = employee_ids.mapped('resource_calendar_id')
+            resource_calendar_ids = employee_ids.sudo().mapped('resource_calendar_id')
             for calendar_id in resource_calendar_ids:
-                res_employee_ids = employee_ids.filtered(lambda e: e.resource_calendar_id.id == calendar_id.id)
+                res_employee_ids = employee_ids.sudo().filtered(lambda e: e.resource_calendar_id.id == calendar_id.id)
                 start_dt = fields.Datetime.now()
                 stop_dt = start_dt + timedelta(hours=1)
                 from_datetime = utc.localize(start_dt).astimezone(timezone(tz or 'UTC'))

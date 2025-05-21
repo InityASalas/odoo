@@ -73,7 +73,7 @@ class TestContractCalendars(TestHrCommon):
 
         self.assertEqual(leave1.calendar_id, self.calendar_richard, "It should stay in Richard's calendar")
         self.assertEqual(leave3.calendar_id, self.calendar_richard, "Global leave should stay in original calendar")
-        self.assertEqual(leave2.calendar_id, self.calendar_35h, "It should be transfered to the other calendar")
+        self.assertEqual(leave2.calendar_id, self.calendar_35h, "It should be transferred to the other calendar")
 
         # Transfer global leaves
         self.employee.resource_id.transfer_leaves_to(self.calendar_35h, resources=None, from_date=Date.to_date('2015-11-21'))

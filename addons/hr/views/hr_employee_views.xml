@@ -94,7 +94,7 @@
                 <form string="Employee" js_class="hr_employee_form">
                     <header groups="hr.group_hr_user">
                         <button string="Create User" name="action_create_user" type="object"
-                                class="btn btn-primary" invisible="user_id" groups="hr.group_hr_contract"
+                                class="btn btn-primary" invisible="user_id" groups="hr.group_hr_user"
                                 context="{'default_create_employee': True}"/>
                         <button name="%(plan_wizard_action)d" string="Launch Plan" type="action"
                             groups="hr.group_hr_user" invisible="not active or not id" context="{'sort_by_responsible': True}"/>
@@ -106,7 +106,7 @@
                                 class="oe_stat_button"
                                 icon="fa-address-book"
                                 type="object"
-                                groups="hr.group_hr_contract">
+                                groups="hr.group_hr_user">
                                 <div class="o_stat_info">
                                     Versions
                                     <span class="o_stat_value">
@@ -253,7 +253,7 @@
                             <page name="contract_information" string="Contract Information">
                                 <div id="o_work_employee_container" class="d-lg-flex"> <!-- These two div are used to position org_chart -->
                                     <div id="o_work_employee_main" class="flex-grow-1">
-                                        <group name="contract" string="Contract Overview" groups="hr.group_hr_contract">
+                                        <group name="contract" string="Contract Overview" groups="hr.group_hr_user">
                                             <field name="contract_template_id"
                                                    domain="[('company_id', '=', company_id), ('employee_id', '=', False)]"
                                                    options="{'no_create': True, 'no_create_edit': True}"
@@ -302,7 +302,7 @@
                                     </div>
                                 </div>
                             </page>
-                            <page name="salary_information" string="Salary Information" groups="hr.group_hr_contract">
+                            <page name="salary_information" string="Salary Information" groups="hr.group_hr_user">
                                 <group name="salary">
                                     <group name="wage" string="Salary">
                                         <field name="currency_id" invisible="1"/>

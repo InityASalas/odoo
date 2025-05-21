@@ -23,8 +23,8 @@ class ResourceResource(models.Model):
     show_hr_icon_display = fields.Boolean(related='employee_id.show_hr_icon_display')
     hr_icon_display = fields.Selection(related='employee_id.hr_icon_display')
 
-    # versions_count = fields.Integer("# Versions using it", compute='_compute_versions_count', groups="hr.group_hr_contract")
-    # version_ids = fields.One2many('hr.version', 'resource_calendar_id', groups="hr.group_hr_contract")
+    # versions_count = fields.Integer("# Versions using it", compute='_compute_versions_count', groups="hr.group_hr_user")
+    # version_ids = fields.One2many('hr.version', 'resource_calendar_id', groups="hr.group_hr_user")
 
     def transfer_leaves_to(self, other_calendar, resources=None, from_date=None):
         """

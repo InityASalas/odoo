@@ -131,7 +131,6 @@ class TestL10nEsEdiVerifactuXml(TestL10nEsEdiVerifactuCommon):
             'date': '2019-01-30',
             'partner_id': self.partner_b.id,  # Spanish customer
             'invoice_line_ids': [
-                Command.create({'product_id': self.product_1.id, 'price_unit': 1000.0, 'tax_ids': [Command.set(self.tax21_services.ids)]}),
                 Command.create({'product_id': self.product_1.id, 'price_unit': 100.0, 'tax_ids': [Command.set((self.tax10_goods + self.tax1p4_services_recargo).ids)]}),
                 Command.create({'product_id': self.product_1.id, 'price_unit': 200.0, 'tax_ids': [Command.set((self.tax21_services + self.tax5p2_services_recargo).ids)]}),
             ],

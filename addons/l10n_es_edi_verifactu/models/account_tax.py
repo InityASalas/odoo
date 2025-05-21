@@ -27,13 +27,9 @@ class AccountTax(models.Model):
             'ipsi': IPSI,
         }
 
-    def _l10n_es_edi_verifactu_get_tax_details_functions(self, company, simplified_invoice=False):
+    def _l10n_es_edi_verifactu_get_tax_details_functions(self, company):
         def full_filter_invl_to_apply(line):
             return any(t != 'ignore' for t in line.tax_ids.flatten_taxes_hierarchy().mapped('l10n_es_type'))
-
-        oss_tag = self.env.ref('l10n_eu_oss.tag_oss', raise_if_not_found=False)
-        company_in_simplified_regime = company.l10n_es_edi_verifactu_special_vat_regime == 'simplified'
-        verifactu_tax_type_map = self._l10n_es_edi_verifactu_get_tax_types_map()
 
         def grouping_key_generator(base_line, tax_values):
             tax = tax_values['tax_repartition_line'].tax_id
@@ -46,30 +42,10 @@ class AccountTax(models.Model):
             if tax.l10n_es_type in self.env['account.tax']._l10n_es_get_sujeto_tax_types():
                 with_recargo = base_line['taxes'].filtered(lambda t: t.l10n_es_type == 'recargo')
 
-            verifactu_tax_type = verifactu_tax_type_map.get(tax.l10n_es_type)
-            regimen_key = None
-            VAT = verifactu_tax_type == '01'
-            IGIC = verifactu_tax_type == '03'
-            if VAT or IGIC:
-                is_oss = oss_tag and oss_tag in tax_values['tax_repartition_line'].tag_ids
-                export_exempts = l10n_es_exempt_reason == 'E2'
-                if VAT and company_in_simplified_regime and simplified_invoice:
-                    regimen_key = '20'
-                if VAT and with_recargo:
-                    regimen_key = '18'
-                elif VAT and is_oss:
-                    regimen_key = '17'
-                elif export_exempts:
-                    regimen_key = '02'
-                else:
-                    regimen_key = '01'
-
             grouping_key = {
                 'amount': tax.amount,
-                'ClaveRegimen': regimen_key,
                 'with_recargo': with_recargo,
                 'l10n_es_bien_inversion': tax.l10n_es_bien_inversion,
-                'l10n_es_edi_verifactu_tax_type': verifactu_tax_type,
                 'l10n_es_exempt_reason': l10n_es_exempt_reason,
                 'l10n_es_type': tax.l10n_es_type,
             }

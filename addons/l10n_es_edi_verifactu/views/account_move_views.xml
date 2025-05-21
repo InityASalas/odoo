@@ -99,6 +99,7 @@
                             <field name="l10n_es_edi_verifactu_error_level" groups="base.group_no_one"/>
                             <field name="l10n_es_edi_verifactu_required" groups="base.group_no_one"/>
                             <field name="l10n_es_edi_verifactu_required" invisible="1"/>
+                            <field name="l10n_es_edi_verifactu_operation_type"/>
                             <field name="l10n_es_edi_verifactu_state"
                                    invisible="not l10n_es_edi_verifactu_required and not l10n_es_edi_verifactu_state"/>
                         </group>

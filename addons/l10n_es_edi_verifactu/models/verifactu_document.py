@@ -183,6 +183,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
         if move_type not in ['out_invoice', 'out_refund']:
             errors.append(_("The record has to be an invoice or a credit note."))
 
+        verifactu_tax_type = vals['verifactu_tax_type']
         tax_details = vals['tax_details']
         sujeto_tax_types = self.env['account.tax']._l10n_es_get_sujeto_tax_types()
         ignored_tax_types = ['ignore', 'retencion']
@@ -190,7 +191,6 @@ class L10nEsEdiVerifactuDocument(models.Model):
         tax_type_description = self.env['account.tax']._fields['l10n_es_type'].get_description(self.env)
         for tax_detail in tax_details['tax_details'].values():
             tax_type = tax_detail['l10n_es_type']
-            verifactu_tax_type = tax_detail['l10n_es_edi_verifactu_tax_type']
             if tax_type not in supported_tax_types:
                 # tax_type in ('no_deducible', 'dua')
                 # The remaining tax types are purchase taxes (for vendor bills).
@@ -841,6 +841,10 @@ class L10nEsEdiVerifactuDocument(models.Model):
     def _render_vals_monetary_amounts(self, vals):
         if vals['cancellation']:
             return {}
+        # We only support a single verifactu tax type / clave regimen per record.
+        # For moves these values are selected via `l10n_es_edi_verifactu_operation_type`.
+        verifactu_tax_type = vals['verifactu_tax_type']
+        clave_regimen = vals['clave_regimen']
 
         sujeto_tax_types = self.env['account.tax']._l10n_es_get_sujeto_tax_types()
 
@@ -878,8 +882,6 @@ class L10nEsEdiVerifactuDocument(models.Model):
             base_amount = sign * tax_detail['base_amount']
             tax_amount = math.copysign(tax_detail['tax_amount'], base_amount)
 
-            verifactu_tax_type = tax_detail['l10n_es_edi_verifactu_tax_type']
-            clave_regimen = tax_detail['ClaveRegimen']
             if clave_regimen == '06' or verifactu_tax_type in ('02', '05'):
                 base_amount_no_sujeto = 0
                 base_amount_sujeto = base_amount

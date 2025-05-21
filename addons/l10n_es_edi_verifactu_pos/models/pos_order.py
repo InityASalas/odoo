@@ -114,6 +114,8 @@ class PosOrder(models.Model):
             return {'errors': errors}
 
         company = self.company_id
+        company_in_simplified_regime = company.l10n_es_edi_verifactu_special_vat_regime == 'simplified'
+
         documents = self.l10n_es_edi_verifactu_document_ids
         document_type = 'cancellation' if cancellation else 'submission'
         # Just checking whether the last document was rejected is enough; we do not allow to submit the same record
@@ -136,9 +138,12 @@ class PosOrder(models.Model):
             'partner': self.partner_id.commercial_partner_id,
             'refunded_document': refunded_order.l10n_es_edi_verifactu_document_ids._get_last('submission'),
             'documents': self.l10n_es_edi_verifactu_document_ids,
+            # TODO:
+            'verifactu_tax_type': '01',
+            'clave_regimen': '20' if company_in_simplified_regime else '01',
         }
 
-        tax_details_functions = self.env['account.tax']._l10n_es_edi_verifactu_get_tax_details_functions(company, simplified_invoice=True)
+        tax_details_functions = self.env['account.tax']._l10n_es_edi_verifactu_get_tax_details_functions(company)
 
         base_lines = self.lines.filtered(tax_details_functions['full_filter_invl_to_apply'])._prepare_tax_base_line_values()
         taxes_values_to_aggregate = []

@@ -211,6 +211,8 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
                     !Within.options.some((o) => o[0] === value[1]),
             };
         }
+        case "virtual_in":
+        case "virtual_not_in":
         case "in":
         case "not in": {
             switch (fieldDef.type) {
@@ -389,8 +391,8 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
             } else if (fieldDef.name === "__time") {
                 return {
                     component: TimePicker,
-                    extractProps: ({ value, update }) => ({
-                        value: parseTime(value, true),
+                    extractProps: ({ value, update, displayPlaceholder }) => ({
+                        value: params.startEmpty ? false : parseTime(value, true),
                         onChange: (time) =>
                             update(
                                 DateTime.fromObject(
@@ -398,6 +400,7 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
                                 ).toFormat("HH:mm:ss")
                             ),
                         showSeconds: true,
+                        placeholder: displayPlaceholder ? undefined : "",
                     }),
                     isSupported: (value) =>
                         typeof value === "string" && Boolean(parseTime(value, true)),

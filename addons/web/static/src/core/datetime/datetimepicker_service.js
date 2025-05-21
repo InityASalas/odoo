@@ -98,7 +98,11 @@ export const datetimePickerService = {
                     const nextInitialProps = markValuesRaw(hookParams.pickerProps);
                     const propsCopy = deepCopy(nextInitialProps);
 
-                    if (lastInitialProps && arePropsEqual(lastInitialProps, propsCopy)) {
+                    if (
+                        lastInitialProps &&
+                        arePropsEqual(lastInitialProps, propsCopy) &&
+                        lastAppliedValue === propsCopy.value
+                    ) {
                         return;
                     }
 

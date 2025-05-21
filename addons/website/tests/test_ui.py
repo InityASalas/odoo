@@ -755,3 +755,6 @@ class TestUi(HttpCaseWithWebsiteUser):
 
     def test_popup_visibility_option(self):
         self.start_tour("/", "website_popup_visibility_option", login="admin")
+
+    def test_create_missing_page(self):
+        self.start_tour("/", "create_missing_page", login="admin")

@@ -509,7 +509,8 @@ class HrLeave(models.Model):
                 continue
             hours, days = (0, 0)
             if leave.employee_id:
-                if leave.employee_id.is_flexible and leave.leave_type_request_unit in ['day','half_day']:
+                # sudo as is_flexible is on version model and employee does not have access to it.
+                if leave.employee_id.sudo().is_flexible and leave.leave_type_request_unit in ['day','half_day']:
                     duration = leave.date_to - leave.date_from
                     days = ceil(duration.total_seconds() / (24 * 3600))
                 elif leave.leave_type_request_unit == 'day' and check_leave_type:

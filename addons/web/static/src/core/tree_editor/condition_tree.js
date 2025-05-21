@@ -388,6 +388,9 @@ function construcTree(domain, options = {}) {
     return tree;
 }
 
+const TRUE_TREE = condition(1, "=", 1);
+const FALSE_TREE = condition(0, "=", 1);
+
 /**
  * @param {Tree} tree
  * @returns {AST[]}
@@ -406,6 +409,13 @@ function getASTs(tree) {
     }
 
     const length = tree.children.length;
+    if (length === 0) {
+        if (tree.value === "|") {
+            return tree.negate ? getASTs(TRUE_TREE) : getASTs(FALSE_TREE);
+        } else if (tree.negate) {
+            return getASTs(FALSE_TREE);
+        }
+    }
     if (length && tree.negate) {
         ASTs.push(toAST("!"));
     }
@@ -918,6 +928,70 @@ class TreePattern extends Pattern {
     }
     make(values) {
         return Just.of(replaceHoleByValues(this._template, values));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// virtual_in - virtual_not_in
+////////////////////////////////////////////////////////////////////////////////
+
+function supportIn(path, options) {
+    const fieldDef = options.getFieldDef?.(path) || null;
+    if (
+        ["datetime_option", "json"].includes(fieldDef?.type) ||
+        (fieldDef?.is_property && ["many2one", "selection"].includes(fieldDef?.type))
+    ) {
+        return false;
+    }
+    return true;
+}
+
+function _createVirtualInOperatorsInConnectors(c) {
+    const op = c.value === "|" ? "virtual_in" : "virtual_not_in";
+    const children = [];
+    let currentCondition = null;
+    for (let index = 0; index < c.children.length; index++) {
+        const child = c.children[index];
+        if (!child.negate && child.operator === op) {
+            if (!currentCondition || child.path !== currentCondition.path) {
+                currentCondition = condition(child.path, op, []);
+                children.push(currentCondition);
+            }
+            // @ts-ignore
+            currentCondition.value.push(...child.value);
+        } else {
+            currentCondition = null;
+            children.push(child);
+        }
+    }
+    return { ...c, children };
+}
+
+function _createVirtualInOperatorsFromcondition(c, options) {
+    const { path, operator, value, negate } = c;
+    if (operator === "=" && !supportIn(path, options)) {
+        return condition(path, "virtual_in", [value], negate);
+    }
+    if (operator === "!=" && !supportIn(path, options)) {
+        return condition(path, "virtual_not_in", [value], negate);
+    }
+}
+
+function _removeVirtualInOperators(c) {
+    const { path, operator, value, negate } = c;
+    if (operator === "virtual_in" && Array.isArray(value)) {
+        return connector(
+            "|",
+            value.map((v) => condition(path, "=", v)),
+            negate
+        );
+    }
+    if (operator === "virtual_not_in" && Array.isArray(value)) {
+        return connector(
+            "&",
+            value.map((v) => condition(path, "!=", v)),
+            negate
+        );
     }
 }
 
@@ -1510,6 +1584,29 @@ export function removeVirtualOperators(tree) {
     return operate(_removeVirtualOperator, tree);
 }
 
+function createVirtualInOperators(tree, options = {}) {
+    tree = operate(_createVirtualInOperatorsFromcondition, tree, options);
+    return operate(_createVirtualInOperatorsInConnectors, tree, options, "connector");
+}
+
+function removeVirtualInOperators(tree) {
+    return operate(_removeVirtualInOperators, tree);
+}
+
+function _removeFalseTrueLeaves(c) {
+    const { path, operator, value, negate } = c;
+    if (areEqualTrees(condition(path, operator, value), FALSE_TREE)) {
+        return connector(negate ? "&" : "|", []);
+    }
+    if (areEqualTrees(condition(path, operator, value), TRUE_TREE)) {
+        return connector(negate ? "|" : "&", []);
+    }
+}
+
+function removeFalseTrueLeaves(tree) {
+    return operate(_removeFalseTrueLeaves, tree);
+}
+
 /**
  * @param {Tree} tree
  * @param {Options} [options=[]]
@@ -1552,6 +1649,8 @@ function removeComplexConditions(tree) {
 
 const VIRTUAL_OPERATORS_CREATION = [createVirtualOperators, createBetweenOperators];
 const FULL_VIRTUAL_OPERATORS_CREATION = [
+    createVirtualInOperators,
+    removeFalseTrueLeaves,
     ...VIRTUAL_OPERATORS_CREATION,
     createSpecialPaths,
     createDatetimeOptions,
@@ -1562,6 +1661,8 @@ const FULL_VIRTUAL_OPERATORS_DESTRUCTION = [
     removeDatetimeOptions,
     removeSpecialPaths,
     ...VIRTUAL_OPERATORS_DESTRUCTION,
+    removeFalseTrueLeaves,
+    removeVirtualInOperators,
     removeComplexConditions,
 ];
 

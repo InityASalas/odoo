@@ -211,6 +211,8 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
                     !Within.options.some((o) => o[0] === value[1]),
             };
         }
+        case "virtual_in":
+        case "virtual_not_in":
         case "in":
         case "not in": {
             switch (fieldDef.type) {

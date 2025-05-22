@@ -4,11 +4,14 @@ from odoo import _, api, models, Command
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
+    def _get_edi_builders(self):
+        return super()._get_edi_builders() + [self.env['sale.edi.xml.ubl_bis3']]
+
     def _get_order_edi_decoder(self, file_data):
         """ Override of sale to add edi decoder for xml files.
 
         :param dict file_data: File data to decode.
-        :return function: Function with decoding capibility `_import_order_ubl` for different xml
+        :return function: Function with decoding capability `_import_order_ubl` for different xml
         formats.
         """
         if file_data['type'] == 'xml':
@@ -20,7 +23,7 @@ class SaleOrder(models.Model):
 
     @api.model
     def _get_order_ubl_builder_from_xml_tree(self, tree):
-        """ Return sale order ubl builder with decording capibily to given tree
+        """ Return sale order ubl builder with decoding capability to given tree
 
         :param xml tree: xml tree to find builder.
         :returns: model of builder for given tree if found else none.
@@ -32,12 +35,13 @@ class SaleOrder(models.Model):
                 return self.env['sale.edi.xml.ubl_bis3']
         return None
 
-    def _create_activity_set_details(self):
+    def _create_activity_set_details(self, body):
         """ Create activity on sale order to set details.
 
         :return: None.
         """
-        activity_message = _("Some information could not be imported")
+        activity_message = _("Some information could not be imported:")
+        activity_message += body
         self.activity_schedule(
             'mail.mail_activity_data_todo',
             user_id=self.env.user.id,

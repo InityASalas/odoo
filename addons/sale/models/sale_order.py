@@ -699,11 +699,9 @@ class SaleOrder(models.Model):
                  AND sale_order.id != duplicate_order.id
                  AND duplicate_order.state != 'cancel'
                  AND sale_order.partner_id = duplicate_order.partner_id
-                 AND sale_order.date_order = duplicate_order.date_order
-                 AND sale_order.client_order_ref = duplicate_order.client_order_ref
                  AND (
-                    sale_order.origin = duplicate_order.origin
-                    OR (sale_order.origin IS NULL AND duplicate_order.origin IS NULL)
+                    sale_order.origin = duplicate_order.name
+                    OR sale_order.client_order_ref = duplicate_order.client_order_ref
                 )
              WHERE sale_order.id IN %(orders)s
              GROUP BY sale_order.id
@@ -1802,6 +1800,9 @@ class SaleOrder(models.Model):
         }
 
     # EDI #
+
+    def _get_edi_builders(self):
+        return []
 
     def create_document_from_attachment(self, attachment_ids):
         """ Create the sale orders from given attachment_ids and redirect newly create order view.

@@ -62,13 +62,21 @@ export function useColorPickerBuilderComponent() {
         callOperation(applyOperation.commit, { userInputValue: getColor(colorValue) });
     }
     let onPreview = (colorValue) => {
-        callOperation(applyOperation.preview, {
-            userInputValue: getColor(colorValue),
-            operationParams: {
-                cancellable: true,
-                cancelPrevious: () => applyOperation.revert(),
+        callOperation(
+            (...args) => {
+                if (comp.env.editor.shared.history.getIsPreviewing()) {
+                    return;
+                }
+                applyOperation.preview(...args);
             },
-        });
+            {
+                userInputValue: getColor(colorValue),
+                operationParams: {
+                    cancellable: true,
+                    cancelPrevious: () => applyOperation.revert(),
+                },
+            }
+        );
     };
     const hasPreview = useHasPreview(getAllActions);
     if (!hasPreview) {
@@ -78,7 +86,11 @@ export function useColorPickerBuilderComponent() {
         state,
         onApply,
         onPreview,
-        onPreviewRevert: () => applyOperation.revert(),
+        onPreviewRevert: () => {
+            // The `next` will cancel the previous operation, which will revert
+            // the operation in case of a preview.
+            comp.env.editor.shared.operation.next();
+        },
     };
 }
 

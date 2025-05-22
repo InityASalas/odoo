@@ -6,6 +6,7 @@ import { registry } from "@web/core/registry";
 
 class ProductsListPageOptionPlugin extends Plugin {
     static id = "productsListPageOptionPlugin";
+    static dependencies = ["history"];
 
     resources = {
         builder_options: [
@@ -19,6 +20,7 @@ class ProductsListPageOptionPlugin extends Plugin {
             },
         ],
         builder_actions: this.getActions(),
+        save_handlers: this.onSave.bind(this),
     };
 
     getActions() {
@@ -46,15 +48,12 @@ class ProductsListPageOptionPlugin extends Plugin {
                 },
             },
             setGap: {
-                reload: {},
-                apply: ({ value }) => rpc("/shop/config/website", { shop_gap: value }),
-            },
-            setDefaultGap: {
-                reload: {},
                 isApplied: () => true,
+                getValue: ({ editingElement }) =>
+                    editingElement.style.getPropertyValue("--o-wsale-products-grid-gap"),
                 apply: ({ editingElement, value }) => {
-                    editingElement.style.setProperty("--o-wsale-products-grid-gap", value + "px");
-                    return rpc("/shop/config/website", { shop_gap: value });
+                    editingElement.style.setProperty("--o-wsale-products-grid-gap", value);
+                    editingElement.dataset.gapToSave = value;
                 },
             },
             setDefaultSort: {
@@ -64,6 +63,16 @@ class ProductsListPageOptionPlugin extends Plugin {
                 apply: ({ value }) => rpc("/shop/config/website", { shop_default_sort: value }),
             },
         };
+    }
+
+    async onSave() {
+        const pageEl = this.editable.querySelector("#o_wsale_container");
+        if (pageEl) {
+            const gapToSave = pageEl.dataset.gapToSave;
+            if (typeof gapToSave !== "undefined") {
+                return rpc("/shop/config/website", { shop_gap: gapToSave });
+            }
+        }
     }
 }
 

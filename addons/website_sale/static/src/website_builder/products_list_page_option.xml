@@ -59,7 +59,6 @@
 
     <BuilderRow label.translate="Gap" level="1">
         <BuilderRange
-            styleAction="'--o-wsale-products-grid-gap'"
             action="'setGap'"
             min="0"
             max="28"
@@ -68,7 +67,7 @@
     </BuilderRow>
 
     <BuilderRow label.translate="Style">
-        <BuilderSelect action="'reloadComposite'">
+        <BuilderSelect action="'composite'">
             <t t-set="defaultLabel">Default</t>
             <t t-set="cardsLabel">Cards</t>
             <t t-set="thumbnailsLabel">Thumbnails</t>
@@ -104,7 +103,7 @@
                         classAction="style.className"
                         actionParam="[
                             {action: 'websiteConfig', actionParam: {views: style.views}},
-                            {action: 'setDefaultGap', actionValue: style.gap + 'px'},
+                            {action: 'setGap', actionValue: style.gap + 'px'},
                         ]"
                         t-out="style.label"
                 />
@@ -155,12 +154,20 @@
     </BuilderRow>
 
     <BuilderRow label.translate="Categories" action="'websiteConfig'">
+    <!--    TODO AGAU:-->
+    <!--        data-wsale-preview-id="website_sale.editor_preview.sidebar"-->
+    <!--        data-wsale-preview-place-before="#o_wsale_container:not(.o_wsale_has_sidebar) #products_grid"-->
+    <!--        data-wsale-preview-classes="o_wsale_previewing_sidebar, o_wsale_has_sidebar"-->
         <BuilderButton
                 title.translate="Show into Sidebar"
                 id="'categories_opt'"
                 actionParam="{views: ['website_sale.products_categories']}"
         >Sidebar</BuilderButton>
 
+    <!--    TODO AGAU:-->
+    <!--        data-wsale-preview-id="website_sale.editor_preview.filmstrip"-->
+    <!--        data-wsale-preview-classes="o_wsale_previewing_filmstrip"-->
+    <!--        data-wsale-preview-place-before="#o_wsale_container:not(.o_wsale_has_filmstrip) .products_header"-->
         <BuilderButton
                 title.translate="Show a filmstrip navigation at the Top"
                 id="'categories_opt_top'"
@@ -177,6 +184,7 @@
     </BuilderRow>
 
     <BuilderRow t-if="isActiveItem('categories_opt_top')" label.translate="Style" level="1">
+        <!-- we use NoReload here assuming there will be preview classes to backup the view change -->
         <BuilderSelect action="'websiteConfig'">
             <BuilderSelectItem classAction="''" actionParam="{views: []}">Filmstrip - default</BuilderSelectItem>
         </BuilderSelect>
@@ -189,11 +197,18 @@
                     id="'attributes_hide_opt'"
                     actionParam="{views: []}"
             >Hide</BuilderSelectItem>
+    <!--        TODO AGAU: -->
+    <!--         data-wsale-preview-id="website_sale.editor_preview.sidebar"-->
+    <!--         data-wsale-preview-place-before="#o_wsale_container:not(.o_wsale_has_sidebar) #products_grid"-->
+    <!--         data-wsale-preview-classes="o_wsale_previewing_sidebar, o_wsale_has_sidebar"-->
             <BuilderSelectItem
                     title.translate="Show filters into Sidebar"
                     id="'attributes_opt'"
                     actionParam="{views: ['website_sale.products_attributes']}"
             >Sidebar</BuilderSelectItem>
+        <!-- TODO AGAU: -->
+    <!--        data-wsale-preview-id=""-->
+    <!--        data-wsale-preview-classes="o_wsale_previewing_offcanvas"-->
             <BuilderSelectItem
                     title.translate="Render a button to show the Off-screen Menu"
                     id="'attributes_opt_top'"
@@ -239,6 +254,10 @@
             level="1"
             action="'websiteConfig'"
     >
+    <!--    TODO AGAU: -->
+    <!--     data-wsale-preview-id="website_sale.editor_preview.floating_bar"-->
+    <!--     data-wsale-preview-classes="o_wsale_previewing_floating_bar"-->
+    <!--     data-wsale-preview-place-after="#o_wsale_container:not(.o_wsale_has_floating_bar) .o_wsale_products_main_row"-->
         <BuilderCheckbox actionParam="{views: ['website_sale.floating_bar']}"/>
     </BuilderRow>
 

@@ -20,6 +20,7 @@ class HrEmployeePublic(models.Model):
     hr_icon_display = fields.Selection(selection_add=[
         ('presence_holiday_absent', 'On leave'),
         ('presence_holiday_present', 'Present but on leave')])
+    allocation_display = fields.Char(compute='_compute_allocation_display')
 
     def _compute_show_leaves(self):
         self._compute_from_employee('show_leaves')
@@ -44,3 +45,6 @@ class HrEmployeePublic(models.Model):
             ('date_to', '>=', today_start),
         ])
         return [('id', 'in', holidays.employee_id.ids)]
+
+    def _compute_allocation_display(self):
+        self._compute_from_employee('allocation_display')

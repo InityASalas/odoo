@@ -63,7 +63,7 @@ class HrEmployee(models.Model):
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
     resource_id = fields.Many2one('resource.resource')
     # required because the mixin already creates it so it is not related to the version_id
-    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False, store=False, groups="hr.group_hr_user")
+    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False, store=False)
     user_id = fields.Many2one(
         'res.users', 'User',
         related='resource_id.user_id',

@@ -49,6 +49,7 @@ class HrEmployeePublic(models.Model):
     last_activity = fields.Date(compute="_compute_last_activity")
     last_activity_time = fields.Char(compute="_compute_last_activity")
     resource_calendar_id = fields.Many2one('resource.calendar', readonly=True)
+    country_code = fields.Char(compute='_compute_country_code')
 
     # Manager-only fields
     is_manager = fields.Boolean(compute='_compute_is_manager')
@@ -99,6 +100,9 @@ class HrEmployeePublic(models.Model):
             else:
                 employee.last_activity = False
                 employee.last_activity_time = False
+
+    def _compute_country_code(self):
+        self._compute_from_employee('country_code')
 
     @api.depends_context('uid')
     @api.depends('parent_id')

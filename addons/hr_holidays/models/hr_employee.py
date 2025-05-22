@@ -30,15 +30,18 @@ class HrEmployee(models.Model):
             ('validate1', 'Waiting Second Approval'),
             ('validate', 'Approved'),
             ('cancel', 'Cancelled')
-        ])
-    leave_date_from = fields.Date('From Date', compute='_compute_leave_status')
+        ], groups="hr.group_hr_user")
+    leave_date_from = fields.Date('From Date', compute='_compute_leave_status', groups="hr.group_hr_user")
     leave_date_to = fields.Date('To Date', compute='_compute_leave_status')
-    allocation_count = fields.Float('Total number of days allocated.', compute='_compute_allocation_count')
-    allocations_count = fields.Integer('Total number of allocations', compute="_compute_allocation_count")
+    allocation_count = fields.Float('Total number of days allocated.', compute='_compute_allocation_count',
+                                    groups="hr.group_hr_user")
+    allocations_count = fields.Integer('Total number of allocations', compute="_compute_allocation_count",
+                                       groups="hr.group_hr_user")
     show_leaves = fields.Boolean('Able to see Remaining Time Off', compute='_compute_show_leaves')
     is_absent = fields.Boolean('Absent Today', compute='_compute_leave_status', search='_search_absent_employee')
-    allocation_display = fields.Char(compute='_compute_allocation_remaining_display')
-    allocation_remaining_display = fields.Char(compute='_compute_allocation_remaining_display')
+    allocation_display = fields.Char(compute='_compute_allocation_remaining_display', groups="hr.group_hr_user")
+    allocation_remaining_display = fields.Char(compute='_compute_allocation_remaining_display',
+                                               groups="hr.group_hr_user")
     hr_icon_display = fields.Selection(selection_add=[
         ('presence_holiday_absent', 'On leave'),
         ('presence_holiday_present', 'Present but on leave')])

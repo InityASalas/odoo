@@ -60,14 +60,15 @@ class TestResource(TestHrCommon):
             'wage': 5000.0,
             'employee_id': cls.employee.id,
         })
-        cls.contract_cdi = cls.employee.create_version({
+        cls.contract_cdi_values = {
             'date_version': Date.to_date('2021-11-01'),
             'contract_date_start': Date.to_date('2021-11-01'),
+            'contract_date_end': False,
             'name': 'CDI Contract for Richard',
             'resource_calendar_id': cls.calendar_richard.id,
             'wage': 5000.0,
             'employee_id': cls.employee.id,
-        })
+        }
 
     def test_calendars_validity_within_period_default(self):
         calendars = self.employee_niv.resource_id._get_calendars_validity_within_period(
@@ -135,6 +136,7 @@ class TestResource(TestHrCommon):
             self.assertEqual(resource[field], employee[field])
 
     def test_calendars_validity_within_period(self):
+        self.employee.create_version(self.contract_cdi_values)
         tz = timezone(self.employee.tz)
         calendars = self.employee.resource_id._get_calendars_validity_within_period(
             tz.localize(datetime(2021, 10, 1, 0, 0, 0)),
@@ -170,8 +172,8 @@ class TestResource(TestHrCommon):
         for emp in employees_test:
             new_contract = self.contract_cdd.copy()
             new_contract.employee_id = emp
-            new_contract = self.contract_cdi.copy()
-            new_contract.employee_id = emp
+            self.contract_cdi_values['employee_id'] = emp.id
+            self.employee.create_version(self.contract_cdi_values)
 
         start = utc.localize(datetime(2021, 9, 1, 0, 0, 0))
         end = utc.localize(datetime(2021, 11, 30, 23, 59, 59))
@@ -181,6 +183,7 @@ class TestResource(TestHrCommon):
         self.assertEqual(len(work_intervals), 51)
 
     def test_get_valid_work_intervals(self):
+        self.employee.create_version(self.contract_cdi_values)
         start = timezone(self.employee.tz).localize(datetime(2021, 10, 24, 2, 0, 0))
         end = timezone(self.employee.tz).localize(datetime(2021, 11, 6, 23, 59, 59))
         work_intervals, _ = self.employee.resource_id._get_valid_work_intervals(start, end)
@@ -199,8 +202,7 @@ class TestResource(TestHrCommon):
         self.assertEqual(21 * 7, attendances['hours'],
             "Attendances should only include running or finished contracts.")
 
-        self.contract_cdd.state = 'close'
-        self.contract_cdi.state = 'open'
+        self.employee.create_version(self.contract_cdi_values)
 
         attendances = self.employee._get_calendar_attendances(date_from, date_to)
         self.assertEqual(21 * 7 + 21 * 8, attendances['hours'],

@@ -85,6 +85,19 @@ class AccountJournal(models.Model):
     l10n_sa_latest_submission_hash = fields.Char("Latest Submission Hash", copy=False,
                                                  help="Hash of the latest submitted invoice to be used as the Previous Invoice Hash (KSA-13)")
 
+
+    def _l10n_sa_reset_chain_head_error(self, trigger_webservice=False):
+        """
+            Reset the chain head error
+        """
+        for journal in self:
+            # if journal._l10n_sa_get_last_posted_invoice()._l10n_sa_is_in_chain():
+            stuck_invoices = self.env['account.move'].search([
+                ('l10n_sa_edi_chain_head_id', '!=', False),
+                ('journal_id', '=', journal.id),
+            ])
+            stuck_invoices.action_retry_edi_documents_error(trigger_webservice=trigger_webservice)
+
     # ====== Utility Functions =======
 
     def _l10n_sa_ready_to_submit_einvoices(self):

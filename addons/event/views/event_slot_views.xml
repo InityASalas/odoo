@@ -9,10 +9,10 @@
                 <group>
                     <group>
                         <field name="start_hour" string="From" widget="float_time"/>
-                        <field name="color" widget="color_picker"/>
+                        <field name="end_hour" string="To" widget="float_time"/>
                     </group>
                     <group>
-                        <field name="end_hour" string="To" widget="float_time"/>
+                        <field name="color" widget="color_picker"/>
                     </group>
                 </group>
             </form>
@@ -53,7 +53,8 @@
         <field name="model">event.slot</field>
         <field name="arch" type="xml">
             <calendar js_class="event_slot_calendar" date_start="start_datetime" date_stop="end_datetime"
-                string="Slots" scales="month" color="color" multi_create_view="event.view_event_slot_multi_create_form">
+                string="Slots" scales="month" color="color" quick_create_view_id="%(event.view_event_slot_form)d"
+                multi_create_form_title="Create Slots" multi_create_view="event.view_event_slot_multi_create_form">
                 <field name="start_datetime" invisible="1"/>
                 <field name="end_datetime" invisible="1"/>
                 <field name="date_tz" invisible="1"/>
@@ -66,7 +67,6 @@
         <field name="res_model">event.slot</field>
         <field name="view_mode">calendar,list,form</field>
         <field name="domain">[('event_id', '=', active_id)]</field>
-        <field name="context">{'default_event_id': active_id}</field>
     </record>
 
 </data></odoo>

@@ -26,15 +26,9 @@ class TestWorkEntryBase(TransactionCase):
             'birthday': '1984-05-01',
             'country_id': cls.env.ref('base.be').id,
             'department_id': cls.dep_rd.id,
-        })
-
-        # I create a contract for "Richard"
-        cls.env['hr.version'].create({
-            'date_end': Date.today() + relativedelta(years=2),
-            'date_start': Date.to_date('2018-01-01'),
-            'name': 'Contract for Richard',
             'wage': 5000.0,
-            'employee_id': cls.richard_emp.id,
+            'contract_date_end': Date.today() + relativedelta(years=2),
+            'contract_date_start': Date.to_date('2018-01-01'),
         })
 
         cls.work_entry_type = cls.env['hr.work.entry.type'].create({

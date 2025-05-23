@@ -24,8 +24,7 @@ class TestGlobalTimeOff(TestWorkEntryBase):
             'calendar_id': other_calendar.id,
             'work_entry_type_id': self.work_entry_type_leave.id,
         })
-        contract = self.richard_emp.version_ids
-        contract.state = 'open'
+        contract = self.richard_emp.version_id
         contract.date_generated_from = start
         contract.date_generated_to = start
         work_entries = contract.generate_work_entries(start.date(), end.date())
@@ -45,8 +44,7 @@ class TestGlobalTimeOff(TestWorkEntryBase):
             'date_to': end,
             'work_entry_type_id': self.work_entry_type_leave.id,
         })
-        contract = self.richard_emp.version_ids
-        contract.state = 'open'
+        contract = self.richard_emp.version_id
         contract.date_generated_from = start
         contract.date_generated_to = start
         work_entries = contract.generate_work_entries(start.date(), end.date())

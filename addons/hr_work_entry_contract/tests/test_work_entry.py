@@ -23,17 +23,15 @@ class TestWorkEntry(TestWorkEntryBase):
         cls.start = datetime(2015, 11, 1, 1, 0, 0)
         cls.end = datetime(2015, 11, 30, 23, 59, 59)
         cls.resource_calendar_id = cls.env['resource.calendar'].create({'name': 'My Calendar'})
-        contract = cls.env['hr.version'].create({
-            'date_start': cls.start.date() - relativedelta(days=5),
+        cls.richard_emp.create_version({
+            'date_version': cls.start.date() - relativedelta(days=5),
+            'contract_date_start': cls.start.date() - relativedelta(days=5),
+            'contract_date_end': False,
             'name': 'dodo',
             'resource_calendar_id': cls.resource_calendar_id.id,
             'wage': 1000,
-            'employee_id': cls.richard_emp.id,
-            'state': 'open',
             'date_generated_from': cls.end.date() + relativedelta(days=5),
         })
-        cls.richard_emp.resource_calendar_id = cls.resource_calendar_id
-        cls.richard_emp.version_id = contract
 
     def test_no_duplicate(self):
         self.richard_emp.generate_work_entries(self.start, self.end)
@@ -229,16 +227,11 @@ class TestWorkEntry(TestWorkEntryBase):
         hk_employee = self.env['hr.employee'].create({
             'name': 'HK Employee',
             'resource_calendar_id': hk_resource_calendar_id.id,
+            'contract_date_start': datetime(2023, 8, 1),
+            'contract_date_end': False,
+            'wage': 1000,
         })
         self.env.company.resource_calendar_id = hk_resource_calendar_id
-        self.env['hr.version'].create({
-            'date_start': datetime(2023, 8, 1),
-            'name': 'Test Contract',
-            'resource_calendar_id': hk_resource_calendar_id.id,
-            'wage': 1000,
-            'employee_id': hk_employee.id,
-            'state': 'open',
-        })
         hk_employee.generate_work_entries(datetime(2023, 8, 1), datetime(2023, 8, 1))
         work_entries = self.env['hr.work.entry'].search([('employee_id', '=', hk_employee.id)])
         self.assertEqual(work_entries[0].date_start, datetime(2023, 7, 31, 23, 0))
@@ -260,19 +253,15 @@ class TestWorkEntry(TestWorkEntryBase):
         self.assertEqual(work_entry.duration, 0.0)
 
     def test_separate_overlapping_work_entries_by_type(self):
-        employee = self.env['hr.employee'].create({'name': 'Test'})
         calendar = self.env['resource.calendar'].create({'name': 'Calendar', 'tz': 'Europe/Brussels'})
-        calendar.attendance_ids -= calendar.attendance_ids.filtered(lambda attendance: attendance.dayofweek == '0')
-
-        self.env['hr.version'].create({
-            'employee_id': employee.id,
+        employee = self.env['hr.employee'].create({
+            'name': 'Test',
             'resource_calendar_id': calendar.id,
-            'date_start': datetime(2024, 9, 1),
-            'date_end': datetime(2024, 9, 30),
-            'name': 'Contract',
+            'contract_date_start': datetime(2024, 9, 1),
+            'contract_date_end': datetime(2024, 9, 30),
             'wage': 5000.0,
-            'state': 'open',
         })
+        calendar.attendance_ids -= calendar.attendance_ids.filtered(lambda attendance: attendance.dayofweek == '0')
 
         entry_type_1, entry_type_2 = self.env['hr.work.entry.type'].create([
             {'name': 'Work type 1', 'is_leave': False, 'code': 'ENTRY_TYPE1'},
@@ -329,7 +318,7 @@ class TestWorkEntry(TestWorkEntryBase):
         work_entry = self.env['hr.work.entry'].create({
             'name': 'Test Work Entry',
             'employee_id': self.richard_emp.id,
-            'contract_id': self.richard_emp.contract_id.id,
+            'version_id': self.richard_emp.version_id.id,
             'date_start': datetime(2023, 10, 1, 9, 0, 0),
             'date_stop': datetime(2023, 10, 1, 9, 59, 59, 999999),
             'work_entry_type_id': self.work_entry_type.id,

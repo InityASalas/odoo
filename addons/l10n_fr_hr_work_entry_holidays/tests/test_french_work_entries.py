@@ -27,16 +27,11 @@ class TestFrenchWorkEntries(TransactionCase):
             'birthday': '1973-03-29',
             'country_id': country_fr.id,
             'company_id': cls.company.id,
-        })
-
-        cls.employee_contract = cls.env['hr.version'].create({
-            'date_start': '2020-01-01',
-            'date_end': '2023-01-01',
-            'name': 'Louis\'s contract',
+            'contract_date_start': '2020-01-01',
+            'contract_date_end': '2023-01-01',
             'wage': 2,
-            'employee_id': cls.employee.id,
-            'company_id': cls.company.id,
         })
+        cls.employee_contract = cls.employee.version_id
 
         cls.time_off_type = cls.env['hr.leave.type'].create({
             'name': 'Time Off',

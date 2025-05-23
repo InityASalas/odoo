@@ -119,7 +119,7 @@ class HrWorkEntry(models.Model):
             contract_start = fields.Datetime.to_datetime(vals.get('date_start')).date()
             contract_end = fields.Datetime.to_datetime(vals.get('date_stop')).date()
             employee = self.env['hr.employee'].browse(vals.get('employee_id'))
-            contracts = employee._get_versions_with_contract_overlap_with_period(contract_start, contract_end, states=['open', 'pending', 'close'])
+            contracts = employee._get_versions_with_contract_overlap_with_period(contract_start, contract_end)
             if not contracts:
                 raise ValidationError(_(
                     "%(employee)s does not have a contract from %(date_start)s to %(date_end)s.",

@@ -55,26 +55,24 @@ class TestHolidayContract(TransactionCase):
         cls.calendar_40h = cls.env['resource.calendar'].create({'name': 'Default calendar'})
 
         # This contract ends at the 15th of the month
-        cls.contract_cdd = cls.env['hr.version'].create({  # Fixed term contract
-            'date_end': datetime.strptime('2015-11-15', '%Y-%m-%d'),
-            'date_start': datetime.strptime('2015-01-01', '%Y-%m-%d'),
+        cls.jules_emp.version_id.write({  # Fixed term contract
+            'contract_date_end': datetime.strptime('2015-11-15', '%Y-%m-%d'),
+            'contract_date_start': datetime.strptime('2015-01-01', '%Y-%m-%d'),
+            'date_version': datetime.strptime('2015-01-01', '%Y-%m-%d'),
             'name': 'First CDD Contract for Jules',
             'resource_calendar_id': cls.calendar_40h.id,
             'wage': 5000.0,
-            'employee_id': cls.jules_emp.id,
-            'state': 'open',
-            'kanban_state': 'blocked',
         })
+        cls.contract_cdd = cls.jules_emp.version_id
 
         # This contract starts the next day
-        cls.contract_cdi = cls.env['hr.version'].create({
-            'date_start': datetime.strptime('2015-11-16', '%Y-%m-%d'),
+        cls.contract_cdi = cls.jules_emp.create_version({
+            'date_version': datetime.strptime('2015-11-16', '%Y-%m-%d'),
+            'contract_date_start': datetime.strptime('2015-11-16', '%Y-%m-%d'),
+            'contract_date_end': False,
             'name': 'Contract for Jules',
             'resource_calendar_id': cls.calendar_35h.id,
             'wage': 5000.0,
-            'employee_id': cls.jules_emp.id,
-            'state': 'open',
-            'kanban_state': 'normal',
         })
 
     @classmethod

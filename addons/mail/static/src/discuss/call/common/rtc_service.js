@@ -311,12 +311,17 @@ export class Rtc extends Record {
         compute() {
             return callActionsRegistry
                 .getEntries()
-                .filter(([key, action]) => action.condition({ rtc: this }))
-                .map(([key, action]) => [key, action.isActive({ rtc: this })]);
+                .filter(([key, action]) => {
+                    return action.condition({ rtc: this });
+                })
+                .map(([key, action]) => [key, action.isActive({ rtc: this }), action.isTracked]);
         },
         onUpdate() {
-            for (const [key, isActive] of this.callActions) {
+            for (const [key, isActive, isTracked] of this.callActions) {
                 if (isActive === this.lastActions[key]) {
+                    continue;
+                }
+                if (!isTracked) {
                     continue;
                 }
                 if (isActive) {
@@ -362,6 +367,10 @@ export class Rtc extends Record {
              * Whether the network fell back to p2p mode in a SFU call.
              */
             fallbackMode: false,
+            /**
+             * Whether the call is in picture-in-picture mode.
+             */
+            isPipMode: false,
         });
         this.blurManager = undefined;
     }
@@ -1490,6 +1499,7 @@ export class Rtc extends Record {
         this.state.cameraTrack?.stop();
         this.state.screenTrack?.stop();
         this.state.fallbackMode = undefined;
+        this.state.isPipMode = false;
         closeStream(this.state.sourceCameraStream);
         this.state.sourceCameraStream = null;
         closeStream(this.state.sourceScreenStream);

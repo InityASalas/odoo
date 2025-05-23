@@ -46,6 +46,11 @@ class HrEmployee(models.Model):
         store=False,
         compute_sudo=True,
         groups="hr.group_hr_user")
+    current_version_id = fields.Many2one(
+        'hr.version',
+        compute='_compute_current_version_id',
+        store=True,
+    )
     version_ids = fields.One2many(
         'hr.version',
         'employee_id',
@@ -301,19 +306,25 @@ class HrEmployee(models.Model):
             if not employee.legal_name:
                 employee.legal_name = employee.name
 
-    @api.depends('version_ids.date_version')
+    @api.depends('current_version_id')
     @api.depends_context('version_id')
     def _compute_version_id(self):
         for employee in self:
             if self._context.get('version_id'):
-                version = self.env['hr.version'].search(
-                    [('id', '=', self._context['version_id'])], limit=1)
-            elif isinstance(employee.id, int):
-                version = self.env['hr.version'].search(
-                    [('employee_id', '=', employee.id)], order='date_version desc', limit=1)
+                version = self.env['hr.version'].browse(self._context.get('version_id'))
             else:
-                version = False
+                version = employee.current_version_id
             employee.version_id = version
+
+    @api.depends('version_ids')
+    def _compute_current_version_id(self):
+        for employee in self:
+            version = self.env['hr.version'].search(
+                [('employee_id', '=', employee.id), ('date_version', '<=', fields.Date.today())],
+                order='date_version desc',
+                limit=1,
+            )
+            employee.current_version_id = version
 
     def _search_version_id(self, operator, value):
         if operator == 'any':

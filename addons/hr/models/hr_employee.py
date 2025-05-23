@@ -50,6 +50,7 @@ class HrEmployee(models.Model):
         'hr.version',
         compute='_compute_current_version_id',
         store=True,
+        groups="hr.group_hr_user",
     )
     version_ids = fields.One2many(
         'hr.version',

@@ -331,7 +331,6 @@ class TestBaseAPIPerformance(BaseMailPerformance):
     def test_activity_mixin(self):
         record = self.env['mail.test.activity'].create({'name': 'Test'})
 
-        # todo guce postfreeze fix: 5 5 -> admin 12 employee 12 ->  9 9?
         with self.assertQueryCount(admin=5, employee=5):
             activity = record.action_start('Test Start')
             # read activity_type to normalize cache between enterprise and community
@@ -340,7 +339,6 @@ class TestBaseAPIPerformance(BaseMailPerformance):
 
         record.write({'name': 'Dupe write'})
 
-        # todo guce postfreeze fix: admin 15 employee 14 -> became 22 17?
         with self.assertQueryCount(admin=15, employee=14):  # tm: 11 / 11
             record.action_close('Dupe feedback')
 

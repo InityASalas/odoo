@@ -63,7 +63,7 @@ class HrEmployee(models.Model):
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
     resource_id = fields.Many2one('resource.resource')
     # required because the mixin already creates it so it is not related to the version_id
-    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False, store=False)
+    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False)
     user_id = fields.Many2one(
         'res.users', 'User',
         related='resource_id.user_id',
@@ -373,7 +373,7 @@ class HrEmployee(models.Model):
 
         version_to_copy = self._get_version(date)
         if not version_to_copy:
-            version_to_copy = self.env['hr.version'].search([('employee_id', '=', self.employee_id)], limit=1)
+            version_to_copy = self.env['hr.version'].search([('employee_id', '=', self.id)], limit=1)
 
         if version_to_copy.date_version == date:
             return version_to_copy
@@ -383,8 +383,15 @@ class HrEmployee(models.Model):
         return version_to_copy.with_company(version_to_copy.company_id).copy(values)
 
     def _compute_versions_count(self):
+        version_count_per_employee = dict(
+            self.env['hr.version']._read_group(
+                [('employee_id', 'in', self.ids)],
+                ['employee_id'],
+                ['id:count'],
+            ),
+        )
         for employee in self:
-            employee.versions_count = len(employee.version_ids)
+            employee.versions_count = version_count_per_employee.get(employee, 0)
 
     def _search_newly_hired(self, operator, value):
         if operator not in ('in', 'not in'):

@@ -10,13 +10,13 @@ const { DateTime } = luxon;
  * This widget displays a small dropdown allowing users to reschedule the
  * selected activity to certain dates in the near future.
  */
-
-// Version of the widget to use on mail.activity lists
-class ActivityListRescheduleDropdown extends Component {
+export class ActivityListRescheduleDropdown extends Component {
     static components = { Dropdown, DropdownItem };
     static props = {
         ...standardWidgetProps,
     };
+    static template = "mail.ActivityListRescheduleDropdown";
+
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
@@ -36,7 +36,6 @@ class ActivityListRescheduleDropdown extends Component {
             },
         };
     }
-    static template = "mail.ActivityListRescheduleDropdown";
 
     async rescheduleActivity(click, actionName) {
         await this.action.doActionButton({
@@ -53,28 +52,8 @@ class ActivityListRescheduleDropdown extends Component {
     }
 }
 
-// Version of the widget to use on lists of records inheriting from mail.activity.mixin
-class ActivityMixinListRescheduleDropdown extends ActivityListRescheduleDropdown {
-    setup() {
-        super.setup();
-        this.targetDays.today.actionName = "action_reschedule_my_next_today";
-        this.targetDays.tomorrow.actionName = "action_reschedule_my_next_tomorrow";
-        this.targetDays.nextWeek.actionName = "action_reschedule_my_next_nextweek";
-    }
-}
-
 registry.category("view_widgets").add("activity_list_reschedule_dropdown", {
     component: ActivityListRescheduleDropdown,
-    extractProps: ({ attrs }) => {
-        const { readonly } = attrs;
-        return {
-            readonly,
-        };
-    },
-});
-
-registry.category("view_widgets").add("activity_mixin_list_reschedule_dropdown", {
-    component: ActivityMixinListRescheduleDropdown,
     extractProps: ({ attrs }) => {
         const { readonly } = attrs;
         return {

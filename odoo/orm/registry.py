@@ -353,7 +353,7 @@ class Registry(Mapping[str, type["BaseModel"]]):
         return model_names
 
     @locked
-    def _setup_models__(self, cr: BaseCursor) -> None:
+    def _setup_models__(self, cr: BaseCursor, force=True, updated_models=None) -> None:
         """ Complete the setup of models.
             This must be called after loading modules and before using the ORM.
         """
@@ -376,19 +376,26 @@ class Registry(Mapping[str, type["BaseModel"]]):
         self._is_modifying_relations.clear()
         self.registry_invalidated = True
 
-        self.field_depends.clear()
-        self.field_depends_context.clear()
-        self.many2many_relations.clear()
+        if force:
+            self.field_depends.clear()
+            self.field_depends_context.clear()
+            self.many2many_relations.clear()
+
         self.many2one_company_dependents.clear()
 
-        model_classes.setup_model_classes(env)
+        model_classes.setup_model_classes(env, force=force, updated_models=updated_models)
 
         # determine field_depends and field_depends_context
-        for model in env.values():
-            for field in model._fields.values():
-                depends, depends_context = field.get_depends(model)
+        for model_cls in env.registry.values():
+            for field in model_cls._fields.values():
+                if (model_cls._get_depends_done__ and not field.related):
+                    # for related field depend_context can be dependant on other fields.
+                    # this check could be done before iterating on field for an additional performance boost if it wasn't the case
+                    continue
+                depends, depends_context = field.get_depends(model_cls(env, (), ()))
                 self.field_depends[field] = tuple(depends)
                 self.field_depends_context[field] = tuple(depends_context)
+            model_cls._get_depends_done__ = True
 
         # clean the lazy_property again in case they are cached by another ongoing registry readonly request
         reset_cached_properties(self)

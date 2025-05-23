@@ -401,6 +401,7 @@ class IrModel(models.Model):
         if manual_models:
             # setup models; this automatically adds model in registry
             self.env.flush_all()
+            #self.pool._setup_models__(self._cr, updated_models=manual_models)
             self.pool._setup_models__(self._cr)
             # update database schema
             self.pool.init_models(self._cr, manual_models, dict(self._context, update_custom_fields=True))
@@ -1018,7 +1019,7 @@ class IrModelFields(models.Model):
         if any(model in self.pool for model in models):
             # setup models; this re-initializes model in registry
             self.env.flush_all()
-            self.pool._setup_models__(self._cr)
+            self.pool._setup_models__(self._cr, updated_models=models)
             # update database schema of models and their descendants
             models = self.pool.descendants(models, '_inherits')
             self.pool.init_models(self._cr, models, dict(self._context, update_custom_fields=True))

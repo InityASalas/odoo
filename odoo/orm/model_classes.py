@@ -292,13 +292,13 @@ def _init_model_class_attributes(model_cls: type[BaseModel]):
         _init_model_class_attributes(registry[child_name])
 
 
-def setup_model_classes(env: Environment):
+def setup_model_classes(env: Environment, force=True, updated_models=None):
     registry = env.registry
 
     # we must setup ir.model before adding manual fields because _add_manual_models may
     # depend on behavior that is implemented through overrides, such as is_mail_thread which
     # is implemented through an override to env['ir.model']._instanciate_attrs
-    _prepare_setup(registry['ir.model'])
+    _prepare_setup(registry['ir.model'], updated_models=updated_models)
 
     # add manual models
     if registry._init_modules:
@@ -307,7 +307,24 @@ def setup_model_classes(env: Environment):
     # prepare the setup on all models
     models_classes = list(registry.values())
     for model_cls in models_classes:
-        _prepare_setup(model_cls)
+        if force:  # check all modules, don't try to detect changes
+            model_cls._setup_done__ = False
+
+        # changing base classes is costly, do it only when necessary
+        # do it before _prepare_setup to ensure that the model_cls._model_classes__ is correct
+        if model_cls.__bases__ != model_cls._base_classes__:
+            model_cls.__bases__ = model_cls._base_classes__
+            model_cls._setup_done__ = False
+
+    for model_cls in models_classes:
+        _prepare_setup(model_cls, updated_models=updated_models)
+
+    for model_cls in models_classes:
+        # check if any model inheriting from and invalidated model_class should be marked as invalidated too.
+        if model_cls._setup_done__ and model_cls._inherits:
+            for inherit_model_name in model_cls._inherits:
+                if not registry[inherit_model_name]._setup_done__:
+                    model_cls._setup_done__ = False
 
     # do the actual setup
     for model_cls in models_classes:
@@ -320,17 +337,29 @@ def setup_model_classes(env: Environment):
         model_cls(env, (), ())._post_model_setup__()
 
 
-def _prepare_setup(model_cls: type[BaseModel]):
+def _prepare_setup(model_cls: type[BaseModel], updated_models=None):
     """ Prepare the setup of the model. """
-    model_cls._setup_done__ = False
 
-    # changing base classes is costly, do it only when necessary
-    if model_cls.__bases__ != model_cls._base_classes__:
-        model_cls.__bases__ = model_cls._base_classes__
+    model_classes = getattr(model_cls, '_model_classes__', None)
+    # the classes that define this model, i.e., the ones that are not
+    # registry classes; the purpose of this attribute is to behave as a
+    # cache of [c for c in model_cls.mro() if not is_model_class(c))], which
+    # is heavily used in function fields.resolve_mro()
+    model_cls._model_classes__ = tuple(c for c in model_cls.mro() if getattr(c, 'pool', None) is None)
+    if model_classes != model_cls._model_classes__:
+        model_cls._setup_done__ = False
+
+    if model_cls._setup_done__ and updated_models is not None:
+        # this is maybe not the most efficient but a reliable way to know if the model name impacts model_cls
+        for model in model_cls._model_classes__:
+            if hasattr(model, '_name') and model._name in updated_models:
+                model_cls._setup_done__ = False
+                break
 
     # reset those attributes on the model's class for _setup_fields() below
-    for attr in ('_rec_name', '_active_name'):
-        discardattr(model_cls, attr)
+    if not model_cls._setup_done__:
+        for attr in ('_rec_name', '_active_name'):
+            discardattr(model_cls, attr)
 
     # reset properties memoized on model_cls
     model_cls._constraint_methods = models.BaseModel._constraint_methods
@@ -342,13 +371,7 @@ def _setup(model_cls: type[BaseModel], env: Environment):
     """ Determine all the fields of the model. """
     if model_cls._setup_done__:
         return
-
-    # the classes that define this model, i.e., the ones that are not
-    # registry classes; the purpose of this attribute is to behave as a
-    # cache of [c for c in model_cls.mro() if not is_model_class(c))], which
-    # is heavily used in function fields.resolve_mro()
-    model_cls._model_classes__ = tuple(c for c in model_cls.mro() if getattr(c, 'pool', None) is None)
-
+    model_cls._get_depends_done__ = False
     # 1. determine the proper fields of the model: the fields defined on the
     # class and magic fields, not the inherited or custom ones
 

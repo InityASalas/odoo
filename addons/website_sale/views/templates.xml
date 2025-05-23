@@ -265,26 +265,26 @@
                         </a>
                     </h6>
                     <t
-                        t-set="detailed_previewed_attribute_values"
+                        t-set="product_ptavs_data"
                         t-value="previewed_attribute_values[product.id]"
                     />
                     <t
                         t-set="remaining_count"
-                        t-value="detailed_previewed_attribute_values.get('remaining_count')"
+                        t-value="product_ptavs_data.get('remaining_count')"
                     />
                     <t
-                        t-set="previewed_attribute_values"
-                        t-value="detailed_previewed_attribute_values.get('ptavs')"
+                        t-set="product_ptavs"
+                        t-value="product_ptavs_data.get('ptavs')"
                     />
                     <div
-                        t-if="len(previewed_attribute_values)>1"
+                        t-if="len(product_ptavs)>1"
                         t-attf-class="o_wsale_attribute_previewer d-flex align-items-center gap-1 flex-nowrap z-1 overflow-hidden
-                        {{'show_on_hover' if previewed_attribute_values[0]['ptav'].attribute_id.preview_variants == 'hover' and layout_mode != 'list' else ''}}"
+                        {{'show_on_hover' if product_ptavs[0]['ptav'].attribute_id.preview_variants == 'hover' and layout_mode != 'list' else ''}}"
                         t-att-data-product-href="product_href"
                         t-att-data-remaining-count="remaining_count"
                     >
-                        <t t-foreach="previewed_attribute_values" t-as="previewed_attribute">
-                            <t t-set="ptav" t-value="previewed_attribute['ptav']"/>
+                        <t t-foreach="product_ptavs" t-as="previewed_ptav">
+                            <t t-set="ptav" t-value="previewed_ptav['ptav']"/>
                             <t t-set="selected_attribute_value"
                                 t-value="ptav.product_attribute_value_id.id"/>
                             <t
@@ -293,8 +293,8 @@
                             />
                             <span
                                 t-attf-id="o_product_variant_preview_{{ptav.id}}"
-                                class="o_product_variant_preview my-2"
-                                t-att-data-variant-image="previewed_attribute['variant_image_url']"
+                                class="o_product_variant_preview my-2 d-none"
+                                t-att-data-variant-image="previewed_ptav['variant_image_url']"
                             >
                                 <div
                                     t-if="ptav.attribute_id.is_thumbnail_visible"
@@ -302,7 +302,7 @@
                                 >
                                     <t
                                         t-set="img_style"
-                                        t-value="'background:url(%s); background-size:cover; background-position: center center;' % previewed_attribute['variant_image_url']"
+                                        t-value="'background:url(%s); background-size:cover; background-position: center center;' % previewed_ptav['variant_image_url']"
                                     />
                                     <label
                                         class="css_attribute_preview_thumbnail cursor-pointer"
@@ -346,6 +346,9 @@
                                 />
                             </span>
                         </t>
+                        <span id="remaining_ptavs_indicator" class="d-none ms-1 small">
+                            <a href="product_href"></a>
+                        </span>
                     </div>
                 </div>
                 <div class="o_wsale_product_sub d-flex align-items-center justify-content-between flex-nowrap gap-3">

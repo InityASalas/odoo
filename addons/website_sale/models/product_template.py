@@ -2,8 +2,6 @@
 
 import logging
 
-from collections import defaultdict
-
 from odoo import _, api, fields, models
 from odoo.fields import Domain
 from odoo.http import request
@@ -277,7 +275,6 @@ class ProductTemplate(models.Model):
 
         return self._get_possible_variants(parent_combination).sorted(_sort_key_variant)
 
-
     def _get_previewed_attribute_values(self) -> dict:
         """Compute previewed product attribute values for each product in the recordset.
 
@@ -292,9 +289,9 @@ class ProductTemplate(models.Model):
             )
             if available_attribute_lines:
                 previewed_ptal = available_attribute_lines[0]
-                previewed_ptavs = previewed_ptal.product_template_value_ids._only_active()[:show_count]
+                previewed_ptavs = previewed_ptal.product_template_value_ids._only_active()
                 previewed_ptavs_data = []
-                for ptav in previewed_ptavs:
+                for ptav in previewed_ptavs[:show_count]:
                     matching_variant = ptav.ptav_product_variant_ids[0]
                     previewed_ptavs_data.append({
                         'ptav': ptav,

@@ -32,7 +32,7 @@ class HrEmployeePublic(models.Model):
     work_location_name = fields.Char(compute="_compute_work_location_name")
     user_id = fields.Many2one('res.users', readonly=True)
     resource_id = fields.Many2one('resource.resource', readonly=True)
-    tz = fields.Selection(_tz_get, readonly=True)
+    tz = fields.Selection(related='resource_id.tz')
     color = fields.Integer(readonly=True)
     hr_presence_state = fields.Selection([
         ('present', 'Present'),

@@ -128,10 +128,7 @@ class HrVersion(models.Model):
     resource_calendar_id = fields.Many2one('resource.calendar', check_company=True, string="Working Hours", tracking=True)
     is_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
     is_fully_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
-    tz = fields.Selection(
-        _tz_get, string='Timezone', required=True,
-        default=lambda self: self._context.get('tz') or self.env.user.tz or self.env.ref('base.user_admin').tz or 'UTC',
-        help="This field is used in order to define in which timezone the employee will work.")
+    tz = fields.Selection(related='employee_id.tz')
 
     # Contract Information
     contract_date_start = fields.Date('Contract Start Date', tracking=True, groups="hr.group_hr_user")

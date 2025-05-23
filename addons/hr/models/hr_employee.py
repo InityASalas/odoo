@@ -69,7 +69,7 @@ class HrEmployee(models.Model):
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
     resource_id = fields.Many2one('resource.resource')
     # required because the mixin already creates it so it is not related to the version_id
-    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', readonly=False)
+    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', index=False, store=False)
     user_id = fields.Many2one(
         'res.users', 'User',
         related='resource_id.user_id',
@@ -317,7 +317,7 @@ class HrEmployee(models.Model):
                 version = employee.current_version_id
             employee.version_id = version
 
-    @api.depends('version_ids')
+    @api.depends('version_ids.date_version')
     def _compute_current_version_id(self):
         for employee in self:
             version = self.env['hr.version'].search(

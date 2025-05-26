@@ -71,11 +71,7 @@ class HrLeaveEmployeeTypeReport(models.Model):
                     allocation.employee_company_id as company_id
                 FROM hr_leave_allocation as allocation
                 INNER JOIN hr_employee as employee ON (allocation.employee_id = employee.id)
-                LEFT JOIN (
-                    SELECT DISTINCT ON (employee_id) *
-                    FROM hr_version
-                    ORDER BY employee_id, date_version DESC
-                ) v ON v.employee_id = employee.id
+                LEFT JOIN hr_version v ON v.id = employee.current_version_id
 
                 /* Obtain the minimum id for a given employee and type of leave */
                 LEFT JOIN
@@ -119,11 +115,7 @@ class HrLeaveEmployeeTypeReport(models.Model):
                     request.employee_company_id as company_id
                 FROM hr_leave as request
                 INNER JOIN hr_employee as employee ON (request.employee_id = employee.id)
-                LEFT JOIN (
-                    SELECT DISTINCT ON (employee_id) *
-                    FROM hr_version
-                    ORDER BY employee_id, date_version DESC
-                ) v ON v.employee_id = employee.id
+                LEFT JOIN hr_version v ON v.id = employee.current_version_id
                 WHERE request.state IN ('confirm', 'validate', 'validate1')) leaves
             );
         """)

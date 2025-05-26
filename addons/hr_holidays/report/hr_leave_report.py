@@ -62,11 +62,7 @@ class HrLeaveReport(models.Model):
                     allocation.employee_company_id as company_id
                 from hr_leave_allocation as allocation
                 inner join hr_employee as employee on (allocation.employee_id = employee.id)
-                LEFT JOIN (
-                    SELECT DISTINCT ON (employee_id) *
-                    FROM hr_version
-                    ORDER BY employee_id, date_version DESC
-                ) v ON v.employee_id = employee.id
+                LEFT JOIN hr_version v ON v.id = employee.current_version_id
                 where employee.active IS True
                 union all select
                     null as allocation_id,
@@ -84,11 +80,7 @@ class HrLeaveReport(models.Model):
                     request.employee_company_id as company_id
                 from hr_leave as request
                 inner join hr_employee as employee on (request.employee_id = employee.id)
-                LEFT JOIN (
-                    SELECT DISTINCT ON (employee_id) *
-                    FROM hr_version
-                    ORDER BY employee_id, date_version DESC
-                ) v ON v.employee_id = employee.id
+                LEFT JOIN hr_version v ON v.id = employee.current_version_id
                 where employee.active IS True
                 ) leaves
             );

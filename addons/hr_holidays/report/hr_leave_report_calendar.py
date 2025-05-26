@@ -69,11 +69,7 @@ class HrLeaveReportCalendar(models.Model):
         FROM hr_leave hl
             LEFT JOIN hr_employee em
                 ON em.id = hl.employee_id
-            LEFT JOIN (
-                SELECT DISTINCT ON (employee_id) *
-                FROM hr_version
-                ORDER BY employee_id, date_version DESC
-            ) v ON v.employee_id = em.id
+            LEFT JOIN hr_version v ON v.id = em.current_version_id
             LEFT JOIN resource_resource rr
                 ON rr.id = em.resource_id
             LEFT JOIN resource_calendar rc

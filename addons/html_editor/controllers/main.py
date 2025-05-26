@@ -594,15 +594,6 @@ class HTML_Editor(http.Controller):
             context = dict(request.env.context)
             parsed_preview_url = urlparse(preview_url)
             words = parsed_preview_url.path.strip('/').split('/')
-            last_segment = words[-1]
-
-            if not last_segment.isnumeric():
-                # this could be a frontend or an external page
-                link_preview_data = self.link_preview_metadata(preview_url)
-                result = {}
-                if link_preview_data and link_preview_data.get('og_description'):
-                    result['description'] = link_preview_data['og_description']
-                return result
 
             record_id = int(words.pop())
             action_name = words.pop()

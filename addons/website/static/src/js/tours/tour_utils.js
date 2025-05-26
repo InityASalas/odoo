@@ -644,11 +644,11 @@ export function openLinkPopup(triggerSelector, linkName = "", focusNodeIndex = 0
                 const sel = el.ownerDocument.getSelection();
                 sel.collapse(el.childNodes[focusNodeIndex], 1);
                 el.focus();
-            }
+            },
         },
         {
             content: "Check if the link popover opened",
             trigger: ".o-we-linkpopover"
-        }
+        },
     ];
 }

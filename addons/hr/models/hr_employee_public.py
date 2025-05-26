@@ -78,8 +78,8 @@ class HrEmployeePublic(models.Model):
     def _compute_from_employee(self, field_names):
         if isinstance(field_names, str):
             field_names = [field_names]
-        employees = self.env['hr.employee'].browse(self.ids)
-        employee_per_id = {emp.id: emp for emp in employees}
+        employees_sudo = self.sudo().env['hr.employee'].browse(self.ids)
+        employee_per_id = {emp.id: emp for emp in employees_sudo}
         for public_employee in self:
             employee = employee_per_id[public_employee.id]
             for field_name in field_names:

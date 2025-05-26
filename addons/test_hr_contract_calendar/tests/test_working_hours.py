@@ -39,6 +39,7 @@ class TestWorkingHours(TestHrContractCalendarCommon):
         self.env.user.company_ids = [self.company_A.id]
 
         self.contractB.date_start = datetime(2023, 12, 28)
+        self.contractB.contract_date_start = datetime(2023, 12, 28)
         work_hours = self.env['res.partner'].get_working_hours_for_all_attendees(
             [self.partnerA.id, self.partnerB.id],
             datetime(2023, 12, 25).isoformat(),
@@ -57,6 +58,7 @@ class TestWorkingHours(TestHrContractCalendarCommon):
         self.env.user.company_ids = [self.company_A.id]
 
         self.contractB.date_end = datetime(2023, 12, 28)
+        self.contractB.contract_date_end = datetime(2023, 12, 28)
         work_hours = self.env['res.partner'].get_working_hours_for_all_attendees(
             [self.partnerA.id, self.partnerB.id],
             datetime(2023, 12, 25).isoformat(),
@@ -170,9 +172,6 @@ class TestWorkingHours(TestHrContractCalendarCommon):
         """
         self.env.user.company_id = self.company_A
         self.env.user.company_ids = [self.company_A.id, self.company_B.id]
-
-        # to check if the resource calendar on the contract takes priority
-        self.employeeB.resource_calendar_id = self.calendar_35h.id
 
         work_hours = self.env['res.partner'].get_working_hours_for_all_attendees(
             [self.partnerB.id],

@@ -1286,3 +1286,21 @@ class TestSaleProject(TestSaleProjectCommon):
         so.action_confirm()
         self.assertFalse(self.product_order_service2.project_id.task_ids)
         self.assertFalse(sol.task_id)
+
+    def test_no_duplicate_project_created(self):
+        """ Test that no new project is created when confirming a Sales Order from the project form.
+        Steps:
+            - Create a Sales Order with a service product that creates a project
+            - Save the Sales Order
+            - Ensure that only one project exists
+            - Verify that the current project is correctly linked to the Sales Order
+        """
+        with Form(self.env['sale.order'].with_context(create_for_project_id=self.project_global.id)) as so_form:
+            so_form.partner_id = self.partner
+            with so_form.order_line.new() as line:
+                line.product_id = self.product_order_service4
+
+            sale_order = so_form.save()
+
+        self.assertTrue(sale_order.project_count == 1, "Duplicate project was created when confirming SO from project form.")
+        self.assertEqual(sale_order.project_ids, self.project_global, "The project of the SO should be set to the project that was generated at SO confirmation.")

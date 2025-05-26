@@ -171,6 +171,12 @@ export class Persona extends Record {
             ? "website.visitor"
             : "mail.guest";
     }
+
+    static async getAvatarCardData(userId) {
+        await this.store.fetchStoreData("avatar_card", {
+            user_id: userId,
+        });
+    }
 }
 
 Persona.register();

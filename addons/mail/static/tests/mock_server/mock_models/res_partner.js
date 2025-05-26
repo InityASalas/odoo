@@ -223,6 +223,10 @@ export class ResPartner extends webModels.ResPartner {
         return Array.from(new Set(partnerIds)).slice(0, limit);
     }
 
+    _get_avatar_store_fields() {
+        return ["name", "phone", "email", "im_status", "user", "share"];
+    }
+
     /**
      * @param {number[]} ids
      * @returns {Record<string, ModelRecord>}
@@ -233,6 +237,10 @@ export class ResPartner extends webModels.ResPartner {
         extra_fields = kwargs.extra_fields ?? [];
         if (!fields) {
             fields = ["avatar_128", "name", "email", "active", "im_status", "is_company", "user"];
+        }
+        if (fields.includes("avatar_card")) {
+            fields = fields.filter((field) => field !== "avatar_card");
+            fields.push(...this._get_avatar_store_fields());
         }
         fields = [...fields, extra_fields];
 

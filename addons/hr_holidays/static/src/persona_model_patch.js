@@ -18,9 +18,14 @@ export function getOutOfOfficeDateEndText(datetime) {
 patch(Persona.prototype, {
     /** @returns {string} */
     get outOfOfficeDateEndText() {
-        if (!this.leave_date_to) {
+        const leaveDateTo =
+            this.leave_date_to ||
+            (!this.employee_ids?.length &&
+                this.all_companies_employee_ids?.length &&
+                this.all_companies_employee_ids[0].leave_date_to);
+        if (!leaveDateTo) {
             return "";
         }
-        return getOutOfOfficeDateEndText(this.leave_date_to);
+        return getOutOfOfficeDateEndText(leaveDateTo);
     },
 });

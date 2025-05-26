@@ -1049,6 +1049,19 @@ function _process_request_for_all(store, name, params, context = {}) {
             channel: mailDataHelpers.Store.one(channelId, makeKwArgs({ only_id: true })),
         });
     }
+    if (name === "avatar_card") {
+        const userId = params.user_id;
+        const [user] = ResUsers.browse(userId);
+        if (!user) {
+            throw new Error(`User with id ${userId} not found`);
+        }
+        const partnerId = user.partner_id;
+        const partner = ResPartner.browse(partnerId);
+        if (!partner || partner.length === 0) {
+            throw new Error(`Partner with id ${partnerId} not found`);
+        }
+        store.add(partner, makeKwArgs({ fields: ["avatar_card"] }));
+    }
 }
 
 function _process_request_for_internal_user(store, name, params) {

@@ -10,7 +10,18 @@ const patchAvatarCardResourcePopover = {
             (this.actionService = useService("action"));
     },
     get fieldNames() {
-        return [...super.fieldNames, "show_hr_icon_display", "hr_icon_display"];
+        return [
+            ...super.fieldNames,
+            "work_phone",
+            "work_email",
+            "work_location_name",
+            "work_location_type",
+            "job_title",
+            "department_id",
+            this.props.recordModel ? "employee_id" : "employee_ids",
+            "show_hr_icon_display",
+            "hr_icon_display",
+        ];
     },
     get email() {
         return this.record.work_email || this.record.email;

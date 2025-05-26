@@ -35,13 +35,13 @@ class TestHolidaysMultiContract(TestHolidayContract):
         leave.action_approve()
         # move contract in the middle of the leave
         with self.assertRaises(ValidationError):
-            self.env['hr.version'].create({
-                'date_start': datetime.strptime('2015-11-30', '%Y-%m-%d').date(),
+            self.jules_emp.create_version({
+                'date_version': datetime.strptime('2015-11-30', '%Y-%m-%d').date(),
+                'contract_date_start': datetime.strptime('2015-11-30', '%Y-%m-%d').date(),
+                'contract_date_end': False,
                 'name': 'Contract for Richard',
                 'resource_calendar_id': self.calendar_40h.id,
                 'wage': 5000.0,
-                'employee_id': self.jules_emp.id,
-                'state': 'open',
             })
 
     def test_leave_outside_contract(self):
@@ -85,22 +85,21 @@ class TestHolidaysMultiContract(TestHolidayContract):
         self.assertEqual(leave.number_of_hours, 14, "It should count hours according to the future contract.")
 
     def test_leave_multi_contracts_same_schedule(self):
+        # TODO DBE / ARPI : Is this test still valid ?
         # Allow leaves overlapping multiple contracts if same
         # resource calendar
         leave = self.create_leave(datetime(2022, 6, 1, 7, 0, 0), datetime(2022, 6, 30, 18, 0, 0), name="Doctor Appointment", employee_id=self.jules_emp.id)
         leave.action_approve()
         self.contract_cdi.date_end = date(2022, 6, 15)
 
-        new_contract_cdi = self.env['hr.version'].create({
-            'date_start': date(2022, 6, 16),
+        self.jules_emp.create_version({
+            'date_version': date(2022, 6, 16),
+            'contract_date_start': date(2022, 6, 16),
+            'date_end': False,
             'name': 'New Contract for Jules',
             'resource_calendar_id': self.calendar_35h.id,
             'wage': 5000.0,
-            'employee_id': self.jules_emp.id,
-            'state': 'draft',
-            'kanban_state': 'normal',
         })
-        new_contract_cdi.state = 'open'
 
     def test_leave_multi_contracts_split(self):
         # Check that setting a contract as running correctly
@@ -113,16 +112,14 @@ class TestHolidaysMultiContract(TestHolidayContract):
         self.assertEqual(leave.state, 'validate')
 
         self.contract_cdi.date_end = date(2022, 6, 15)
-        new_contract_cdi = self.env['hr.version'].create({
-            'date_start': date(2022, 6, 16),
+        self.jules_emp.create_version({
+            'date_version': date(2022, 6, 16),
+            'contract_date_start': date(2022, 6, 16),
+            'contract_date_end': False,
             'name': 'New Contract for Jules',
             'resource_calendar_id': self.calendar_40h.id,
             'wage': 5000.0,
-            'employee_id': self.jules_emp.id,
-            'state': 'draft',
-            'kanban_state': 'normal',
         })
-        new_contract_cdi.state = 'open'
 
         leaves = self.env['hr.leave'].search([('employee_id', '=', self.jules_emp.id)])
         self.assertEqual(len(leaves), 3)
@@ -165,26 +162,22 @@ class TestHolidaysMultiContract(TestHolidayContract):
             'name': 'Employee',
             'resource_calendar_id': calendar_partial.id,
         })
-        self.env['hr.version'].create([
-            {
-                'name': 'Full time (5/5)',
-                'employee_id': employee.id,
-                'date_start': datetime.strptime('2023-01-01', '%Y-%m-%d').date(),
-                'date_end': datetime.strptime('2023-06-30', '%Y-%m-%d').date(),
-                'resource_calendar_id': calendar_full.id,
-                'wage': 1000.0,
-                'state': 'close', # Old contract
-            },
-            {
-                'name': 'Partial time (4/5)',
-                'employee_id': employee.id,
-                'date_start': datetime.strptime('2023-07-01', '%Y-%m-%d').date(),
-                'date_end': datetime.strptime('2023-12-31', '%Y-%m-%d').date(),
-                'resource_calendar_id': calendar_partial.id,
-                'wage': 1000.0,
-                'state': 'open', # Current contract
-            },
-        ])
+        employee.create_version({
+            'name': 'Full time (5/5)',
+            'date_version': datetime.strptime('2023-01-01', '%Y-%m-%d').date(),
+            'contract_date_start': datetime.strptime('2023-01-01', '%Y-%m-%d').date(),
+            'contract_date_end': datetime.strptime('2023-06-30', '%Y-%m-%d').date(),
+            'resource_calendar_id': calendar_full.id,
+            'wage': 1000.0,
+        })
+        employee.create_version({
+            'name': 'Partial time (4/5)',
+            'date_version': datetime.strptime('2023-07-01', '%Y-%m-%d').date(),
+            'contract_date_start': datetime.strptime('2023-07-01', '%Y-%m-%d').date(),
+            'contract_date_end': datetime.strptime('2023-12-31', '%Y-%m-%d').date(),
+            'resource_calendar_id': calendar_partial.id,
+            'wage': 1000.0,
+        })
         leave_type = self.env['hr.leave.type'].create({
             'name': 'Leave Type',
             'time_type': 'leave',
@@ -261,26 +254,23 @@ class TestHolidaysMultiContract(TestHolidayContract):
             'resource_calendar_id': calendar_full.id,
         })
 
-        self.env['hr.version'].create([
-            {
-                'name': 'Full time (5/5)',
-                'employee_id': employee.id,
-                'date_start': datetime.strptime('2024-01-01', '%Y-%m-%d').date(),
-                'date_end': datetime.strptime('2024-01-31', '%Y-%m-%d').date(),
-                'resource_calendar_id': calendar_full.id,
-                'wage': 1000.0,
-                'state': 'open',
-            },
-            {
-                'name': 'Partial time (4/5)',
-                'employee_id': employee.id,
-                'date_start': datetime.strptime('2024-02-01', '%Y-%m-%d').date(),
-                'resource_calendar_id': calendar_partial.id,
-                'wage': 1000.0,
-                'state': 'draft',
-                'kanban_state': 'done'
-            },
-        ])
+        employee.create_version({
+            'name': 'Full time (5/5)',
+            'date_version': datetime.strptime('2024-01-01', '%Y-%m-%d').date(),
+            'contract_date_start': datetime.strptime('2024-01-01', '%Y-%m-%d').date(),
+            'contract_date_end': datetime.strptime('2024-01-31', '%Y-%m-%d').date(),
+            'resource_calendar_id': calendar_full.id,
+            'wage': 1000.0,
+        })
+        employee.create_version({
+            'name': 'Partial time (4/5)',
+            'date_version': datetime.strptime('2024-02-01', '%Y-%m-%d').date(),
+            'contract_date_start': datetime.strptime('2024-02-01', '%Y-%m-%d').date(),
+            'contract_date_end': False,
+            'resource_calendar_id': calendar_partial.id,
+            'wage': 1000.0,
+            # 'state': 'draft',
+        })
 
         leave_type = self.env['hr.leave.type'].create({
             'name': 'Leave Type',

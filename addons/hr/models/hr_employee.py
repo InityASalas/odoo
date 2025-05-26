@@ -68,7 +68,7 @@ class HrEmployee(models.Model):
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
     resource_id = fields.Many2one('resource.resource')
     # required because the mixin already creates it so it is not related to the version_id
-    resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', index=False, store=False)
+    resource_calendar_id = fields.Many2one(related=None, compute="_compute_resource_calendar_id", search="_search_resource_calendar_id", inverse="_inverse_resource_calendar_id", index=False, store=False)
     user_id = fields.Many2one(
         'res.users', 'User',
         related='resource_id.user_id',
@@ -344,6 +344,19 @@ class HrEmployee(models.Model):
             domain = [('id', operator, value)]
 
         return [('id', 'in', self.env['hr.version']._search(domain).select('employee_id'))]
+
+    @api.depends('current_version_id.resource_calendar_id')
+    def _compute_resource_calendar_id(self):
+        for employee in self:
+            employee.resource_calendar_id = employee.current_version_id.resource_calendar_id
+
+    def _search_resource_calendar_id(self, operator, value):
+        return [('current_version_id.resource_calendar_id', operator, value)]
+
+    def _inverse_resource_calendar_id(self):
+        for employee in self:
+            employee.current_version_id.resource_calendar_id = employee.resource_calendar_id
+            employee.resource_id.calendar_id = employee.resource_calendar_id
 
     def _field_to_sql(self, alias, fname, query=None, flush: bool = True) -> SQL:
         """This is required to search for the related fields of version_id as version_id is not stored"""

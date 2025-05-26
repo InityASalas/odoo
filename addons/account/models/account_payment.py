@@ -908,6 +908,9 @@ class AccountPayment(models.Model):
         return outstanding_account
 
     def write(self, vals):
+        if self.name and self.move_id.name == '/':
+            self.move_id.name = self.name
+
         if vals.get('state') in ('in_process', 'paid') and not vals.get('move_id'):
             self.filtered(lambda p: not p.move_id)._generate_journal_entry()
             self.move_id.filtered(lambda m: m.state == 'draft').action_post()

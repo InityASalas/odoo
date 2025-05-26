@@ -402,18 +402,18 @@ class TestPortalFlow(TestMailFullCommon, HttpCase):
                 'No access record (portal can read, no customer portal)', self.record_read_url_base,
                 f'{login_url}#{url_encode(odoo_read_params)}',
             ),
-            # not existing -> redirect to login, with a parameter for messaging (???)
+            # not existing -> redirect to login, original (local) URL kept as redirection post login to try again (even if faulty)
             (
                 'Not existing record (internal)', self.record_internal_url_no_exists,
-                f'{login_url}#action=mail.action_discuss',
+                f'{login_url}?{url_encode({"redirect": self.record_internal_url_no_exists.replace(self.test_base_url, "")})}',
             ),
             (
                 'Not existing record (portal enabled)', self.record_portal_url_no_exists,
-                f'{login_url}#action=mail.action_discuss',
+                f'{login_url}?{url_encode({"redirect": self.record_portal_url_no_exists.replace(self.test_base_url, "")})}',
             ),
             (
                 'Not existing model', self.record_url_no_model,
-                f'{login_url}#action=mail.action_discuss',
+                f'{login_url}?{url_encode({"redirect": self.record_url_no_model.replace(self.test_base_url, "")})}',
             ),
         ]:
             with self.subTest(name=url_name, url=url):

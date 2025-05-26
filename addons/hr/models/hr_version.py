@@ -23,7 +23,7 @@ class HrVersion(models.Model):
         address = self.env.user.company_id.partner_id.address_get(['default'])
         return address['default'] if address else False
 
-    company_id = fields.Many2one(related='employee_id.company_id', readonly=False,
+    company_id = fields.Many2one('res.company', compute='_compute_company_id', readonly=False,
                                  store=True, default=lambda self: self.env.company)
     employee_id = fields.Many2one(
         'hr.employee',
@@ -170,6 +170,12 @@ class HrVersion(models.Model):
         'res.users', 'HR Responsible', tracking=True,
         help='Person responsible for validating the employee\'s contracts.', domain=_get_hr_responsible_domain,
         default=lambda self: self.env.user, required=True, groups="hr.group_hr_user")
+
+    @api.depends('employee_id.company_id')
+    def _compute_company_id(self):
+        for version in self:
+            if version.employee_id:
+                version.company_id = version.employee_id.company_id
 
     @api.constrains('contract_date_start', 'contract_date_end')
     def _check_dates(self):

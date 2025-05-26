@@ -384,7 +384,7 @@ class HrEmployee(models.Model):
 
         if not 'employee_id' in values:
             values['employee_id'] = self.id
-        return version_to_copy.with_company(version_to_copy.company_id).copy(values)
+        return version_to_copy.copy(values)
 
     def _compute_versions_count(self):
         version_count_per_employee = dict(

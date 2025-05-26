@@ -40,3 +40,10 @@
         flex-direction: inherit !important;
     }
 }
+
+.o_reverse_progressbar {
+    .o_progressbar {
+        flex-direction: row-reverse;
+        justify-content: flex-end !important;
+    }
+}

@@ -196,10 +196,11 @@ class HrEmployee(models.Model):
         'A user cannot be linked to multiple employees in the same company.',
     )
 
-    def _create(self, vals_list):
-        versions = [vals['stored'].pop('version_id', None) for vals in vals_list]
-        result = super()._create(vals_list)
-        for (employee, version_id, vals) in zip(result, versions, vals_list):
+    @api.model
+    def _create(self, data_list):
+        versions = [vals['stored'].pop('version_id', None) for vals in data_list]
+        result = super()._create(data_list)
+        for (employee, version_id, vals) in zip(result, versions, data_list):
             version = self.env['hr.version'].browse(version_id)
             version.employee_id = employee.id
             version.write({**vals.get('inherited', {})['hr.version'], **{'employee_id': employee.id}})

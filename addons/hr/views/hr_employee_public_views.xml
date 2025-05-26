@@ -111,7 +111,7 @@
                     <field name="work_email"/>
                     <field name="company_id" groups="base.group_multi_company"/>
                     <field name="department_id"/>
-                    <field name="job_id"/>
+                    <field name="job_id" options="{'no_open': True}"/>
                     <field name="parent_id" widget="many2one_avatar_employee"/>
                     <field name="coach_id" widget="many2one_avatar_employee" optional="show"/>
                 </list>

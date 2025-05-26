@@ -29,7 +29,7 @@ class HrEmployee(models.Model):
             ('refuse', 'Refused'),
             ('validate1', 'Waiting Second Approval'),
             ('validate', 'Approved'),
-            ('cancel', 'Cancelled')
+            ('cancel', 'Cancelled'),
         ], groups="hr.group_hr_user")
     leave_date_from = fields.Date('From Date', compute='_compute_leave_status', groups="hr.group_hr_user")
     leave_date_to = fields.Date('To Date', compute='_compute_leave_status')

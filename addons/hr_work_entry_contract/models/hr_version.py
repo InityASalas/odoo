@@ -32,7 +32,9 @@ class HrVersion(models.Model):
         Planning: Work entries will be generated from the employee's planning. (requires Planning app)
     ''', groups="hr.group_hr_user")
     work_entry_source_calendar_invalid = fields.Boolean(
-        compute='_compute_work_entry_source_calendar_invalid', groups="hr.group_hr_user")
+        compute='_compute_work_entry_source_calendar_invalid',
+        groups="hr.group_hr_user",
+    )
 
     @api.depends('work_entry_source', 'resource_calendar_id')
     def _compute_work_entry_source_calendar_invalid(self):
@@ -324,7 +326,7 @@ class HrVersion(models.Model):
         for version in self:
             versions_by_company_tz[
                 version.company_id,
-                (version.resource_calendar_id or version.employee_id.resource_calendar_id).tz
+                (version.resource_calendar_id).tz,
             ] += version
         utc = pytz.timezone('UTC')
         new_work_entries = self.env['hr.work.entry']

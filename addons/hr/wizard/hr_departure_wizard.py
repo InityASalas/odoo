@@ -1,6 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import fields, models, _
+from odoo import fields, models
 from odoo.exceptions import UserError
 
 
@@ -45,7 +45,7 @@ class HrDepartureWizard(models.TransientModel):
         active_versions = self.employee_ids.version_id
 
         if any(v.contract_date_start and v.contract_date_start > self.departure_date for v in active_versions):
-            raise UserError(_("Departure date can't be earlier than the start date of current contract."))
+            raise UserError(self.env._("Departure date can't be earlier than the start date of current contract."))
 
         for employee in self.employee_ids.filtered(lambda emp: emp.active):
             if self.env.context.get('employee_termination', False):

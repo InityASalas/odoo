@@ -13,7 +13,7 @@ from odoo.tools.intervals import Intervals
 class HrWorkEntry(models.Model):
     _inherit = 'hr.work.entry'
 
-    version_id = fields.Many2one('hr.version', string="Versions", required=True)
+    version_id = fields.Many2one('hr.version', string="Version", required=True)
     employee_id = fields.Many2one()
     work_entry_source = fields.Selection(related='version_id.work_entry_source')
 
@@ -62,8 +62,8 @@ class HrWorkEntry(models.Model):
             res = self._set_current_contract(vals)
         except ValidationError:
             return
-        if res.get('version_id'):
-            self.version_id = res.get('version_id')
+        if version_id := res.get('version_id'):
+            self.version_id = version_id
 
     @api.depends('date_start', 'duration')
     def _compute_date_stop(self):

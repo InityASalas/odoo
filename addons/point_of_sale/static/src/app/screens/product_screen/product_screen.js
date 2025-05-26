@@ -70,10 +70,10 @@ export class ProductScreen extends Component {
             this.numberBuffer.reset();
         });
 
-        onWillRender(() => {
+        onWillRender(async () => {
             // If its a shared order it can be paid from another POS
             if (this.currentOrder?.state !== "draft") {
-                this.pos.addNewOrder();
+                await this.pos.addNewOrder();
             }
         });
 

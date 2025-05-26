@@ -15,22 +15,31 @@ class TestClaimReward(WebsiteSaleCommon):
         super().setUpClass()
 
         cls.WebsiteSaleController = WebsiteSale()
+<<<<<<< 84d85a99eb74a384e238deb05323e248a8f0ce84
 
         cls.user_portal = cls._create_new_portal_user()
         cls.partner_portal = cls.user_portal.partner_id
+||||||| a43ef8e15f4e0ee28bdb1975a8a359d3373e8d2c
+        cls.website = cls.env.ref('website.default_website')
+=======
+        cls.website = cls.env.ref('website.default_website').with_user(cls.user_portal)
+
+        cls.env['product.pricelist'].search([]).action_archive()
+>>>>>>> d404c6772792479a2cde7ea62d8b84cc601aafd7
 
         tag = cls.env['product.tag'].create({
             'name': 'multi reward',
         })
-
         cls.product1, cls.product2 = cls.env['product.product'].create([
             {
             'name': 'Test Product',
             'list_price': 10.0,
+            'taxes_id': False,
             'product_tag_ids': tag,
         }, {
             'name': 'Test Product 2',
             'list_price': 20.0,
+            'taxes_id': False,
             'product_tag_ids': tag,
         }])
 
@@ -103,7 +112,13 @@ class TestClaimReward(WebsiteSaleCommon):
         website = cart.website_id.with_user(self.user_portal)
         discount_reward = self.coupon_program.reward_ids.filtered('discount')
 
+<<<<<<< 84d85a99eb74a384e238deb05323e248a8f0ce84
         with MockRequest(website.env, website=website, sale_order_id=cart.id):
+||||||| a43ef8e15f4e0ee28bdb1975a8a359d3373e8d2c
+        with MockRequest(self.env, website=self.website, sale_order_id=self.cart.id):
+=======
+        with MockRequest(self.website.env, website=self.website, sale_order_id=self.cart.id):
+>>>>>>> d404c6772792479a2cde7ea62d8b84cc601aafd7
             self.WebsiteSaleController.pricelist(promo=self.coupon.code)
             self.assertFalse(cart.order_line.reward_id)
 

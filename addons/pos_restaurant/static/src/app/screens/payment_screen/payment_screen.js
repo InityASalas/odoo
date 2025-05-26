@@ -25,8 +25,13 @@ patch(PaymentScreen.prototype, {
         return await super.afterOrderValidation(...arguments);
     },
     async validateOrder(isForceValidate) {
-        if (this.pos.config.module_pos_restaurant && this.pos.getOrder().hasChange) {
-            const confirmed = await ask(this.dialog, {
+        let confirmed = false;
+        if (
+            this.pos.config.module_pos_restaurant &&
+            this.pos.getOrder().hasChange &&
+            !this.pos.getOrder().is_refund
+        ) {
+            confirmed = await ask(this.dialog, {
                 title: _t("Warning !"),
                 body: _t(
                     "It seems that the order has not been sent. Would you like to send it to preparation?"
@@ -34,10 +39,10 @@ patch(PaymentScreen.prototype, {
                 confirmLabel: _t("Order"),
                 cancelLabel: _t("Discard"),
             });
-            if (confirmed) {
-                await this.pos.sendOrderInPreparationUpdateLastChange(this.currentOrder);
-            }
         }
         await super.validateOrder(...arguments);
+        if (confirmed) {
+            await this.pos.sendOrderInPreparationUpdateLastChange(this.currentOrder);
+        }
     },
 });

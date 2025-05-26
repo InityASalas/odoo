@@ -321,7 +321,7 @@ class HrEmployee(models.Model):
     def _compute_current_version_id(self):
         for employee in self:
             version = self.env['hr.version'].search(
-                [('employee_id', '=', employee.id), ('date_version', '<=', fields.Date.today())],
+                [('employee_id', 'in', employee.ids), ('date_version', '<=', fields.Date.today())],
                 order='date_version desc',
                 limit=1,
             )

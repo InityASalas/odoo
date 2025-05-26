@@ -505,6 +505,26 @@ class TestSaleOrder(SaleCommon):
 
         self.assertIn(self.partner2, sale_order.message_partner_ids)
 
+    def test_scheduled_mark_so_as_sent(self):
+        """Check that a order gets marked as sent after a scheduled message was sent."""
+        self.env['mail.scheduled.message'].search([]).unlink()
+        order = self.sale_order
+        composer = self.env['mail.compose.message'].with_context(
+            active_id=order.id,
+            active_ids=order.ids,
+            active_model=order._name,
+            mark_so_as_sent=True,
+        ).create({'body': '<h1>Your Sales Order</h1>'})
+        composer.action_schedule_message(
+            scheduled_date=fields.Datetime.now() + timedelta(hours=1),
+        )
+
+        scheduled_message = self.env['mail.scheduled.message'].search([])
+        self.assertEqual(len(scheduled_message), 1)
+
+        scheduled_message.post_message()
+        self.assertEqual(order.state, 'sent')
+
     def test_so_discount_is_not_reset(self):
         """ Discounts should not be recomputed on order confirmation """
         with patch(

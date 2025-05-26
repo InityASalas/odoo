@@ -1121,7 +1121,7 @@ class HrEmployee(models.Model):
         date_from_date = datetime.strptime(date_from, '%Y-%m-%d %H:%M:%S').date()
         date_to_date = datetime.strptime(date_to, '%Y-%m-%d %H:%M:%S').date() if date_to else None
         employee_versions = self.env['hr.version'].sudo().search([('employee_id', '=', self.id)]).filtered(
-            lambda v: v.is_overlapping_period(date_from_date, date_to_date))
+            lambda v: v._is_overlapping_period(date_from_date, date_to_date))
         if not employee_versions:
             # Checking the calendar directly allows to not grey out the leaves taken
             # by the employee or fallback to the company calendar
@@ -1243,7 +1243,7 @@ class HrEmployee(models.Model):
         Returns the versions of the employee between date_from and date_to
         that have at least 1 day in contract during that period
         """
-        return self.version_ids.filtered(lambda v: v.is_overlapping_period(date_from, date_to))
+        return self.version_ids.filtered(lambda v: v._is_overlapping_period(date_from, date_to))
 
     # ---------------------------------------------------------
     # Messaging

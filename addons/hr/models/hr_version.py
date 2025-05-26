@@ -228,7 +228,7 @@ class HrVersion(models.Model):
         return ((not self.contract_date_start or self.date_start <= date) and
                 (not self.date_end or self.date_end >= date))
 
-    def is_overlapping_period(self, date_from, date_to):
+    def _is_overlapping_period(self, date_from, date_to):
         """
         Return True if the employee is at least in contract one day during the period given
         :param date date_from: the start of the period

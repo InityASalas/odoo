@@ -114,7 +114,7 @@ export const fieldService = {
             // @ts-ignore
             domain = Domain.and([[[definitionRecordField, "!=", false]], domain]).toList();
 
-            const result = await orm.webSearchRead(definitionRecordModel, domain, {
+            const result = await orm.cached.webSearchRead(definitionRecordModel, domain, {
                 specification: {
                     display_name: {},
                     [definitionRecordField]: {},

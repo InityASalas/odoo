@@ -58,7 +58,6 @@ class HrEmployee(models.Model):
         string='Employee Versions',
         groups="hr.group_hr_user")
     versions_count = fields.Integer(compute='_compute_versions_count', groups="hr.group_hr_user")
-    is_last_version = fields.Boolean(compute='_compute_is_last_version', groups="hr.group_hr_user")
 
     @api.model
     def _lang_get(self):
@@ -344,13 +343,6 @@ class HrEmployee(models.Model):
             domain = [('id', operator, value)]
 
         return [('id', 'in', self.env['hr.version']._search(domain).select('employee_id'))]
-
-    def _compute_is_last_version(self):
-        for employee in self:
-            if not employee.version_ids:
-                employee.is_last_version = True
-            else:
-                employee.is_last_version = employee.version_id == employee.version_ids[-1]
 
     def _field_to_sql(self, alias, fname, query=None, flush: bool = True) -> SQL:
         """This is required to search for the related fields of version_id as version_id is not stored"""

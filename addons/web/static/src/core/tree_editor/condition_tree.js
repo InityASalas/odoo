@@ -317,23 +317,6 @@ function addChild(parent, child) {
 }
 
 /**
- * @param {Condition} condition
- * @returns {Condition}
- */
-function getNormalizedCondition(condition) {
-    let { operator, negate } = condition;
-    if (negate && typeof operator === "string" && TERM_OPERATORS_NEGATION[operator]) {
-        operator = TERM_OPERATORS_NEGATION[operator];
-        negate = false;
-    }
-    return { ...condition, operator, negate };
-}
-
-function normalizeCondition(condition) {
-    Object.assign(condition, getNormalizedCondition(condition));
-}
-
-/**
  * @param {AST[]} ASTs
  * @param {Options} [options={}]
  * @param {boolean} [negate=false]
@@ -372,7 +355,6 @@ function _construcTree(ASTs, options = {}, negate = false) {
                 tree.value = Array.isArray(tree.value) ? tree.value : [tree.value];
             }
         }
-        normalizeCondition(tree);
     }
     let remaimingASTs = tailASTs;
     if (tree.type === "connector") {
@@ -719,7 +701,6 @@ function _expressionFromTree(tree, options, isRoot = false) {
         return tree.value;
     }
 
-    tree = getNormalizedCondition(tree);
     const { path, operator, value } = tree;
 
     const op = operator === "=" ? "==" : operator; // do something about is ?
@@ -843,7 +824,7 @@ function normalizeConnector(connector) {
         if (newTree.negate) {
             const newChild = { ...child, negate: !child.negate };
             if (newChild.type === "condition") {
-                return getNormalizedCondition(newChild);
+                return newChild;
             }
             return newChild;
         }

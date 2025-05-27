@@ -389,8 +389,8 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
             } else if (fieldDef.name === "__time") {
                 return {
                     component: TimePicker,
-                    extractProps: ({ value, update }) => ({
-                        value: parseTime(value, true),
+                    extractProps: ({ value, update, displayPlaceholder }) => ({
+                        value: params.startEmpty ? false : parseTime(value, true),
                         onChange: (time) =>
                             update(
                                 DateTime.fromObject(
@@ -398,6 +398,7 @@ function getPartialValueEditorInfo(fieldDef, operator, params = {}) {
                                 ).toFormat("HH:mm:ss")
                             ),
                         showSeconds: true,
+                        displayPlaceholder,
                     }),
                     isSupported: (value) =>
                         typeof value === "string" && Boolean(parseTime(value, true)),

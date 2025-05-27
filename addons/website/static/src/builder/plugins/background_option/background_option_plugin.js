@@ -6,7 +6,6 @@ class BackgroundOptionPlugin extends Plugin {
     static id = "backgroundOption";
     resources = {
         normalize_handlers: this.normalize.bind(this),
-        system_classes: ["o_colored_level"],
     };
     normalize(root) {
         const markColorLevelSelectorParams = this.getResource("mark_color_level_selector_params");

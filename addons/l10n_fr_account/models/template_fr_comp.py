@@ -6,18 +6,19 @@ from odoo.addons.account.models.chart_template import template
 class AccountChartTemplate(models.AbstractModel):
     _inherit = 'account.chart.template'
 
-    @template('fr')
-    def _get_fr_template_data(self):
+    @template('fr_comp')
+    def _get_fr_comp_template_data(self):
         return {
-            'name': _('General accounting plan'),
+            'name': _('Companies accounting plan'),
+            'parent': 'fr',
             'code_digits': 6,
             'property_account_receivable_id': 'fr_pcg_recv',
             'property_account_payable_id': 'fr_pcg_pay',
             'property_account_downpayment_categ_id': 'pcg_4191',
         }
 
-    @template('fr', 'res.company')
-    def _get_fr_res_company(self):
+    @template('fr_comp', 'res.company')
+    def _get_fr_comp_res_company(self):
         return {
             self.env.company.id: {
                 'account_fiscal_country_id': 'base.fr',
@@ -40,20 +41,3 @@ class AccountChartTemplate(models.AbstractModel):
                 'income_account_id': 'pcg_707_account',
             },
         }
-
-    @template('fr', 'account.journal')
-    def _get_fr_account_journal(self):
-        return {
-            'sale': {'refund_sequence': True},
-            'purchase': {'refund_sequence': True},
-        }
-
-    def _get_bank_fees_reco_account(self, company):
-        # French account for the bank fees reco model. We need to be as precise
-        # as possible in case it's modified so it's missing and not replaced.
-        fr_account = self.env['account.account'].with_company(company).search([
-            ('code', '=', '627800'),
-            ('account_type', '=', 'expense'),
-            ('name', '=', 'Other expenses and commissions on services supplied'),
-        ], limit=1)
-        return fr_account or super()._get_bank_fees_reco_account(company)

@@ -301,9 +301,10 @@ class HrVersion(models.Model):
         if not contract_template_id:
             return {}
         whitelist = self._get_whitelist_fields_from_template()
+        contract_template_vals = contract_template_id.copy_data()[0]
         return {
-            field: contract_template_id[field]
-                for field in contract_template_id._fields
+            field: value
+                for field, value in contract_template_vals.items()
                 if field in whitelist and not self.env['hr.version']._fields[field].related
         }
 

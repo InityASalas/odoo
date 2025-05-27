@@ -1,6 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+from dateutil.relativedelta import relativedelta
 from psycopg2.errors import UniqueViolation
 
+from odoo import fields
 from odoo.fields import Domain
 from odoo.tests import Form, users, new_test_user, HttpCase, tagged
 from odoo.addons.hr.tests.common import TestHrCommon
@@ -488,6 +490,27 @@ class TestHrEmployee(TestHrCommon):
         employee.resource_calendar_id = False
         self.assertTrue(employee.is_flexible)
         self.assertTrue(employee.is_fully_flexible)
+
+    def test_resource_calendar_sync_with_employee_one(self):
+        calendar = self.env['resource.calendar'].create({
+            'name': 'test calendar',
+            'flexible_hours': True,
+        })
+        self.assertTrue(self.employee.resource_id)
+        self.assertTrue(self.employee.resource_calendar_id)
+        self.assertEqual(self.employee.resource_calendar_id, self.employee.resource_id.calendar_id)
+        self.assertNotEqual(self.employee.resource_calendar_id, calendar)
+        self.assertTrue(self.employee.resource_calendar_id, self.employee.resource_id.calendar_id)
+        old_calendar = self.employee.resource_calendar_id
+        old_version = self.employee.version_id
+        old_version.date_version = old_version.date_version - relativedelta(days=1)
+        self.employee.resource_calendar_id = calendar
+        self.assertEqual(self.employee.resource_id.calendar_id, calendar)
+        version = self.employee.create_version({'resource_calendar_id': old_calendar.id, 'date_version': fields.Date.today()})
+        self.assertEqual(self.employee.current_version_id, version)
+        self.assertNotEqual(self.employee.current_version_id, old_version)
+        self.assertEqual(self.employee.resource_calendar_id, old_calendar)
+        self.assertEqual(self.employee.resource_id.calendar_id, old_calendar)
 
 
 @tagged('-at_install', 'post_install')

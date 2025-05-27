@@ -125,7 +125,7 @@ class HrVersion(models.Model):
     departure_description = fields.Html(string="Additional Information", groups="hr.group_hr_user", copy=False)
     departure_date = fields.Date(string="Departure Date", groups="hr.group_hr_user", copy=False, tracking=True)
 
-    resource_calendar_id = fields.Many2one('resource.calendar', check_company=True, string="Working Hours", tracking=True)
+    resource_calendar_id = fields.Many2one('resource.calendar', inverse='_inverse_resource_calendar_id', check_company=True, string="Working Hours", tracking=True)
     is_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
     is_fully_flexible = fields.Boolean(compute='_compute_is_flexible', store=True, groups="hr.group_hr_user")
     tz = fields.Selection(related='employee_id.tz')
@@ -417,6 +417,13 @@ class HrVersion(models.Model):
                 version.coach_id = manager
             elif not version.coach_id:
                 version.coach_id = False
+
+    def _inverse_resource_calendar_id(self):
+        for employee, versions in self.grouped('employee_id').items():
+            current_version = employee.current_version_id
+            for version in versions:
+                if version == current_version:
+                    employee.resource_id.calendar_id = version.resource_calendar_id
 
     def _get_salary_costs_factor(self):
         self.ensure_one()

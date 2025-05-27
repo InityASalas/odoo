@@ -27,11 +27,12 @@ export class TimePicker extends Component {
     };
     static props = {
         class: { type: String, optional: true },
-        value: { type: [String, Time], optional: true },
+        value: { type: [String, Time, { value: false }], optional: true },
         onChange: { type: Function, optional: true },
         onInvalid: { type: Function, optional: true },
         showSeconds: { type: Boolean, optional: true },
         minutesRounding: { type: Number, optional: true },
+        displayPlaceholder: { type: Boolean, optional: true },
     };
     static defaultProps = {
         class: "",
@@ -39,6 +40,7 @@ export class TimePicker extends Component {
         onInvalid: () => {},
         showSeconds: false,
         minutesRounding: 5,
+        displayPlaceholder: true,
     };
 
     setup() {
@@ -121,6 +123,12 @@ export class TimePicker extends Component {
     onPropsUpdated(props) {
         if (this.suggestions.length === 0) {
             this.suggestions = this.getSuggestions(props);
+        }
+        if (props.value === false) {
+            this.state.value = new Time();
+            this.state.inputValue = "";
+            this.state.isValid = true;
+            return;
         }
 
         const newValue = Time.from(props.value);
@@ -240,6 +248,9 @@ export class TimePicker extends Component {
      * @returns {string}
      */
     getPlaceholder() {
+        if (this.props.displayPlaceholder === false) {
+            return;
+        }
         const seconds = this.props.showSeconds ? ":ss" : "";
         return `hh:mm${seconds}`;
     }

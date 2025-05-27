@@ -14,8 +14,11 @@
                             <span t-if="props.isSubTree">of:</span>
                             <span t-else="">of the following rules:</span>
                         </t>
-                        <t t-else="">
+                        <t t-elif="node.value === '|' ? node.negate : !node.negate">
                             <span><span t-if="!props.isSubTree">Match </span><strong>all records</strong></span>
+                        </t>
+                        <t t-else="">
+                            <span><span t-if="!props.isSubTree">Match </span><strong>no records</strong></span>
                         </t>
                     </div>
                     <t t-slot="default"/>
@@ -176,7 +179,7 @@
         </t>
         <t t-elif="info.component">
             <div t-attf-class="o_tree_editor_editor #{_classes}">
-                <t t-component="info.component" t-props="info.extractProps({ update, value })" />
+                <t t-component="info.component" t-props="info.extractProps({ update, value, displayPlaceholder })" />
             </div>
         </t>
     </t>

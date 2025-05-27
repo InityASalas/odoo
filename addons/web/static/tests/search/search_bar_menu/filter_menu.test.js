@@ -705,12 +705,12 @@ test("Add a custom filter", async () => {
         "&",
         ["foo", "=", "abc"],
         "&",
-        ["id", "=", 1],
         "&",
-        ["id", "=", 1],
+        ["id", "in", []],
+        ["id", "in", []],
         "|",
-        ["id", "=", 1],
-        ["id", "=", 1],
+        ["id", "in", []],
+        ["id", "in", []],
     ]);
 
     // open again the search menu -> the custom filter should not be displayed

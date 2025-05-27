@@ -27,7 +27,7 @@ export class BuilderOptionsPlugin extends Plugin {
         "getReloadSelector",
     ];
     resources = {
-        step_added_handlers: () => this.updateContainers(),
+        step_added_handlers: this.onStepAdded.bind(this),
         clean_for_save_handlers: this.cleanForSave.bind(this),
         post_undo_handlers: this.restoreContainer.bind(this),
         post_redo_handlers: this.restoreContainer.bind(this),
@@ -100,7 +100,7 @@ export class BuilderOptionsPlugin extends Plugin {
         return null;
     }
 
-    updateContainers(target, { force = false } = {}) {
+    updateContainers(target, { forceUpdate = false } = {}) {
         if (this.dependencies.history.getIsCurrentStepModified()) {
             console.warn(
                 "Should not have any mutations in the current step when you update the container selection"
@@ -118,11 +118,12 @@ export class BuilderOptionsPlugin extends Plugin {
         }
 
         const newContainers = this.computeContainers(this.target);
-        // Do not update the containers if they did not change or not forced to update.
+        // Do not update the containers if they did not change and are not
+        // forced to update.
         if (
+            !forceUpdate &&
             this.target?.isConnected &&
-            newContainers.length === this.lastContainers.length &&
-            !force
+            newContainers.length === this.lastContainers.length
         ) {
             const previousIds = this.lastContainers.map((c) => c.id);
             const newIds = newContainers.map((c) => c.id);
@@ -148,7 +149,7 @@ export class BuilderOptionsPlugin extends Plugin {
         }
 
         this.lastContainers = newContainers;
-        this.dependencies.history.setStepExtra("optionSelection", this.target);
+        this.dependencies.history.setStepExtra("currentTarget", this.target);
         this.dispatchTo("change_current_options_containers_listeners", this.lastContainers);
     }
 
@@ -264,9 +265,21 @@ export class BuilderOptionsPlugin extends Plugin {
         }
     }
 
+    onStepAdded({ step }) {
+        // If a target is specified, activate its containers.
+        const nextTargetEl = step.extraStepInfos.nextTarget;
+        if (nextTargetEl) {
+            const forceUpdate = step.extraStepInfos.forceContainerUpdate || false;
+            this.updateContainers(nextTargetEl, { forceUpdate });
+        } else {
+            this.updateContainers();
+        }
+    }
+
     restoreContainer(revertedStep) {
-        if (revertedStep && revertedStep.extraStepInfos.optionSelection) {
-            this.updateContainers(revertedStep.extraStepInfos.optionSelection);
+        if (revertedStep && revertedStep.extraStepInfos.currentTarget) {
+            const targetEl = revertedStep.extraStepInfos.currentTarget;
+            this.updateContainers(targetEl, { forceUpdate: true });
         }
     }
     getRemoveDisabledReason(el) {

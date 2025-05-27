@@ -258,8 +258,8 @@
                                                    domain="[('company_id', '=', company_id), ('employee_id', '=', False)]"
                                                    options="{'no_create': True, 'no_create_edit': True}"
                                                    context="{'form_view_ref': 'hr.hr_contract_template_form_view'}"/>
-                                            <field name="contract_date_start" string="Start Date"/>
-                                            <field name="contract_date_end" placeholder="No Limit" string="End Date"/>
+                                            <field name="contract_date_start" string="Start Date" placeholder="Not Employed"/>
+                                            <field name="contract_date_end" string="End Date" placeholder="Indefinite" invisible="not contract_date_start"/>
                                             <field name="employee_type"/>
                                             <label for="contract_type_id" string="Contract Type"/>
                                             <div class="o_row" name="contract_type">

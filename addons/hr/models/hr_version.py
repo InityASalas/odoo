@@ -187,6 +187,21 @@ class HrVersion(models.Model):
                     'Start date (%(start)s) must be earlier than contract end date (%(end)s).',
                     start=version.contract_date_start, end=version.contract_date_end,
                 ))
+            if version._check_overlap():
+                raise ValidationError(_('You cannot have overlapping contracts.'))
+
+    def _check_overlap(self):
+        self.ensure_one()
+        if not self.contract_date_start or not self.employee_id:
+            return False
+        for date_from, date_to in self.employee_id._get_all_contract_dates():
+            if self.contract_date_start == date_from and self.contract_date_end == date_to:
+                continue
+            date_to = date_to or date.max
+            contract_date_end = self.contract_date_end or date.max
+            if date_from <= contract_date_end and self.contract_date_start <= date_to:
+                return True
+        return False
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -202,6 +217,33 @@ class HrVersion(models.Model):
     def _unlink_except_last_version(self):
         if self.employee_id.versions_count == len(self):
             raise ValidationError(_('An employee must always have at least one version.'))
+
+    def write(self, values):
+        if self.env.context.get('sync_contract_dates'):
+            return super().write(values)
+
+        if values.get('contract_date_start') or 'contract_date_end' in values:
+            for version in self:
+
+                domain = [('id', '!=', version.id)]
+                if values.get('contract_date_start'):
+                    if isinstance(values['contract_date_start'], str):
+                        contract_date_start = fields.Date.from_string(values['contract_date_start'])
+                    else:
+                        contract_date_start = values['contract_date_start']
+                    domain += [('contract_date_start', '=', contract_date_start)]
+                if version.contract_date_start:
+                    domain += [('contract_date_start', '=', version.contract_date_start)]
+                if values.get('contract_date_start') and version.contract_date_start:
+                    domain.insert(1, '|')
+
+                if len(domain) > 1:
+                    sync_versions = version.employee_id.version_ids.filtered_domain(domain)
+                    sync_versions.with_context(sync_contract_dates=True).write({
+                        'contract_date_start': values.get('contract_date_start', version.contract_date_start),
+                        'contract_date_end': values.get('contract_date_end', version.contract_date_end),
+                    })
+        super().write(values)
 
     @api.depends('date_version')
     def _compute_display_name(self):

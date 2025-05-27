@@ -241,6 +241,11 @@ class HrEmployee(models.Model):
                 if field in whitelist and not self.env['hr.version']._fields[field].related:
                     self[field] = self.contract_template_id[field]
 
+    @api.onchange('contract_date_start')
+    def _onchange_contract_date_start(self):
+        if not self.contract_date_start:
+            self.contract_date_end = False
+
     @api.model
     def _get_new_hire_field(self):
         return 'create_date'
@@ -371,6 +376,9 @@ class HrEmployee(models.Model):
 
     def create_version(self, values):
         self.ensure_one()
+
+        if 'date_version' not in values:
+            raise ValueError("date_version is required")
         if isinstance(values['date_version'], str):
             date = parse(values['date_version']).date()
         else:
@@ -379,13 +387,37 @@ class HrEmployee(models.Model):
         version_to_copy = self._get_version(date)
         if not version_to_copy:
             version_to_copy = self.env['hr.version'].search([('employee_id', '=', self.id)], limit=1)
-
         if version_to_copy.date_version == date:
             return version_to_copy
 
-        if not 'employee_id' in values:
+        date_from, date_to = self._get_contract_dates(date)
+        values['contract_date_start'] = values.get('contract_date_start', date_from)
+        values['contract_date_end'] = values.get('contract_date_end', date_to)
+
+        if 'employee_id' not in values:
             values['employee_id'] = self.id
         return version_to_copy.copy(values)
+
+    def _get_all_contract_dates(self):
+        """
+        Return a list of intervals (date_from, date_to) where the employee is in contract.
+        For a permanent contract, the interval is (date_from, False).
+        """
+        self.ensure_one()
+        return self.env['hr.version']._read_group(
+            [('employee_id', '=', self.id), ('contract_date_start', '!=', False)],
+            ['contract_date_start:day', 'contract_date_end:day'])
+
+    def _get_contract_dates(self, date):
+        """
+        Return a tuple (date_from, date_to) of the contract at the date given.
+        (False, False) if the employee is not in contract at that date.
+        """
+        self.ensure_one()
+        for date_from, date_to in self._get_all_contract_dates():
+            if date_from <= date and (date_to is False or date_to >= date):
+                return date_from, date_to
+        return False, False
 
     def _compute_versions_count(self):
         version_count_per_employee = dict(
@@ -916,10 +948,15 @@ class HrEmployee(models.Model):
         return employees
 
     def write(self, vals):
-        self.version_id.last_modified_uid = self.env.uid
-        self.version_id.last_modified_date = fields.Datetime.now()
-        for employee in self:
-            employee._track_set_log_message(Markup("<b>Modified on the Version '%s'</b>") % employee.version_id.display_name)
+        # Only one write call for all the fields from hr.version
+        version_vals = {val: vals.pop(val) for val in vals.copy() if val in self._fields and self._fields[val].inherited}
+        if version_vals:
+            version_vals['last_modified_date'] = fields.Datetime.now()
+            version_vals['last_modified_uid'] = self.env.uid
+            self.version_id.write(version_vals)
+
+            for employee in self:
+                employee._track_set_log_message(Markup("<b>Modified on the Version '%s'</b>") % employee.version_id.display_name)
 
         if 'work_contact_id' in vals:
             account_ids = vals.get('bank_account_id') or self.bank_account_id.ids

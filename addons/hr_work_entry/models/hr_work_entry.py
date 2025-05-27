@@ -89,10 +89,9 @@ class HrWorkEntry(models.Model):
                     FROM
                         hr_work_entry AS hwe
                     LEFT JOIN
-                        hr_contract AS hc
+                        hr_version AS hc
                     ON
                         hwe.employee_id=hc.employee_id AND
-                        hc.state in ('open', 'close') AND
                         hwe.date_start >= hc.date_start AND
                         hwe.date_stop < COALESCE(hc.date_end + integer '1', '9999-12-31 23:59:59')
                     WHERE

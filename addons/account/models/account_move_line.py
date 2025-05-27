@@ -1212,8 +1212,16 @@ class AccountMoveLine(models.Model):
 
     @api.constrains('account_id', 'tax_ids', 'tax_line_id', 'reconciled')
     def _check_off_balance(self):
+<<<<<<< 1fc971f39cacd78f3fb13407ab039bfe2860d7ef
         for line in self:
             if line.account_id.account_type == 'off_balance':
+||||||| 7bab598a97ea006e223093b9b558d58691fc8150
+        for line in self:
+            if line.account_id.internal_group == 'off_balance':
+=======
+        for line in self.move_id.line_ids:
+            if line.account_id.internal_group == 'off_balance':
+>>>>>>> df3b3c9893d63d4fa5d83d09de47d6c5f77adcb8
                 if any(a.internal_group != line.account_id.internal_group for a in line.move_id.line_ids.account_id):
                     raise UserError(_('If you want to use "Off-Balance Sheet" accounts, all the accounts of the journal entry must be of this type'))
                 if line.tax_ids or line.tax_line_id:

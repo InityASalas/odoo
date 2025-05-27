@@ -299,7 +299,7 @@ class ProductTemplate(models.Model):
                     })
                 res[template.id] = {
                     'ptavs': previewed_ptavs_data,
-                    'remaining_count': max(0, len(previewed_ptavs) - show_count)
+                    'hidden_ptavs': max(0, len(previewed_ptavs) - show_count)
                 }
         return res
 

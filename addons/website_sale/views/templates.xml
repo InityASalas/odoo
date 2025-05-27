@@ -269,8 +269,8 @@
                         t-value="previewed_attribute_values[product.id]"
                     />
                     <t
-                        t-set="remaining_count"
-                        t-value="product_ptavs_data.get('remaining_count')"
+                        t-set="hidden_ptavs"
+                        t-value="product_ptavs_data.get('hidden_ptavs')"
                     />
                     <t
                         t-set="product_ptavs"
@@ -280,8 +280,7 @@
                         t-if="len(product_ptavs)>1"
                         t-attf-class="o_wsale_attribute_previewer d-flex align-items-center gap-1 flex-nowrap z-1 overflow-hidden
                         {{'show_on_hover' if product_ptavs[0]['ptav'].attribute_id.preview_variants == 'hover' and layout_mode != 'list' else ''}}"
-                        t-att-data-product-href="product_href"
-                        t-att-data-remaining-count="remaining_count"
+                        t-att-data-hidden-ptavs="hidden_ptavs"
                     >
                         <t t-foreach="product_ptavs" t-as="previewed_ptav">
                             <t t-set="ptav" t-value="previewed_ptav['ptav']"/>
@@ -295,6 +294,7 @@
                                 t-attf-id="o_product_variant_preview_{{ptav.id}}"
                                 class="o_product_variant_preview my-2 d-none"
                                 t-att-data-variant-image="previewed_ptav['variant_image_url']"
+                                t-att-data-variant-href="variant_href"
                             >
                                 <div
                                     t-if="ptav.attribute_id.is_thumbnail_visible"
@@ -310,7 +310,6 @@
                                     >
                                         <a
                                             class="d-block"
-                                            t-att-href="variant_href"
                                             t-att-title="ptav.name"
                                         />
                                     </label>
@@ -333,15 +332,13 @@
                                     >
                                         <a
                                             class="d-block"
-                                            t-att-href="variant_href"
                                             t-att-title="ptav.name"
                                         />
                                     </label>
                                 </div>
                                 <a
                                     t-else=""
-                                    t-attf-class="{{'btn-sm' if ppr != 2 else ''}} btn bg-body text-body"
-                                    t-att-href="variant_href"
+                                    t-attf-class="{{'' if ppr == 2 and layout_mode != 'list' else 'btn-sm'}} btn bg-body text-body"
                                     t-out="ptav.name"
                                 />
                             </span>

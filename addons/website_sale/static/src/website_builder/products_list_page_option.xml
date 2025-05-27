@@ -139,7 +139,18 @@
     </BuilderRow>
 
     <BuilderRow label.translate="Description" level="1">
-        <BuilderCheckbox action="'websiteConfig'" actionParam="{views: ['website_sale.products_description']}"/>
+        <BuilderCheckbox
+                action="'composite'"
+                actionParam="[
+                    {action: 'websiteConfig', actionParam: {views: ['website_sale.products_description']}},
+                    {action: 'previewTemplate', actionParam: {
+                        appliedSelector: '.oe_product_cart_has_description',
+                        templateId: 'website_sale.editor_preview.description',
+                        previewClass: 'o_wsale_previewing_description',
+                        placeAfter: '.oe_product_cart:not(.oe_product_cart_has_description) .o_wsale_products_item_title',
+                    }},
+                ]"
+        />
     </BuilderRow>
 
     <BuilderRow label.translate="Actions" level="1">

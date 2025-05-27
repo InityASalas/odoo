@@ -190,12 +190,13 @@ class HrVersion(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        versions = super().create(vals_list)
+        Version = self.env['hr.version']
         for vals in vals_list:
             if 'contract_template_id' in vals:
-                versions.copy_from_contract_template(self.env['hr.version'].browse(vals['contract_template_id']))
-                versions.update(vals)
-        return versions
+                contract_vals = Version.get_values_from_contract_template(Version.browse(vals['contract_template_id']))
+                # take vals from template, but priority given to the original vals
+                vals.update({**contract_vals, **vals})
+        return super().create(vals_list)
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_last_version(self):
@@ -254,14 +255,15 @@ class HrVersion(models.Model):
         # Those fields should have tracking=True in hr.version to see the change
         return ['job_id', 'department_id', 'contract_type_id', 'structure_type_id', 'wage', 'resource_calendar_id']
 
-    def copy_from_contract_template(self, contract_template_id):
+    def get_values_from_contract_template(self, contract_template_id):
         if not contract_template_id:
-            return
+            return {}
         whitelist = self._get_whitelist_fields_from_template()
-        for field in contract_template_id._fields:
-            if field in whitelist and not self.env['hr.version']._fields[field].related:
-                for version in self:
-                    version[field] = contract_template_id[field]
+        return {
+            field: contract_template_id[field]
+                for field in contract_template_id._fields
+                if field in whitelist and not self.env['hr.version']._fields[field].related
+        }
 
     @api.depends('wage')
     def _compute_contract_wage(self):

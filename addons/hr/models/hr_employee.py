@@ -231,7 +231,7 @@ class HrEmployee(models.Model):
     @api.onchange('contract_template_id')
     def _onchange_contract_template_id(self):
         if self.contract_template_id:
-            self.version_id.copy_from_contract_template(self.contract_template_id)
+            self.version_id.update(self.version_id.get_values_from_contract_template(self.contract_template_id))
 
     @api.onchange('contract_template_id')
     def _onchange_contract_template_id(self):

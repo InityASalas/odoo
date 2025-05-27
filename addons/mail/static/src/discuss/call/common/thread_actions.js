@@ -23,7 +23,7 @@ threadActionsRegistry
             component.rtc.toggleCall(component.thread);
         },
         sequence: 10,
-        sequenceQuick: 30,
+        sequenceQuick: (component) => (component.env.inDiscussApp ? null : 30),
         setup() {
             const component = useComponent();
             component.rtc = useService("discuss.rtc");
@@ -45,7 +45,7 @@ threadActionsRegistry
             component.rtc.toggleCall(component.thread, { camera: true });
         },
         sequence: 5,
-        sequenceQuick: (component) => (component.env.inDiscussApp ? 25 : 35),
+        sequenceQuick: (component) => (component.env.inDiscussApp ? null : 35),
         setup() {
             const component = useComponent();
             component.rtc = useService("discuss.rtc");

@@ -2,10 +2,10 @@
 
 import warnings
 import pytz
-from collections import defaultdict
 from datetime import datetime, time
 
 from odoo import models
+from odoo.tools.date_utils import convert_timezone
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 import holidays  # noqa: E402
@@ -63,7 +63,8 @@ class ResCompany(models.Model):
             public_holidays_values_dict = {}
 
             for holiday_date, holiday_name in public_holiday_dict.items():
-                holiday_start_utc, holiday_end_utc = self._convert_to_utc(holiday_date, holiday_date, company_tz)
+                holiday_start_utc = convert_timezone(datetime.combine(holiday_date, time.min), pytz.utc, company_tz)
+                holiday_end_utc = convert_timezone(datetime.combine(holiday_date, time.max), pytz.utc, company_tz)
                 overlapping = any(
                     holiday.date_from <= holiday_end_utc and
                     holiday.date_to >= holiday_start_utc

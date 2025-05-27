@@ -66,7 +66,7 @@ class HrVersion(models.Model):
     def _get_interval_leave_work_entry_type(self, interval, leaves, bypassing_codes):
         # returns the work entry time related to the leave that
         # includes the whole interval.
-        # Overriden in hr_work_entry_contract_holiday to select the
+        # Overriden in hr_work_entry_holiday to select the
         # global time off first (eg: Public Holiday > Home Working)
         self.ensure_one()
         for leave in leaves:
@@ -496,4 +496,4 @@ class HrVersion(models.Model):
         versions_todo = versions_todo[:BATCH_SIZE].generate_work_entries(start.date(), stop.date(), False)
         # if necessary, retrigger the cron to generate more work entries
         if version_todo_count > BATCH_SIZE:
-            self.env.ref('hr_work_entry_contract.ir_cron_generate_missing_work_entries')._trigger()
+            self.env.ref('hr_work_entry.ir_cron_generate_missing_work_entries')._trigger()

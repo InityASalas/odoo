@@ -8,7 +8,7 @@ export function useWorkEntry({ getEmployeeIds, getRange, onClose}) {
     return {
         onRegenerateWorkEntries: () => {
             const { start, end } = getRange();
-            action.doAction('hr_work_entry_contract.hr_work_entry_regeneration_wizard_action', {
+            action.doAction('hr_work_entry.hr_work_entry_regeneration_wizard_action', {
                 additionalContext: {
                     default_employee_ids: getEmployeeIds(),
                     date_start: serializeDate(start),

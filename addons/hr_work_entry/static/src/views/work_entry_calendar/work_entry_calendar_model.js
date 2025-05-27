@@ -1,5 +1,5 @@
 import { CalendarModel } from "@web/views/calendar/calendar_model";
-import { useWorkEntry } from "@hr_work_entry_contract/views/work_entry_hook";
+import { useWorkEntry } from "@hr_work_entry/views/work_entry_hook";
 
 const { DateTime } = luxon;
 

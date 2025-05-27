@@ -10,7 +10,7 @@ from odoo.exceptions import ValidationError
 from odoo.tests import Form
 from odoo.tests.common import tagged
 from odoo.tools import mute_logger
-from odoo.addons.hr_work_entry_contract.tests.common import TestWorkEntryBase
+from odoo.addons.hr_work_entry.tests.common import TestWorkEntryBase
 
 
 @tagged('work_entry')

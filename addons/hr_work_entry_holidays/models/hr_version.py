@@ -25,7 +25,7 @@ class HrVersion(models.Model):
     def _get_interval_leave_work_entry_type(self, interval, leaves, bypassing_codes):
         # returns the work entry time related to the leave that
         # includes the whole interval.
-        # Overriden in hr_work_entry_contract_holiday to select the
+        # Overriden in hr_work_entry_holiday to select the
         # global time off first (eg: Public Holiday > Home Working)
         self.ensure_one()
         if 'work_entry_type_id' in interval[2] and interval[2].work_entry_type_id.code in bypassing_codes:

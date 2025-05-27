@@ -1,8 +1,8 @@
 import { registry } from "@web/core/registry";
 import { CalendarController } from '@web/views/calendar/calendar_controller';
-import { WorkEntryCalendarModel } from "@hr_work_entry_contract/views/work_entry_calendar/work_entry_calendar_model";
+import { WorkEntryCalendarModel } from "@hr_work_entry/views/work_entry_calendar/work_entry_calendar_model";
 import { calendarView } from "@web/views/calendar/calendar_view";
-import { useWorkEntry } from "@hr_work_entry_contract/views/work_entry_hook";
+import { useWorkEntry } from "@hr_work_entry/views/work_entry_hook";
 
 export class WorkEntryCalendarController extends CalendarController {
     setup() {
@@ -24,7 +24,7 @@ export const WorkEntryCalendarView = {
     ...calendarView,
     Controller: WorkEntryCalendarController,
     Model: WorkEntryCalendarModel,
-    buttonTemplate: "hr_work_entry_contract.calendar.controlButtons",
+    buttonTemplate: "hr_work_entry.calendar.controlButtons",
 }
 
 registry.category("views").add("work_entries_calendar", WorkEntryCalendarView);

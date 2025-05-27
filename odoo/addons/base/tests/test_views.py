@@ -4682,7 +4682,6 @@ class TestInvisibleField(TransactionCaseWithUserDemo):
             'hr_contract_sign',
             'l10n_be_hr_payroll',
             'hr_payroll',
-            'hr_work_entry_contract',
             'hr',
             'hr_skills',
             'planning',

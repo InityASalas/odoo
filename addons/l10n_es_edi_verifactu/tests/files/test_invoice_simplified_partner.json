@@ -20,7 +20,7 @@
             "Subsanacion": "N",
             "TipoFactura": "F2",
             "DescripcionOperacion": "manual",
-            "FacturaSimplificadaArt7273": "S",
+            "FacturaSinIdentifDestinatarioArt61d": "S",
             "Desglose": {
                 "DetalleDesglose": [{
                     "Impuesto": "01",

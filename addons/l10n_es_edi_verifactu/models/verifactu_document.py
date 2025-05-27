@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
-from lxml import etree
 from pytz import timezone
 from werkzeug.urls import url_quote_plus, url_encode
-from zeep.plugins import HistoryPlugin
 
 import contextlib
 import hashlib
@@ -189,6 +187,8 @@ class L10nEsEdiVerifactuDocument(models.Model):
         ignored_tax_types = ['ignore', 'retencion']
         supported_tax_types = sujeto_tax_types + ignored_tax_types + ['no_sujeto', 'no_sujeto_loc', 'recargo', 'exento']
         tax_type_description = self.env['account.tax']._fields['l10n_es_type'].get_description(self.env)
+        if not tax_details['tax_details']:
+            errors.append(_("There are no taxes set on the invoice"))
         for tax_detail in tax_details['tax_details'].values():
             tax_type = tax_detail['l10n_es_type']
             if tax_type not in supported_tax_types:
@@ -202,6 +202,26 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 tax_amount = tax_detail['tax_amount']
                 if float_round(tax_percentage, precision_digits=2) or float_round(tax_amount, precision_digits=2):
                     errors.append(_("No Sujeto VAT taxes must have 0 amount."))
+            if len(tax_detail['recargo_taxes']) > 1:
+                errors.append(_("Only a single recargo tax may used per \"main\" tax."))
+
+        verifactu_tax_types = {
+            tax_detail['verifactu_tax_type']
+            for tax_detail in tax_details['tax_details'].values()
+            if tax_detail['is_main_tax']
+        }
+        if len(verifactu_tax_types) > 1:
+            name_map = self.env['account.tax']._l10n_es_edi_verifactu_get_tax_types_name_map()
+            human_readable_types = [name_map[t] for t in verifactu_tax_types]
+            errors.append(_("We only allow a single Veri*Factu Tax Type per document: %(types).",
+                            types=', '.join(human_readable_types)))
+
+        for record_detail in tax_details['tax_details_per_record'].values():
+            main_tax_details = [tax_detail for key, tax_detail in record_detail['tax_details'].items() if key['is_main_tax']]
+            if len(main_tax_details) > 1 or any(len(tax_detail['group_tax_details']) > 1 for tax_detail in main_tax_details):
+                errors.append(_("We only allow a single \"main\" tax per line."))
+                # Giving the errors once should be enough
+                break
 
         return errors
 
@@ -219,12 +239,29 @@ class L10nEsEdiVerifactuDocument(models.Model):
             render_vals = self._render_vals(
                 record_values, previous_record_identifier=previous_record_identifier,
             )
-            document_dict = {render_vals['record_type']: render_vals[render_vals['record_type']]}
-            json_string = json.dumps(document_dict)
-            document_vals.update({
-                'record_identifier': render_vals['record_identifier'],
-                'chain_index': company._l10n_es_edi_verifactu_get_next_chain_index(),
-            })
+            # We do not allow generating documents that would change the record identifier (i.e. values in the QR code)
+            record_identifier = render_vals['record_identifier']
+            old_record_identifier = record_values['record_identifier']
+            if old_record_identifier:
+                keys_to_check = ['IDEmisorFactura', 'NumSerieFactura', 'FechaExpedicionFactura', 'ImporteTotal']
+                changed_identifiers = {
+                    key: (old_record_identifier[key], record_identifier[key])
+                    for key in keys_to_check
+                    if old_record_identifier[key] != record_identifier[key]
+                }
+                if changed_identifiers:
+                    error_title = _("The Veri*Factu document was not created")
+                    errors = [_("The record identifier changed: %(key)s (%(old)s → %(new)s)",
+                                key=key, old=old, new=new)
+                              for key, (old, new) in changed_identifiers.items()]
+                    document_vals['errors'] = self._format_errors(error_title, errors)
+            if not document_vals.get('errors'):
+                document_dict = {render_vals['record_type']: render_vals[render_vals['record_type']]}
+                json_string = json.dumps(document_dict)
+                document_vals.update({
+                    'record_identifier': record_identifier,
+                    'chain_index': company._l10n_es_edi_verifactu_get_next_chain_index(),
+                })
 
         document = self.create(document_vals)
 
@@ -273,7 +310,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 [('chain_index', '!=', False)], order='chain_index asc', limit=1,
             )
             for record_values in record_values_list:
-                if record_values['documents']._filter_waiting():
+                if record_values.get('documents', self.env[self._name])._filter_waiting():
                     continue
                 document = self.env['l10n_es_edi_verifactu.document']._create_for_record(
                     record_values, previous_record_identifier=previous_document.record_identifier,
@@ -362,12 +399,11 @@ class L10nEsEdiVerifactuDocument(models.Model):
         company = self.env.company
 
         session = requests.Session()
-        history = HistoryPlugin()
 
-        settings = zeep.Settings(forbid_entities=False)
+        settings = zeep.Settings(forbid_entities=False, strict=False)
         wsdl = company._l10n_es_edi_verifactu_get_endpoints()['wsdl']
         client = zeep.Client(
-            wsdl['url'], session=session, settings=settings, plugins=[history],
+            wsdl['url'], session=session, settings=settings,
             operation_timeout=60, timeout=60,
         )
 
@@ -378,7 +414,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
         service = client.bind(wsdl['service'], wsdl['port'])
         operation = service[wsdl[operation]]
 
-        return operation, lambda: history.last_sent['envelope'] if history.last_sent else None
+        return operation
 
     @api.model
     def _get_zeep_registration_operations(self):
@@ -394,7 +430,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
         record_info = info['record_info']
 
         try:
-            register, get_last_sent = self._get_zeep_registration_operations()
+            register = self._get_zeep_registration_operations()
         except (zeep.exceptions.Error, requests.exceptions.RequestException) as error:
             errors.append(_("Networking error:\n%s", error))
             return info
@@ -415,16 +451,8 @@ class L10nEsEdiVerifactuDocument(models.Model):
         except zeep.exceptions.Fault as soapfault:
             info['state'] = 'rejected'
             errors.append(f"[{soapfault.code}] {soapfault.message}")
-            sent_xml_node = get_last_sent()
-            if sent_xml_node is not None:
-                xml = etree.tostring(sent_xml_node, xml_declaration=True, encoding='UTF-8', pretty_print=True).decode()
-            # TODO: log the xml and the error
         except zeep.exceptions.Error as error:
-            errors.append(_("Error while sending the document:\n%s", error))
-            sent_xml_node = get_last_sent()
-            if sent_xml_node is not None:
-                xml = etree.tostring(sent_xml_node, xml_declaration=True, encoding='UTF-8', pretty_print=True).decode()
-            # TODO: log the sent xml and the error
+            errors.append(_("Error while sending the batch document:\n%s", error))
 
         if errors:
             return info
@@ -696,30 +724,12 @@ class L10nEsEdiVerifactuDocument(models.Model):
         return render_vals
 
     @api.model
-    def _get_tipos(self, vals):
-        move_type = vals['move_type']
-        is_simplified = vals['is_simplified']
-
-        result = {
-            'TipoFactura': None,
-            'TipoRectificativa': None,
-        }
-        if move_type == 'out_invoice':
-            result['TipoFactura'] = 'F2' if is_simplified else 'F1'
-        else:
-            # move_type == 'out_refund':
-            result.update({
-                'TipoFactura': 'R5' if is_simplified else 'R1',
-                'TipoRectificativa': 'I',
-            })
-        return result
-
-    @api.model
     def _render_vals_operation(self, vals):
         company = vals['company']
         cancellation = vals['cancellation']
         invoice_date = self._format_date_fecha_type(vals['invoice_date'])
         is_simplified = vals['is_simplified']
+        move_type = vals['move_type']
         name = vals['name']
         partner = vals['partner']
 
@@ -748,7 +758,9 @@ class L10nEsEdiVerifactuDocument(models.Model):
 
         simplified_partner = self.env.ref('l10n_es.partner_simplified', raise_if_not_found=False)
         partner_is_simplified_partner = simplified_partner and partner == simplified_partner
+        partner_specified = partner and not partner_is_simplified_partner
 
+        # TODO: we could face zeep xsd validation issue here too
         if partner and not partner_is_simplified_partner:
             render_vals['Destinatarios'] = {
                 'IDDestinatario': [{
@@ -761,14 +773,24 @@ class L10nEsEdiVerifactuDocument(models.Model):
         if delivery_date:
             delivery_date = self._format_date_fecha_type(delivery_date)
 
-        tipos = self._get_tipos(vals)
+        if move_type == 'out_invoice':
+            tipo_factura = 'F2' if is_simplified and not partner_specified else 'F1'
+            tipo_rectificativa = None
+        else:
+            # move_type == 'out_refund':
+            tipo_factura = 'R5' if is_simplified else 'R1'
+            tipo_rectificativa = 'I'
 
         render_vals.update({
-            'TipoFactura': tipos['TipoFactura'],
-            'TipoRectificativa': tipos['TipoRectificativa'],  # may be None
+            'TipoFactura': tipo_factura,
+            'TipoRectificativa': tipo_rectificativa,  # may be None
             'FechaOperacion': delivery_date if delivery_date and delivery_date != invoice_date else None,
             'DescripcionOperacion': vals['description'] or 'manual',
-            'FacturaSimplificadaArt7273': 'S' if is_simplified else None,
+            # Note: error [1183]
+            # El campo FacturaSimplificadaArticulos7273 solo se podrá rellenar con S
+            # si TipoFactura es de tipo F1 o F3 o R1 o R2 o R3 o R4.
+            'FacturaSimplificadaArt7273': 'S' if is_simplified and partner_specified else None,
+            'FacturaSinIdentifDestinatarioArt61d': 'S' if is_simplified and not partner_specified else None,
         })
 
         refunded_document = vals['refunded_document']
@@ -791,25 +813,25 @@ class L10nEsEdiVerifactuDocument(models.Model):
         # See "Sistemas Informáticos de Facturación y Sistemas VERI*FACTU" Version 1.0.0 - "Validaciones" p. 22 f.
         render_vals = {}
 
+        # Note: We do not allow generating documents that would change the record identifier (i.e. the keys in the QR code)
         verifactu_state = vals['verifactu_state']
         submission_rejected_before = vals['rejected_before']
-        record_identifier_changed = False  # TODO: add a warning / check: record identifier / some qr code values changed
         verifactu_registered_with_document = verifactu_state in ('registered_with_errors', 'accepted')
         # In some cases we may not have the document / response which led to the registration
         verifactu_registered_without_document = bool(
             # We may not know it is registered due to a timeout (we sent it but did not get / process the response).
             # But then we will get a duplicate error when re-sending the document.
-            not record_identifier_changed
-            and vals['documents'].filtered(
-                lambda doc: (doc.document_type == 'submission'
-                             and doc.state == 'rejected'
-                             and doc.errors
-                             and "[3000] Registro de facturación duplicado." in doc.errors))
+            vals['documents'].filtered(
+            lambda doc: (doc.document_type == 'submission'
+                         and doc.state == 'rejected'
+                         and doc.errors
+                         and "[3000] Registro de facturación duplicado." in doc.errors))
         )
         verifactu_registered = verifactu_registered_with_document or verifactu_registered_without_document
         # The record may be otherwise known to the AEAT;
         # i.e. when switching to Veri*Factu after the original invoice was created.
-        otherwise_known_to_AEAT = False  # TODO: implement; should probably be taken directly from the record values?
+        # TODO: Currently not implemented / can not happen
+        otherwise_known_to_AEAT = not verifactu_registered and vals['record_identifier']
 
         if vals['cancellation']:
             render_vals = {
@@ -856,9 +878,10 @@ class L10nEsEdiVerifactuDocument(models.Model):
             record_tax_details = tax_details_per_record['tax_details']
             main_key = None
             recargo_key = None
-            # Note: We assume there is only a single (main_tax, recargo_tax) on a single line
+            # Note: There is only a single (main tax, recargo tax) pair on a single invoice line
+            #       (if any; see `_check_record_values`)
             for key in record_tax_details:
-                if key['with_recargo']:
+                if key['recargo_taxes']:
                     main_key = key
                 if key['l10n_es_type'] == 'recargo':
                     recargo_key = key
@@ -893,7 +916,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
             recargo_equivalencia = {}
             if tax_type in sujeto_tax_types:
                 calificacion_operacion = 'S2' if tax_type == 'sujeto_isp' else 'S1'
-                if tax_detail['with_recargo']:
+                if tax_detail['recargo_taxes']:
                     recargo_key = recargo_tax_details_key.get(key)
                     recargo_tax_detail = tax_details['tax_details'][recargo_key]
                     recargo_tax_percentage = recargo_tax_detail['amount']
@@ -906,7 +929,14 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 calificacion_operacion = 'N2' if tax_type == 'no_sujeto_loc' else 'N1'
             else:
                 # tax_type == 'exento' (see `_check_record_values`)
-                pass  # exempt_reason set already
+                # exempt_reason set already
+                # [1238]
+                #     Si la operacion es exenta no se puede informar ninguno de los campos
+                #     TipoImpositivo, CuotaRepercutida, TipoRecargoEquivalencia y CuotaRecargoEquivalencia.
+                tax_percentage = None
+                tax_amount = None
+                recargo_percentage = None
+                recargo_amount = None
 
             recargo_percentage = recargo_equivalencia.get('tax_percentage')
             recargo_amount = recargo_equivalencia.get('tax_amount')
@@ -920,10 +950,6 @@ class L10nEsEdiVerifactuDocument(models.Model):
             # See the following errors
             # [1198]
             #     Si CalificacionOperacion es S2 TipoImpositivo y CuotaRepercutida deberan tener valor 0.
-            # [1237]
-            #     El valor del campo CalificacionOperacion está informado como N1 o N2 y el impuesto es IVA.
-            #     No se puede informar de los campos TipoImpositivo (excepto con ClaveRegimen 17),
-            #     CuotaRepercutida (excepto con ClaveRegimen 17), TipoRecargoEquivalencia y CuotaRecargoEquivalencia.
             if calificacion_operacion in ('N1', 'N2') and verifactu_tax_type == '01':
                 tax_percentage = None
                 tax_amount = None
@@ -1078,7 +1104,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
         return self.filtered(lambda doc: not doc.state and doc.json_attachment_id)
 
     def _get_last(self, document_type):
-        return self.filtered(lambda doc: doc.document_type == document_type).sorted()[:1]
+        return self.filtered(lambda doc: doc.document_type == document_type and doc.json_attachment_id).sorted()[:1]
 
     def _get_state(self):
         last_registered_document = self.filtered(lambda doc: doc.state in ('registered_with_errors', 'accepted')).sorted()[:1]

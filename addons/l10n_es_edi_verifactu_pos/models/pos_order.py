@@ -109,26 +109,34 @@ class PosOrder(models.Model):
     def _l10n_es_edi_verifactu_get_record_values(self, cancellation=False):
         self.ensure_one()
 
-        errors = self._l10n_es_edi_verifactu_check(cancellation=cancellation)
-        if errors:
-            return {'errors': errors}
-
         company = self.company_id
+        document_type = 'cancellation' if cancellation else 'submission'
+        vals = {
+            'company': company,
+            'record': self,
+            'cancellation': cancellation,
+            'errors': self._l10n_es_edi_verifactu_check(cancellation=cancellation),
+            'document_vals': {
+                'pos_order_id': self.id,
+                'company_id': company.id,
+                'document_type': document_type,
+            },
+        }
+
+        if vals['errors']:
+            return vals
+
         company_in_simplified_regime = company.l10n_es_edi_verifactu_special_vat_regime == 'simplified'
 
         documents = self.l10n_es_edi_verifactu_document_ids
-        document_type = 'cancellation' if cancellation else 'submission'
         # Just checking whether the last document was rejected is enough; we do not allow to submit the same record
         # again after a cancellation (else we get the error '[3000] Registro de facturación duplicado.').
         rejected_before = documents._get_last(document_type).state == 'rejected'
         refunded_order = self.refunded_order_ids  # it is max 1 record (see `create_from_ui`)
 
-        vals = {
-            'cancellation': cancellation,
-            'record': self,
+        vals.update({
             'rejected_before': rejected_before,
             'verifactu_state': self.l10n_es_edi_verifactu_state,
-            'company': company,
             'delivery_date': False,
             'description': None,
             'invoice_date': self.date_order.date(),
@@ -137,11 +145,12 @@ class PosOrder(models.Model):
             'name': self.name,
             'partner': self.partner_id.commercial_partner_id,
             'refunded_document': refunded_order.l10n_es_edi_verifactu_document_ids._get_last('submission'),
-            'documents': self.l10n_es_edi_verifactu_document_ids,
+            'documents': documents,
+            'record_identifier': documents._get_last('submission').record_identifier,
             # TODO:
             'verifactu_tax_type': '01',
             'clave_regimen': '20' if company_in_simplified_regime else '01',
-        }
+        })
 
         tax_details_functions = self.env['account.tax']._l10n_es_edi_verifactu_get_tax_details_functions(company)
 
@@ -161,12 +170,6 @@ class PosOrder(models.Model):
             grouping_key_generator=tax_details_functions['grouping_key_generator'],
             distribute_total_on_line=distribute_total_on_line,
         )
-
-        vals['document_vals'] = {
-            'pos_order_id': self.id,
-            'company_id': company.id,
-            'document_type': document_type,
-        }
 
         vals['errors'] = self.env['l10n_es_edi_verifactu.document']._check_record_values(vals)
 

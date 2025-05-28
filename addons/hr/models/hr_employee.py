@@ -953,7 +953,8 @@ class HrEmployee(models.Model):
 
     def write(self, vals):
         # Only one write call for all the fields from hr.version
-        version_vals = {val: vals.pop(val) for val in vals.copy() if val in self._fields and self._fields[val].inherited}
+        new_vals = vals.copy()
+        version_vals = {val: new_vals.pop(val) for val in vals if val in self._fields and self._fields[val].inherited}
         if version_vals:
             version_vals['last_modified_date'] = fields.Datetime.now()
             version_vals['last_modified_uid'] = self.env.uid
@@ -991,7 +992,7 @@ class HrEmployee(models.Model):
                 employee.message_post(body=_(
                     'Additional Information: \n %(description)s',
                     description=vals.get('departure_description')))
-        res = super().write(vals)
+        res = super().write(new_vals)
         if res and 'resource_calendar_id' in vals:
             resources_per_calendar_id = defaultdict(lambda: self.env['resource.resource'])
             for employee in self:

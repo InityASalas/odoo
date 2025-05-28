@@ -1537,30 +1537,33 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 {
                     "content": "👍",
                     "count": 1,
+                    "guests": [],
                     "message": last_message.id,
+                    "partners": [{"id": partner_2, "type": "partner"}],
                     "sequence": min(reactions_0.ids),
-                    "personas": [{"id": partner_2, "type": "partner"}],
                 },
                 {
                     "content": "😁",
                     "count": 2,
+                    "guests": [],
                     "message": last_message.id,
-                    "sequence": min(reactions_1.ids),
-                    "personas": [
+                    "partners": [
                         {"id": partner_2, "type": "partner"},
                         {"id": partner_1, "type": "partner"},
                     ],
+                    "sequence": min(reactions_1.ids),
                 },
                 {
                     "content": "😊",
                     "count": 3,
+                    "guests": [],
                     "message": last_message.id,
-                    "sequence": min(reactions_2.ids),
-                    "personas": [
+                    "partners": [
                         {"id": partner_2, "type": "partner"},
                         {"id": partner_1, "type": "partner"},
                         {"id": partner_0, "type": "partner"},
                     ],
+                    "sequence": min(reactions_2.ids),
                 },
             ]
         if channel == self.channel_channel_public_1:
@@ -1568,32 +1571,36 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 {
                     "content": "😁",
                     "count": 1,
+                    "guests": [],
                     "message": last_message.id,
+                    "partners": [{"id": partner_2, "type": "partner"}],
                     "sequence": min(reactions_1.ids),
-                    "personas": [{"id": partner_2, "type": "partner"}],
                 },
                 {
                     "content": "😊",
                     "count": 3,
+                    "guests": [],
                     "message": last_message.id,
-                    "sequence": min(reactions_2.ids),
-                    "personas": [
+                    "partners": [
                         {"id": partner_2, "type": "partner"},
                         {"id": partner_1, "type": "partner"},
                         {"id": partner_0, "type": "partner"},
                     ],
+                    "sequence": min(reactions_2.ids),
                 },
                 {
                     "content": "😏",
                     "count": 2,
+                    "guests": [],
                     "message": last_message.id,
-                    "sequence": min(reactions_3.ids),
-                    "personas": [
+                    "partners": [
                         {"id": partner_1, "type": "partner"},
                         {"id": partner_0, "type": "partner"},
                     ],
+                    "sequence": min(reactions_3.ids),
                 },
             ]
+        return []
 
     def _expected_result_for_notification(self, channel):
         last_message = channel._get_last_messages()

@@ -125,17 +125,17 @@ class MailMessage(models.Model):
                     {
                         "content": content,
                         "count": len(reactions),
-                        "personas": [
-                                        {"id": guest.id, "name": guest.name, "type": "guest"}
-                                        for guest in reactions.guest_id
-                                    ]
-                                    + [
-                                        # sudo: res.partner - reading partners of reaction on accessible message is allowed
-                                        {"id": partner.id, "name": partner.name, "type": "partner"}
-                                        for partner in reactions.partner_id.sudo()
-                                    ],
+                        "guests": [
+                            {"id": guest.id, "name": guest.name, "type": "guest"}
+                            for guest in reactions.guest_id
+                        ],
                         "message": message.id,
-                    }
+                        "partners": [
+                            # sudo: res.partner - reading partners of reaction on accessible message is allowed
+                            {"id": partner.id, "name": partner.name, "type": "partner"}
+                            for partner in reactions.partner_id.sudo()
+                        ],
+                    },
                 )
             values.update(
                 {

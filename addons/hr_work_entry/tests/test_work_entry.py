@@ -62,7 +62,7 @@ class TestWorkEntry(TestWorkEntryBase):
         })
         work_entry.action_validate()
         work_entries = self.env['hr.work.entry'].search([('employee_id', '=', self.richard_emp.id)])
-        self.assertTrue(all((b.state == 'validated' for b in work_entries)), "Work entries should be approved")
+        self.assertTrue(all(b.state == 'validated' for b in work_entries), "Work entries should be approved")
 
     def test_validate_conflict_work_entry(self):
         start = datetime(2015, 11, 1, 9, 0, 0)

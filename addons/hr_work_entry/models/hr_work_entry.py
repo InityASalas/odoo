@@ -190,7 +190,7 @@ class HrWorkEntry(models.Model):
         mapped_contract_data = defaultdict(lambda: defaultdict(lambda: {'hours': 0.0}))
         for (date_start, date_stop), employees_by_calendar in mapped_periods.items():
             for calendar, employees in employees_by_calendar.items():
-                mapped_contract_data[(date_start, date_stop)][calendar] = employees._get_work_days_data_batch(
+                mapped_contract_data[date_start, date_stop][calendar] = employees._get_work_days_data_batch(
                     date_start, date_stop, compute_leaves=False, calendar=calendar)
 
         cached_periods = defaultdict(float)

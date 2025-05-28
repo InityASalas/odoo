@@ -25,6 +25,23 @@ class TestHrEmployee(TestHrCommon):
             'image_1920': False
         })
 
+    def test_employee_must_have_active_version(self):
+        employee = self.env['hr.employee'].create({
+            'name': 'Batman'
+        })
+        self.assertEqual(len(employee.version_ids), 1)
+        employee_version = employee.version_id
+        with self.assertRaises(ValidationError, msg="An employee should always have a version"):
+            employee.write({'version_ids': False})
+        with self.assertRaises(ValidationError, msg="An employee should always have a version"):
+            employee_version.unlink()
+        with self.assertRaises(ValidationError, msg="An employee should always have a version"):
+            employee_version.write({
+                'employee_id': self.employee_without_image.id
+            })
+        with self.assertRaises(ValidationError, msg="An employee should always have an active version"):
+            employee_version.write({'active': False})
+
     def test_employee_smart_button_multi_company(self):
         partner = self.env['res.partner'].create({'name': 'Partner Test'})
         company_A = self.env['res.company'].create({'name': 'company_A'})

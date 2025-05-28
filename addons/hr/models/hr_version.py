@@ -220,6 +220,14 @@ class HrVersion(models.Model):
             raise ValidationError(_('An employee must always have at least one version.'))
 
     def write(self, values):
+        # Employee Versions Validation
+        if 'employee_id' in values:
+            if self.filtered(lambda v: len(v.employee_id.version_ids) == 1 and values['employee_id'] != v.employee_id.id):
+                raise ValidationError("Cannot unassign the only active version of an employee.")
+        if 'active' in values and not values['active']:
+            if self.filtered(lambda v: len(v.employee_id.version_ids) == 1):
+                raise ValidationError("Cannot archive the only active version of an employee.")
+
         if self.env.context.get('sync_contract_dates'):
             return super().write(values)
 

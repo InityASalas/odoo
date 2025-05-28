@@ -56,7 +56,9 @@ class HrEmployee(models.Model):
         'hr.version',
         'employee_id',
         string='Employee Versions',
-        groups="hr.group_hr_user")
+        groups="hr.group_hr_user",
+        required=True
+    )
     versions_count = fields.Integer(compute='_compute_versions_count', groups="hr.group_hr_user")
 
     @api.model

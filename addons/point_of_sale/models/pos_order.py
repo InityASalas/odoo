@@ -277,11 +277,11 @@ class PosOrder(models.Model):
         help="Employee who uses the cash register.",
         default=lambda self: self.env.uid,
     )
-    amount_difference = fields.Monetary(string='Difference', readonly=True)
-    amount_tax = fields.Monetary(string='Taxes', readonly=True, required=True)
-    amount_total = fields.Monetary(string='Total', readonly=True, required=True)
-    amount_paid = fields.Monetary(string='Paid', required=True)
-    amount_return = fields.Monetary(string='Returned', required=True, readonly=True)
+    amount_difference = fields.Float(string='Difference', digits=0, readonly=True)
+    amount_tax = fields.Float(string='Taxes', digits=0, readonly=True, required=True)
+    amount_total = fields.Monetary(string='Total', currency_field='currency_id', readonly=True, required=True)
+    amount_paid = fields.Float(string='Paid', digits=0, required=True)
+    amount_return = fields.Float(string='Returned', digits=0, required=True, readonly=True)
     margin = fields.Monetary(string="Margin", compute='_compute_margin')
     margin_percent = fields.Float(string="Margin (%)", compute='_compute_margin', digits=(12, 4))
     is_total_cost_computed = fields.Boolean(compute='_compute_is_total_cost_computed',

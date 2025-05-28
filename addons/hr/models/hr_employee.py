@@ -203,7 +203,7 @@ class HrEmployee(models.Model):
         for (employee, version_id, vals) in zip(result, versions, data_list):
             version = self.env['hr.version'].browse(version_id)
             version.employee_id = employee.id
-            version.write({**vals.get('inherited', {})['hr.version'], **{'employee_id': employee.id}})
+            version.write({**vals.get('inherited', {})['hr.version'], 'employee_id': employee.id})
         return result
 
     @api.model

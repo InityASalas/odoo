@@ -4,7 +4,6 @@ from datetime import timedelta
 from pytz import timezone, UTC
 
 from odoo import api, fields, models, tools
-from odoo.addons.base.models.res_partner import _tz_get
 from odoo.tools import format_time
 
 

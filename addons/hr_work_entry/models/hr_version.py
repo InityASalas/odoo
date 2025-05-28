@@ -9,9 +9,8 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models
 from odoo.osv import expression
-from odoo.tools import ormcache, format_list
+from odoo.tools import ormcache
 from odoo.tools.intervals import Intervals
-from odoo.exceptions import UserError
 
 
 class HrVersion(models.Model):

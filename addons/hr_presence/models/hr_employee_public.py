@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import fields, models
@@ -16,4 +15,3 @@ class HrEmployeePublic(models.Model):
         ('present', 'Present'),
         ('absent', 'Absent'),
         ], default='out_of_working_hour')
-

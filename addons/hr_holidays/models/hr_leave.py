@@ -578,7 +578,7 @@ class HrLeave(models.Model):
             hours, days = (0, 0)
             if leave.employee_id:
                 # sudo as is_flexible is on version model and employee does not have access to it.
-                if leave.employee_id.sudo().is_flexible and leave.leave_type_request_unit in ['day','half_day']:
+                if leave.employee_id.sudo().is_flexible and leave.leave_type_request_unit in ['day', 'half_day']:
                     duration = leave.date_to - leave.date_from
                     days = ceil(duration.total_seconds() / (24 * 3600))
                 elif leave.leave_type_request_unit == 'day' and check_leave_type:
@@ -1415,13 +1415,13 @@ is approved, validated or refused.')
             if self.holiday_status_id.responsible_ids:
                 responsible = self.holiday_status_id.responsible_ids
         return responsible
-    
+
     def _get_to_clean_activities(self):
         return ['hr_holidays.mail_act_leave_approval', 'hr_holidays.mail_act_leave_second_approval']
 
     def activity_update(self):
         if self.env.context.get('mail_activity_automation_skip'):
-            return False
+            return
 
         to_clean, to_do, to_do_confirm_activity = self.env['hr.leave'], self.env['hr.leave'], self.env['hr.leave']
         activity_vals = []

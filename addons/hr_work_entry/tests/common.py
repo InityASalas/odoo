@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from dateutil.relativedelta import relativedelta
@@ -10,7 +9,7 @@ class TestWorkEntryBase(TransactionCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestWorkEntryBase, cls).setUpClass()
+        super().setUpClass()
 
         cls.env.user.tz = 'Europe/Brussels'
         cls.env.ref('resource.resource_calendar_std').tz = 'Europe/Brussels'

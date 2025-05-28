@@ -184,7 +184,7 @@ class HrWorkEntry(models.Model):
                 result[work_entry.id] = 0.0
                 continue
             employee = work_entry.version_id.employee_id
-            mapped_periods[(date_start, date_stop)][calendar] |= employee
+            mapped_periods[date_start, date_stop][calendar] |= employee
 
         # {(date_start, date_stop): {calendar: {'hours': foo}}}
         mapped_contract_data = defaultdict(lambda: defaultdict(lambda: {'hours': 0.0}))
@@ -201,11 +201,11 @@ class HrWorkEntry(models.Model):
                 result[work_entry.id] = 0.0
                 continue
             if (date_start, date_stop) in cached_periods:
-                result[work_entry.id] = cached_periods[(date_start, date_stop)]
+                result[work_entry.id] = cached_periods[date_start, date_stop]
             else:
                 dt = date_stop - date_start
                 duration = dt.days * 24 + round(dt.total_seconds()) / 3600  # Number of hours
-                cached_periods[(date_start, date_stop)] = duration
+                cached_periods[date_start, date_stop] = duration
                 result[work_entry.id] = duration
 
         for work_entry in self - no_version_work_entries:
@@ -213,7 +213,7 @@ class HrWorkEntry(models.Model):
             date_stop = work_entry.date_stop
             calendar = work_entry.version_id.resource_calendar_id
             employee = work_entry.version_id.employee_id
-            result[work_entry.id] = mapped_contract_data[(date_start, date_stop)][calendar][employee.id]['hours'] if calendar else 0.0
+            result[work_entry.id] = mapped_contract_data[date_start, date_stop][calendar][employee.id]['hours'] if calendar else 0.0
         return result
 
     def _is_duration_computed_from_calendar(self):

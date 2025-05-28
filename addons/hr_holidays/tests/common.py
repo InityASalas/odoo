@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import datetime
@@ -8,7 +7,6 @@ from odoo.addons.mail.tests.common import mail_new_test_user
 from odoo.fields import Datetime
 from odoo.tests import common
 from odoo.tests.common import TransactionCase
-
 
 
 class TestHrHolidaysCommon(common.TransactionCase):
@@ -97,7 +95,7 @@ class TestHolidayContract(TransactionCase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestHolidayContract, cls).setUpClass()
+        super().setUpClass()
 
         cls.leave_type = cls.env['hr.leave.type'].create({
             'name': 'Legal Leaves',

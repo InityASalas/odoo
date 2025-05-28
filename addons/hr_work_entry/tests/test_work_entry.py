@@ -1,4 +1,3 @@
-# # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import datetime
@@ -18,7 +17,7 @@ class TestWorkEntry(TestWorkEntryBase):
 
     @classmethod
     def setUpClass(cls):
-        super(TestWorkEntry, cls).setUpClass()
+        super().setUpClass()
         cls.tz = pytz.timezone(cls.richard_emp.tz)
         cls.start = datetime(2015, 11, 1, 1, 0, 0)
         cls.end = datetime(2015, 11, 30, 23, 59, 59)

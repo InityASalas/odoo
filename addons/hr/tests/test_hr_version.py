@@ -295,7 +295,7 @@ class TestHrVersion(TransactionCase):
         versions = []
         for i in range(10):
             versions.append(employee.create_version({
-                'date_version': f'20{31+i}-01-01',
+                'date_version': f'20{31 + i}-01-01',
             }))
         v3.write({
             'contract_date_end': '2040-12-31'

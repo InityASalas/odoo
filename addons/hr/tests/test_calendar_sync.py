@@ -41,7 +41,7 @@ class TestContractCalendars(TestHrCommon):
         # Setting a running contract with fully flexible calendar should set the employee's calendar to False (fully flexible)
         self.assertEqual(self.employee.resource_calendar_id, self.calendar_richard)
         flexijob = self.employee.create_version(self.contract_fully_flexible_values)
-        self.assertEqual(self.employee.version_id.id, flexijob.id,"The version of the employee should be updated to the last version.")
+        self.assertEqual(self.employee.version_id.id, flexijob.id, "The version of the employee should be updated to the last version.")
         self.assertFalse(self.employee.resource_calendar_id, "The employee should have a fully flexible calendar.")
 
     def test_contract_transfer_leaves(self):

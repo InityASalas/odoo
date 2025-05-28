@@ -914,14 +914,14 @@ test("correctly load statusbar when dynamic domain changes", async () => {
         `,
     });
     expect(queryAllTexts(".o_statusbar_status button:not(.d-none)")).toEqual(["Stage Project 1"]);
-    expect.verifySteps([["|", ["id", "=", 1], ["project_ids", "in", 1]]]);
+    expect.verifySteps([["|", ["id", "=", 1], "&", ["1", "=", "1"], ["project_ids", "in", 1]]]);
     await click(`[name="project_id"] .dropdown input`);
     await animationFrame();
     await click(`[name="project_id"] .dropdown .dropdown-menu .ui-menu-item:contains("Project 2")`);
     await animationFrame();
 
     expect(queryAllTexts(".o_statusbar_status button:not(.d-none)")).toEqual(["Stage Project 2"]);
-    expect.verifySteps([["|", ["id", "=", 2], ["project_ids", "in", 2]]]);
+    expect.verifySteps([["|", ["id", "=", 2], "&", ["1", "=", "1"], ["project_ids", "in", 2]]]);
     await clickSave();
     expect(queryAllTexts(".o_statusbar_status button:not(.d-none)")).toEqual(["Stage Project 2"]);
     expect.verifySteps([]);

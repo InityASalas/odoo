@@ -36,7 +36,8 @@
                 month_overflow="0"
                 quick_create="0"
                 color="color"
-                event_limit="5">
+                event_limit="5"
+                js_class="work_entries_calendar">
                 <!-- Sidebar favorites filters -->
                 <field name="employee_id" write_model="hr.user.work.entry.employee" write_field="employee_id" filter_field="is_checked" avatar_field="avatar_128" widget="many2one_avatar_employee"/>
                 <field name="state"/>
@@ -54,6 +55,11 @@
                 </header>
                 <div class="alert alert-warning text-center" role="alert" invisible="state != 'validated'">
                     Note: Validated work entries cannot be modified.
+                </div>
+                <div invisible="state != 'conflict'">
+                    <div class="alert alert-warning" role="alert" invisible="work_entry_type_id" name="work_entry_undefined">
+                        This work entry cannot be validated. The work entry type is undefined.
+                    </div>
                 </div>
                 <sheet>
                     <group>

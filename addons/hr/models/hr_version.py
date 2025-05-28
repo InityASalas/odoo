@@ -187,7 +187,7 @@ class HrVersion(models.Model):
                     'Start date (%(start)s) must be earlier than contract end date (%(end)s).',
                     start=version.contract_date_start, end=version.contract_date_end,
                 ))
-            if version._check_overlap():
+            if version.active and version._check_overlap():
                 raise ValidationError(_('You cannot have overlapping contracts.'))
 
     def _check_overlap(self):

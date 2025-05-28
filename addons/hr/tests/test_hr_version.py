@@ -56,6 +56,7 @@ class TestHrVersion(TransactionCase):
             })
 
     def test_contracts_no_overlap(self):
+        # Simple overlap cases
         employee = self.env['hr.employee'].create({
             'name': 'John Doe',
             'date_version': '2020-01-01',
@@ -83,6 +84,14 @@ class TestHrVersion(TransactionCase):
                 'contract_date_start': '2020-02-01',
                 'contract_date_end': '2020-10-31'
             })
+
+        # It should not detect overlap with archived versions
+        employee.create_version({
+            'active': False,
+            'date_version': '2019-06-01',
+            'contract_date_start': '2019-06-01',
+            'contract_date_end': '2020-05-31'
+        })
 
     def test_occupation_dates(self):
         """

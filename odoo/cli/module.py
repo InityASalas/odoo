@@ -1,6 +1,7 @@
 import logging
 import textwrap
 from contextlib import contextmanager
+from pathlib import Path
 
 import odoo
 from odoo.cli.command import Command
@@ -90,7 +91,7 @@ class Module(Command):
         if not db_names or len(db_names) > 1:
             self.parser.error("Please provide a single database in the config file")
         parsed_args.db_name = db_names[0]
-        if 'modules' in parsed_args:
+        if 'modules' in parsed_args and parsed_args.subcommand in ('install', 'upgrade'):
             parsed_args.modules = self._get_module_names(parsed_args.modules)
 
         match parsed_args.subcommand:
@@ -103,6 +104,15 @@ class Module(Command):
             case 'force-demo':
                 self._force_demo(parsed_args)
 
+    def _get_zip_path(self, path):
+        if (
+            (fullpath := Path(path).resolve())
+            and fullpath.exists()
+            and fullpath.suffix.lower() == '.zip'
+        ):
+            return fullpath
+        return None
+
     def _get_module_names(self, module_names):
         """ Get valid module names from disk before starting the Db environment """
         initialize_sys_path()
@@ -111,6 +121,7 @@ class Module(Command):
             module
             for module in module_names
             if get_module_path(module)
+            or self._get_zip_path(module)
         }
         if not valid_module_names:
             _logger.warning("No valid module names found")
@@ -129,8 +140,22 @@ class Module(Command):
 
     def _install(self, parsed_args):
         with self._create_env_context(parsed_args.db_name) as env:
-            if modules := self._get_modules(env, parsed_args.modules):
-                modules.button_immediate_install()
+
+            installable_modules = self._get_modules(env, parsed_args.modules)
+            parsed_args.modules = set(parsed_args.modules) - set(installable_modules.mapped("name"))
+            if installable_modules:
+                installable_modules.button_immediate_install()
+
+            importable_zipfiles = {
+                fullpath
+                for module in parsed_args.modules
+                if (fullpath := self._get_zip_path(module))
+            }
+            if 'imported' not in env['ir.module.module']._fields:
+                _logger.warning("Cannot import data modules unless the `base_import_module` module is installed")
+            else:
+                for importable_zipfile in importable_zipfiles:
+                    env['ir.module.module']._import_zipfile(importable_zipfile)
 
     def _upgrade(self, parsed_args):
         with self._create_env_context(parsed_args.db_name) as env:

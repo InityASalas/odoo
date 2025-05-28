@@ -1,12 +1,20 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import re
+from contextlib import contextmanager
+
 from odoo import http
 from odoo.addons.base.tests.common import TransactionCaseWithUserDemo
 from odoo.addons.website.tools import MockRequest
-from odoo.tests.common import TransactionCase
+from odoo.tests.common import TransactionCase, tagged
 
 
 class TestQweb(TransactionCaseWithUserDemo):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user_demo.group_ids = cls.env.ref('base.group_user')
+
     def test_qweb_post_processing_att(self):
         website = self.env.ref('website.default_website')
         t = self.env['ir.ui.view'].create({
@@ -23,6 +31,267 @@ class TestQweb(TransactionCaseWithUserDemo):
             """
         rendered = self.env['ir.qweb']._render(t.id, {'url': 'http://test.external.img/img2.png'}, website_id=website.id)
         self.assertEqual(rendered.strip(), result.strip())
+
+    def test_call_context_website(self):
+        self.env['ir.ui.view'].create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'website.dummy',
+            'arch_db': '<t t-name="dummy"><span>Stuff</span></t>'
+        })
+        template = self.env['ir.ui.view'].create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'root',
+            'arch_db': '''<t t-name="root"><div><t t-call="website.dummy"/></div></t>'''
+        })
+
+        result = """<div><span>Stuff</span></div>"""
+
+        rendered = self.env['ir.qweb']._render(template.id)
+        self.assertEqual(rendered.strip(), result.strip(), 'First rendering (without website_id)')
+
+        rendered = self.env['ir.qweb'].with_context(website_id=1)._render(template.id)
+        self.assertEqual(rendered.strip(), result.strip(), 'Second rendering (with website_id=1)')
+
+        rendered = self.env['ir.qweb'].with_context(website_id=None)._render(template.id)
+        self.assertEqual(rendered.strip(), result.strip(), 'Third rendering (with website_id=None)')
+
+        rendered = self.env['ir.qweb'].with_context(website_id=1)._render(template.id)
+        self.assertEqual(rendered.strip(), result.strip(), 'Fourth rendering (with website_id=1)')
+
+    def test_call_query_count(self):
+        """
+        see also test_call_query_count test in base/tests/test_queb.py
+        """
+        IrUiView = self.env['ir.ui.view']
+        IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_unused',
+            'arch_db': '''<span>unused</span>'''
+        })
+        header_0 = IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_header_0',
+            'arch_db': '''<span>0</span>'''
+        })
+        IrUiView.create({  # website_id=1
+            'name': 'test',
+            'type': 'qweb',
+            'website_id': 1,
+            'key': 'base.testing_header_1',
+            'arch_db': '''<span>WITH WEBSITE</span>'''
+        })
+        IrUiView.create({  # same key but website_id=False
+            'name': 'test',
+            'type': 'qweb',
+            'website_id': False,
+            'key': 'base.testing_header_1',
+            'arch_db': '''<span>NO WEBSITE</span>'''
+        })
+        IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_header',
+            'arch_db': f'''<t t-name="base.testing_header">
+                <t t-call="{header_0.id}"/>
+                    <header>header</header>
+                <t t-call="base.testing_header_1"/>
+            </t>'''
+        })
+        IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_footer_0',
+            'arch_db': '''<span>0</span>'''
+        })
+        IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_footer_1',
+            'arch_db': '''<span>1</span>'''
+        })
+        IrUiView.create({  # website_id=False
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_footer',
+            'arch_db': '''<t t-name="base.testing_footer">
+                <t t-call="base.testing_footer_0"/>
+                    <footer>footer</footer>
+                <t t-call="base.testing_footer_1"/>
+            </t>'''
+        })
+        IrUiView.create({  # website_id=1
+            'name': 'test',
+            'type': 'qweb',
+            'website_id': 1,
+            'key': 'base.testing_footer',
+            'arch_db': '''<t t-name="base.testing_footer">
+                <t t-call="base.testing_footer_0"/>
+                    <footer>footer WITH WEBSITE</footer>
+                <t t-call="base.testing_footer_1"/>
+            </t>'''
+        })
+        IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_layout',
+            'arch_db': '''<t t-name="base.testing_layout">
+                <section>
+                    <div id="header"><t t-call="base.testing_header"/></div>
+                    <article><t t-out="0"/></article>
+                    <div id="footer"><t t-call="base.testing_footer"/></div>
+                </section>
+            </t>'''
+        })
+        view = IrUiView.create({
+            'name': 'test',
+            'type': 'qweb',
+            'key': 'base.testing_content',
+            'arch_db': '''<t t-call="base.testing_layout"><div><t t-call="base.testing_header_0"/><t t-out="doc"/></div></t>'''
+        })
+        website = self.env['website'].browse(1)
+        other_website = self.env['website'].create({'name': 'testing'})
+
+        expected = """
+                <section>
+                    <div id="header"><span>0</span>
+                    <header>header</header><span>NO WEBSITE</span></div>
+                    <article><div><span>0</span>%s</div></article>
+                    <div id="footer"><span>0</span>
+                    <footer>footer</footer><span>1</span></div>
+                </section>"""
+
+        expected_website = """
+                <section>
+                    <div id="header"><span>0</span>
+                    <header>header</header><span>WITH WEBSITE</span></div>
+                    <article><div><span>0</span>%s</div></article>
+                    <div id="footer"><span>0</span>
+                    <footer>footer WITH WEBSITE</footer><span>1</span></div>
+                </section>"""
+
+        env = self.env(user=self.user_demo, context={
+            'lang': 'en_US',
+            'website_id': other_website.id,
+            'minimal_qcontext': True,
+            'cookies_allowed': True,
+        })
+
+        # add some website information in cache (default website, lang...)
+        with MockRequest(env, website=website) as request:
+            # SELECT res_lang
+            # SELECT ir_attachment from res.lang
+            # SELECT website.id from domain
+            # SELECT website.id ORDER BY sequence (without WHERE)
+            request.env['ir.qweb']._render('base.testing_unused')
+        env.user.name  # fetch user to not count this query
+        website.with_user(env.user).name  # fetch website to not count this query
+        other_website.with_user(env.user).name  # fetch website to not count this query
+
+        def test_render_queries(template, name, queries=0, with_website=False, invalidate_templates=False, invalidate_view=False):
+            if invalidate_templates:
+                env.registry.clear_cache('templates')
+            if invalidate_view:
+                IrUiView.invalidate_model()
+
+            init = env.cr.sql_log_count
+            if with_website:
+                queries += 1
+                with MockRequest(env, website=website) as request:
+                    value = str(request.env['ir.qweb']._render(template, {'doc': name}))
+                self.assertEqual(value, expected_website % name)
+            else:
+                value = str(env['ir.qweb']._render(template, {'doc': name}))
+                self.assertEqual(value, expected % name)
+            self.assertEqual(env.cr.sql_log_count - init, queries, f'Maximum queries: {queries}')
+
+        # SELECT visibility (from _render) + fields from in cache
+        # 'base.testing_content'
+        #     SELECT RECURSIVE arch combine
+        # 'base.testing_layout', 'base.testing_header_0'
+        #     SELECT id + fields from (xmlid + website_id)
+        #     SELECT RECURSIVE arch combine => TODO: batch me
+        # 'base.testing_header', 'base.testing_footer'
+        #     SELECT id + fields from (xmlid + website_id)
+        #     SELECT RECURSIVE arch combine => TODO: batch me
+        # 'base.testing_header_1', 'base.testing_footer_0', 'base.testing_footer_1'
+        #     SELECT id + fields from (xmlid + website_id)
+        #     SELECT RECURSIVE arch combine => TODO: batch me
+
+        first_search_fetch_xmlid_queries = 1  # instead of the first SELECT visibility
+        other_search_fetch_xmlid_queries = 3  # "SELECT id + fields from xmlid"
+        arch_combine_queries = 4  # SELECT RECURSIVE arch combine
+
+        self.env.registry.clear_cache('templates')
+        view.invalidate_recordset()
+
+        test_render_queries('base.testing_content', 'test-cold-0',
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True, invalidate_view=True)
+
+        test_render_queries('base.testing_content', 'test-cold-0', with_website=True,
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True, invalidate_view=True)
+
+        test_render_queries('base.testing_content', 'test-cold-0',
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries)  # 8
+
+        test_render_queries('base.testing_content', 'test-hot-0', 0)
+        test_render_queries('base.testing_content', 'test-hot-0', 0, with_website=True)
+        test_render_queries('base.testing_content', 'test-hot-1', 0)
+        test_render_queries('base.testing_content', 'test-hot-1', 0, with_website=True)
+        test_render_queries('base.testing_content', 'test-hot-2', 0, invalidate_view=True)
+        test_render_queries('base.testing_content', 'test-hot-2', 0, with_website=True, invalidate_view=True)
+        test_render_queries(view.id, 'test-hot-id', 0)
+        test_render_queries(view.id, 'test-hot-id', 0, with_website=True)
+
+        # like 'test-cold-0'
+
+        test_render_queries(view.id, 'test-cold-id-1',
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True)
+
+        test_render_queries(view.id, 'test-cold-id-1',
+                            queries=arch_combine_queries + 0 + other_search_fetch_xmlid_queries,  # 7
+                            invalidate_templates=True)
+
+        test_render_queries(view.id, 'test-cold-id-1', with_website=True,
+                            queries=arch_combine_queries + 0 + other_search_fetch_xmlid_queries,  # 7
+                            invalidate_templates=True)
+
+        # like 'test-cold-0' the first search query is replaced by a fetching
+        test_render_queries(view.id, 'test-cold-id-2', with_website=True,
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True, invalidate_view=True)
+        test_render_queries(view.id, 'test-cold-id-2',
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True, invalidate_view=True)
+
+        env = self.env(user=self.user_demo, context={
+            'lang': 'en_US',
+            'minimal_qcontext': True,
+            'cookies_allowed': True,
+        })
+
+        # like 'test-cold-0'
+        test_render_queries('base.testing_content', 'test-cold-1',
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True)
+        test_render_queries('base.testing_content', 'test-cold-1', with_website=True,
+                            queries=arch_combine_queries + first_search_fetch_xmlid_queries + other_search_fetch_xmlid_queries,  # 8
+                            invalidate_templates=True)
+
+        # like 'test-cold-0'
+        test_render_queries(view.id, 'test-cold-id-3',
+                            queries=arch_combine_queries + 0 + other_search_fetch_xmlid_queries,  # 7
+                            with_website=True,
+                            invalidate_templates=True)
+        test_render_queries(view.id, 'test-cold-id-3',
+                            queries=arch_combine_queries + 0 + other_search_fetch_xmlid_queries,  # 7
+                            invalidate_templates=True)
 
 
 class TestQwebProcessAtt(TransactionCase):
@@ -109,6 +378,7 @@ class TestQwebProcessAtt(TransactionCase):
             match.assert_called_with('/x', method='POST', query_args='y')
 
 
+@tagged('-at_install', 'post_install')
 class TestQwebDataSnippet(TransactionCase):
 
     @classmethod
@@ -238,3 +508,28 @@ class TestQwebDataSnippet(TransactionCase):
         '''
         rendered = self._render_snippet('website.s_d')
         self.assertEqual(self._normalize_xml(rendered), self._normalize_xml(expected_output))
+
+    def test_call_query_count_snippets_template(self):
+        actual_queries = []
+        with contextmanager(lambda: self._patchExecute(actual_queries))():
+            with MockRequest(self.env, website=self.env['website'].browse(1)):
+                render = self.env['ir.ui.view'].render_public_asset('website.snippets')
+                self.assertTrue('data-selector=".s_blockquote"' in render)
+
+        re_sql = re.compile(r'\bir_ui_view\b', re.IGNORECASE)
+        ir_ui_view_queries = [q for q in actual_queries if re_sql.search(q)]
+
+        # nb_snippets = 156
+        first_search = 1
+        t_call_snippets = 3
+        fetch_snippets = 0
+        get_root_view = 3
+        combine_views = 3
+
+        all_ir_ui_view_queries = first_search + t_call_snippets + fetch_snippets + get_root_view + combine_views  # 10
+        self.assertEqual(len(ir_ui_view_queries), all_ir_ui_view_queries, f'ir_ui_view queries: {all_ir_ui_view_queries}')
+
+        re_sql = re.compile(r'\bwebsite\b', re.IGNORECASE)
+        website_queries = [q for q in actual_queries if re_sql.search(q)]
+
+        self.assertEqual(len(website_queries), 19, f'Maximum queries: {19}')

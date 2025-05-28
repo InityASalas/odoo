@@ -381,6 +381,8 @@ class HrEmployee(models.Model):
             raise ValueError("date_version is required")
         if isinstance(values['date_version'], str):
             date = parse(values['date_version']).date()
+        elif isinstance(values['date_version'], datetime):
+            date = values['date_version'].date()
         else:
             date = values['date_version']
 
@@ -415,6 +417,7 @@ class HrEmployee(models.Model):
         """
         self.ensure_one()
         for date_from, date_to in self._get_all_contract_dates():
+            print(date_from, date_to, date)
             if date_from <= date and (date_to is False or date_to >= date):
                 return date_from, date_to
         return False, False

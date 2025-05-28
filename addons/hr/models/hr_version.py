@@ -194,11 +194,12 @@ class HrVersion(models.Model):
         self.ensure_one()
         if not self.contract_date_start or not self.employee_id:
             return False
+        contract_date_end = self.contract_date_end or date.max
         for date_from, date_to in self.employee_id._get_all_contract_dates():
             if self.contract_date_start == date_from and self.contract_date_end == date_to:
                 continue
             date_to = date_to or date.max
-            contract_date_end = self.contract_date_end or date.max
+            print(date_from, date_to, self.contract_date_start, contract_date_end)
             if date_from <= contract_date_end and self.contract_date_start <= date_to:
                 return True
         return False

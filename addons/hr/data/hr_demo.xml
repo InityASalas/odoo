@@ -477,7 +477,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="work_phone">(555)-169-1352</field>
             <field name="work_contact_id" ref="hr.work_contact_lur"/>
             <field name="image_1920" type="base64" file="hr/static/img/employee_lur-image.jpg"/>
-            <field name="create_date">2010-01-01 00:00:00</field>
+            <field name="date_version" eval="'2010-1-1'"/>
             <field name="sex">male</field>
         </record>
 
@@ -498,7 +498,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="work_phone">(555)-267-3735</field>
             <field name="work_contact_id" ref="hr.work_contact_jod"/>
             <field name="image_1920" type="base64" file="hr/static/img/employee_jod-image.jpg"/>
-            <field name="create_date">2010-01-01 00:00:00</field>
+            <field name="date_version" eval="'2010-1-1'"/>
             <field name="sex">female</field>
         </record>
 
@@ -549,7 +549,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="work_phone">(555)-331-5378</field>
             <field name="work_contact_id" ref="hr.work_contact_jep"/>
             <field name="image_1920" type="base64" file="hr/static/img/employee_jep-image.jpg"/>
-            <field name="create_date">2010-01-01 00:00:00</field>
+            <field name="date_version" eval="'2010-1-1'"/>
             <field name="sex">female</field>
             <field name="distance_home_work">13</field>
         </record>
@@ -571,7 +571,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="work_phone">(555)-518-8232</field>
             <field name="work_contact_id" ref="hr.work_contact_jgo"/>
             <field name="image_1920" type="base64" file="hr/static/img/employee_jgo-image.jpg"/>
-            <field name="create_date">2010-01-01 00:00:00</field>
+            <field name="date_version" eval="'2010-1-1'"/>
             <field name="sex">male</field>
         </record>
 
@@ -705,6 +705,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="create_date">2010-01-01 00:00:00</field>
             <field name="date_version" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m')+'-1'"/>
             <field name="contract_date_start" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m')+'-1'"/>
+            <field name="contract_date_end" eval="time.strftime('%Y')+'-12-1'"/>
             <field name="contract_type_id" ref="contract_type_permanent"/>
             <field name="structure_type_id" ref="structure_type_employee"/>
             <field name="wage">3750.00</field>
@@ -731,6 +732,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="create_date">2010-01-01 00:00:00</field>
             <field name="date_version" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m')+'-1'"/>
             <field name="contract_date_start" eval="(DateTime.today() - relativedelta(months=2)).strftime('%Y-%m')+'-1'"/>
+            <field name="contract_date_end" eval="time.strftime('%Y')+'-12-1'"/>
             <field name="contract_type_id" ref="contract_type_permanent"/>
             <field name="structure_type_id" ref="structure_type_employee"/>
             <field name="wage">3950.00</field>
@@ -788,7 +790,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="work_phone">(555)-532-3841</field>
             <field name="work_contact_id" ref="hr.work_contact_jog"/>
             <field name="image_1920" type="base64" file="hr/static/img/employee_jog-image.jpg"/>
-            <field name="create_date">2010-01-01 00:00:00</field>
+            <field name="date_version" eval="'2010-1-1'"/>
             <field name="sex">female</field>
             <field name="distance_home_work">50</field>
         </record>

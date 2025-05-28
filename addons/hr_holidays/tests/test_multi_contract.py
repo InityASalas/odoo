@@ -3,7 +3,7 @@
 from datetime import datetime, date
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged, freeze_time
-from odoo.addons.hr_holidays_contract.tests.common import TestHolidayContract
+from odoo.addons.hr_holidays.tests.common import TestHolidayContract
 
 
 @tagged('multi_contract')

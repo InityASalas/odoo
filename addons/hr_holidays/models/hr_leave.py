@@ -334,6 +334,7 @@ class HrLeave(models.Model):
 
     @api.depends('employee_id')
     def _compute_resource_calendar_id(self):
+        # YTI TODO: Clean that brol to improve performance
         employees_by_dates = defaultdict(lambda: self.env['hr.employee'])
         for leave in self:
             if leave.employee_id and leave.request_date_from:
@@ -344,6 +345,72 @@ class HrLeave(models.Model):
             if leave.employee_id and leave.request_date_from:
                 calendar = calendar_by_dates[leave.request_date_from][leave.employee_id.id]
             leave.resource_calendar_id = calendar or self.env.company.resource_calendar_id
+        for leave in self:
+            # We use the request dates to find the contracts, because date_from
+            # and date_to are not set yet at this point. Since these dates are
+            # used to get the contracts for which these leaves apply and
+            # contract start- and end-dates are just dates (and not datetimes)
+            # these dates are comparable.
+            if not leave.employee_id:
+                continue
+            contracts = self.env['hr.version'].search([('employee_id', '=', leave.employee_id.id)]).filtered(
+                lambda c: c.date_start <= leave.request_date_to and
+                          (not c.date_end or c.date_end >= leave.request_date_from))
+            if contracts:
+                # If there are more than one contract they should all have the
+                # same calendar, otherwise a constraint is violated.
+                leave.resource_calendar_id = contracts[:1].resource_calendar_id
+
+    # def _get_overlapping_contracts(self, contract_states=None):
+    #     self.ensure_one()
+    #     if contract_states is None:
+    #         contract_states = [
+    #             '|',
+    #             ('state', 'not in', ['draft', 'cancel']),
+    #             '&',
+    #             ('state', '=', 'draft'),
+    #             ('kanban_state', '=', 'done')
+    #         ]
+    #     domain = AND([contract_states, [
+    #         ('employee_id', '=', self.employee_id.id),
+    #         ('date_start', '<=', self.date_to),
+    #         '|',
+    #             ('date_end', '>=', self.date_from),
+    #             ('date_end', '=', False),
+    #     ]])
+    #     return self.env['hr.version'].sudo().search(domain)
+
+    # TODO: check if we still need this
+#     @api.constrains('date_from', 'date_to')
+#     def _check_contracts(self):
+#         """
+#             A leave cannot be set across multiple contracts.
+#             Note: a leave can be across multiple contracts despite this constraint.
+#             It happens if a leave is correctly created (not across multiple contracts) but
+#             contracts are later modifed/created in the middle of the leave.
+#         """
+#         for holiday in self.filtered('employee_id'):
+#             contracts = holiday._get_overlapping_contracts()
+#             if len(contracts.resource_calendar_id) > 1:
+#                 state_labels = {e[0]: e[1] for e in contracts._fields['state']._description_selection(self.env)}
+#                 raise ValidationError(
+#                     _("""A leave cannot be set across multiple contracts with different working schedules.
+#
+# Please create one time off for each contract.
+#
+# Time off:
+# %(time_off)s
+#
+# Contracts:
+# %(contracts)s""",
+#                       time_off=holiday.display_name,
+#                       contracts='\n'.join(_(
+#                           "Contract %(contract)s from %(start_date)s to %(end_date)s, status: %(status)s",
+#                           contract=contract.name,
+#                           start_date=format_date(self.env, contract.date_start),
+#                           end_date=format_date(self.env, contract.date_end) if contract.date_end else _("undefined"),
+#                           status=state_labels[contract.state]
+#                       ) for contract in contracts)))
 
     @api.depends('request_date_from_period', 'request_hour_from', 'request_hour_to', 'request_date_from', 'request_date_to',
                  'request_unit_half', 'request_unit_hours', 'employee_id')

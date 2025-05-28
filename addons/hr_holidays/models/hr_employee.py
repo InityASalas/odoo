@@ -206,6 +206,10 @@ class HrEmployee(models.Model):
         return super().create(vals_list)
 
     def write(self, values):
+        # Prevent the resource calendar of leaves to be updated by a write to
+        # employee. When this module is enabled the resource calendar of
+        # leaves are determined by those of the contracts.
+        self = self.with_context(no_leave_resource_calendar_update=True)
         if 'parent_id' in values:
             manager = self.env['hr.employee'].browse(values['parent_id']).user_id
             if manager:

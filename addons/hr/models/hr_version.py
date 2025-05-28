@@ -188,6 +188,7 @@ class HrVersion(models.Model):
                     start=version.contract_date_start, end=version.contract_date_end,
                 ))
             if version.active and version._check_overlap():
+                # YTI TODO: Raise user friendly error message explaining which contracts and which dates
                 raise ValidationError(_('You cannot have overlapping contracts.'))
 
     def _check_overlap(self):

@@ -199,7 +199,6 @@ class HrVersion(models.Model):
             if self.contract_date_start == date_from and self.contract_date_end == date_to:
                 continue
             date_to = date_to or date.max
-            print(date_from, date_to, self.contract_date_start, contract_date_end)
             if date_from <= contract_date_end and self.contract_date_start <= date_to:
                 return True
         return False

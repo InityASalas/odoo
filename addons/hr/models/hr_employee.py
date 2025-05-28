@@ -417,7 +417,6 @@ class HrEmployee(models.Model):
         """
         self.ensure_one()
         for date_from, date_to in self._get_all_contract_dates():
-            print(date_from, date_to, date)
             if date_from <= date and (date_to is False or date_to >= date):
                 return date_from, date_to
         return False, False

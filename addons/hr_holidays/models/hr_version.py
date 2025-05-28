@@ -9,10 +9,9 @@ class HrVersion(models.Model):
     _inherit = 'hr.version'
     _description = 'Employee Contract'
 
-    # TODO: check if we still need this
-    # @api.constrains('date_start', 'date_end', 'state')
-    # def _check_contracts(self):
-    #     self._get_leaves()._check_contracts()
+    @api.constrains('contract_date_start', 'contract_date_end')
+    def _check_contracts(self):
+        self._get_leaves()._check_contracts()
 
     def _get_leaves(self):
         return self.env['hr.leave'].search([

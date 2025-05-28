@@ -1555,16 +1555,6 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                             ),
                             "res.partner": self._filter_partners_fields(
                                 {
-                                    "email": self.user_test_inbox.partner_id.email,
-                                    "id": self.user_test_inbox.partner_id.id,
-                                    "name": "Paulette Testouille",
-                                },
-                                {
-                                    "email": self.user_test_inbox_2.partner_id.email,
-                                    "id": self.user_test_inbox_2.partner_id.id,
-                                    "name": "Jeannette Testouille",
-                                },
-                                {
                                     "avatar_128_access_token": self.env.user.partner_id._get_avatar_128_access_token(),
                                     "id": self.env.user.partner_id.id,
                                     "isInternalUser": True,
@@ -1574,6 +1564,16 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                                     "write_date": fields.Datetime.to_string(
                                         self.env.user.partner_id.write_date
                                     ),
+                                },
+                                {
+                                    "email": self.user_test_inbox.partner_id.email,
+                                    "id": self.user_test_inbox.partner_id.id,
+                                    "name": "Paulette Testouille",
+                                },
+                                {
+                                    "email": self.user_test_inbox_2.partner_id.email,
+                                    "id": self.user_test_inbox_2.partner_id.id,
+                                    "name": "Jeannette Testouille",
                                 },
                             ),
                         },
@@ -1668,16 +1668,6 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                             ),
                             "res.partner": self._filter_partners_fields(
                                 {
-                                    "email": self.user_test_inbox.partner_id.email,
-                                    "id": self.user_test_inbox.partner_id.id,
-                                    "name": "Paulette Testouille",
-                                },
-                                {
-                                    "email": self.user_test_inbox_2.partner_id.email,
-                                    "id": self.user_test_inbox_2.partner_id.id,
-                                    "name": "Jeannette Testouille",
-                                },
-                                {
                                     "avatar_128_access_token": self.env.user.partner_id._get_avatar_128_access_token(),
                                     "id": self.env.user.partner_id.id,
                                     "isInternalUser": True,
@@ -1687,6 +1677,16 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                                     "write_date": fields.Datetime.to_string(
                                         self.env.user.partner_id.write_date
                                     ),
+                                },
+                                {
+                                    "email": self.user_test_inbox.partner_id.email,
+                                    "id": self.user_test_inbox.partner_id.id,
+                                    "name": "Paulette Testouille",
+                                },
+                                {
+                                    "email": self.user_test_inbox_2.partner_id.email,
+                                    "id": self.user_test_inbox_2.partner_id.id,
+                                    "name": "Jeannette Testouille",
                                 },
                             ),
                         },

@@ -1497,7 +1497,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "create_date": create_date,
                 "date": date,
                 "default_subject": "anon 2 Ernest Employee",
-                "email_from": False,
                 "id": last_message.id,
                 "incoming_email_cc": False,
                 "incoming_email_to": False,

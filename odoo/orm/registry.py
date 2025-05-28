@@ -10,7 +10,6 @@ import inspect
 import logging
 import os
 import threading
-import time
 import typing
 import warnings
 from collections import defaultdict, deque
@@ -23,8 +22,9 @@ import psycopg2.sql
 
 from odoo import sql_db
 from odoo.tools import (
-    SQL,
     OrderedSet,
+    PerfCounter,
+    SQL,
     config,
     lazy_classproperty,
     remove_accents,
@@ -145,50 +145,49 @@ class Registry(Mapping[str, type["BaseModel"]]):
         :param new_db_demo: Whether to install demo data for the new database. If set to ``None``, the value will be
                             determined by the ``config['with_demo']``. Defaults to ``None``
         """
-        t0 = time.time()
-        registry: Registry = object.__new__(cls)
-        registry.init(db_name)
-        registry.new = registry.init = registry.registries = None  # type: ignore
+        with PerfCounter("Loading registry"):
+            registry: Registry = object.__new__(cls)
+            registry.init(db_name)
+            registry.new = registry.init = registry.registries = None  # type: ignore
 
-        # Initializing a registry will call general code which will in
-        # turn call Registry() to obtain the registry being initialized.
-        # Make it available in the registries dictionary then remove it
-        # if an exception is raised.
-        cls.delete(db_name)
-        cls.registries[db_name] = registry  # pylint: disable=unsupported-assignment-operation
-        try:
-            registry.setup_signaling()
-            # This should be a method on Registry
-            from odoo.modules.loading import load_modules, reset_modules_state  # noqa: PLC0415
+            # Initializing a registry will call general code which will in
+            # turn call Registry() to obtain the registry being initialized.
+            # Make it available in the registries dictionary then remove it
+            # if an exception is raised.
+            cls.delete(db_name)
+            cls.registries[db_name] = registry  # pylint: disable=unsupported-assignment-operation
             try:
-                if new_db_demo is None:
-                    new_db_demo = config['with_demo']
-                load_modules(
-                    registry,
-                    update_module=update_module or bool(upgrade_modules or install_modules),
-                    upgrade_modules=upgrade_modules,
-                    install_modules=install_modules,
-                    new_db_demo=new_db_demo,
-                )
+                registry.setup_signaling()
+                # This should be a method on Registry
+                from odoo.modules.loading import load_modules, reset_modules_state  # noqa: PLC0415
+                try:
+                    if new_db_demo is None:
+                        new_db_demo = config['with_demo']
+                    load_modules(
+                        registry,
+                        update_module=update_module or bool(upgrade_modules or install_modules),
+                        upgrade_modules=upgrade_modules,
+                        install_modules=install_modules,
+                        new_db_demo=new_db_demo,
+                    )
+                except Exception:
+                    reset_modules_state(db_name)
+                    raise
             except Exception:
-                reset_modules_state(db_name)
+                _logger.error('Failed to load registry')
+                del cls.registries[db_name]     # pylint: disable=unsupported-delete-operation
                 raise
-        except Exception:
-            _logger.error('Failed to load registry')
-            del cls.registries[db_name]     # pylint: disable=unsupported-delete-operation
-            raise
 
-        # load_modules() above can replace the registry by calling
-        # indirectly new() again (when modules have to be uninstalled).
-        # Yeah, crazy.
-        registry = cls.registries[db_name]  # pylint: disable=unsubscriptable-object
+            # load_modules() above can replace the registry by calling
+            # indirectly new() again (when modules have to be uninstalled).
+            # Yeah, crazy.
+            registry = cls.registries[db_name]  # pylint: disable=unsubscriptable-object
 
-        registry._init = False
-        registry.ready = True
-        registry.registry_invalidated = bool(update_module)
-        registry.signal_changes()
+            registry._init = False
+            registry.ready = True
+            registry.registry_invalidated = bool(update_module)
+            registry.signal_changes()
 
-        _logger.info("Registry loaded in %.3fs", time.time() - t0)
         return registry
 
     def init(self, db_name: str) -> None:

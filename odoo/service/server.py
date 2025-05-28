@@ -57,7 +57,7 @@ except ImportError:
 from odoo import api, sql_db
 from odoo.modules.registry import Registry
 from odoo.release import nt_service_name
-from odoo.tools import config, osutil, OrderedSet
+from odoo.tools import config, osutil, OrderedSet, PerfCounter
 from odoo.tools.cache import log_ormcache_stats
 from odoo.tools.misc import stripped_sys_argv, dumpstacks
 from .db import list_dbs
@@ -1380,6 +1380,23 @@ def _reexec(updated_modules=None):
     os.execve(sys.executable, args, os.environ)
 
 
+def run_post_install_tests(registry, update_module):
+    from odoo.tests import loader  # noqa: PLC0415
+    module_names = (registry.updated_modules if update_module else sorted(registry._init_modules))
+    post_install_suite = loader.make_suite(module_names, 'post_install')
+    if post_install_suite.has_http_case():
+        with registry.cursor() as cr:
+            env = api.Environment(cr, api.SUPERUSER_ID, {})
+            env['ir.qweb']._pregenerate_assets_bundles()
+    with PerfCounter(
+        "Post-install tests",
+        assertion_report=registry._assertion_report, sql_db=sql_db, log_method=_logger.info
+    ):
+        result = loader.run_suite(post_install_suite, global_report=registry._assertion_report)
+        registry._assertion_report.update(result)
+        registry._assertion_report.log_stats()
+
+
 def preload_registries(dbnames):
     """ Preload a registries, possibly run a test file."""
     # TODO: move all config checks to args dont check tools.config here
@@ -1390,41 +1407,20 @@ def preload_registries(dbnames):
             threading.current_thread().dbname = dbname
             update_module = config['init'] or config['update']
             registry = Registry.new(dbname, update_module=update_module, install_modules=config['init'], upgrade_modules=config['update'])
-
-            # run post-install tests
             if config['test_enable']:
-                from odoo.tests import loader  # noqa: PLC0415
-                t0 = time.time()
-                t0_sql = sql_db.sql_counter
-                module_names = (registry.updated_modules if update_module else
-                                sorted(registry._init_modules))
-                _logger.info("Starting post tests")
-                tests_before = registry._assertion_report.testsRun
-                post_install_suite = loader.make_suite(module_names, 'post_install')
-                if post_install_suite.has_http_case():
-                    with registry.cursor() as cr:
-                        env = api.Environment(cr, api.SUPERUSER_ID, {})
-                        env['ir.qweb']._pregenerate_assets_bundles()
-                result = loader.run_suite(post_install_suite, global_report=registry._assertion_report)
-                registry._assertion_report.update(result)
-                _logger.info("%d post-tests in %.2fs, %s queries",
-                             registry._assertion_report.testsRun - tests_before,
-                             time.time() - t0,
-                             sql_db.sql_counter - t0_sql)
-
-                registry._assertion_report.log_stats()
+                run_post_install_tests(registry, update_module)
             if registry._assertion_report and not registry._assertion_report.wasSuccessful():
                 rc += 1
-        except Exception:
+        except Exception:  # noqa: BLE001
             _logger.critical('Failed to initialize database `%s`.', dbname, exc_info=True)
             return -1
     return rc
+
 
 def start(preload=None, stop=False):
     """ Start the odoo http server and cron processor.
     """
     global server
-
     load_server_wide_modules()
     import odoo.http  # noqa: PLC0415
 

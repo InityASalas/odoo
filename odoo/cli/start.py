@@ -1,24 +1,15 @@
-import glob
-import itertools
 import os
 import sys
 
 from . import Command
 from .server import main
-from odoo.modules.module import get_module_root, MANIFEST_NAMES
+from odoo.modules.module import get_module_root, get_modules
 from odoo.service.db import _create_empty_database, DatabaseExists
 from odoo.tools import config
 
 
 class Start(Command):
     """ Quickly start the odoo server with default options """
-
-    def get_module_list(self, path):
-        mods = itertools.chain.from_iterable(
-            glob.glob(os.path.join(path, '*/%s' % mname))
-            for mname in MANIFEST_NAMES
-        )
-        return [mod.split(os.path.sep)[-2] for mod in mods]
 
     def run(self, cmdargs):
         config.parser.prog = self.prog
@@ -42,7 +33,7 @@ class Start(Command):
             project_path = os.path.abspath(os.path.join(project_path, os.pardir))
 
         # check if one of the subfolders has at least one module
-        mods = self.get_module_list(project_path)
+        mods = get_modules([project_path])
         if mods and '--addons-path' not in cmdargs:
             cmdargs.append('--addons-path=%s' % project_path)
 

@@ -18,6 +18,12 @@
                         groups="stock.group_stock_manager"/>
             </xpath>
             <xpath expr="//sheet/div[hasclass('oe_button_box')]" position="inside">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                <field name="l10n_in_ewaybill_id" invisible="1" groups="stock.group_stock_manager"/>
+=======
+                <field name="l10n_in_ewaybill_id" invisible="1" groups="stock.group_stock_manager"/> <!-- TODO: to be removed in master -->
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                 <button name="action_open_l10n_in_ewaybill"
                         class="oe_stat_button"
                         icon="fa-truck"

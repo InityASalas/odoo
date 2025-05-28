@@ -29,6 +29,20 @@
                             invisible="country_code != 'IN'"
                             type="object"/>
                 </div>
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                <field name="display_pan_warning" invisible="1"/>
+                <div class="alert alert-warning" role="alert"
+                        invisible="not display_pan_warning">
+                        PAN number is not same as the 3rd to 12th characters of the GST number.
+                </div>
+=======
+                <field name="display_pan_warning" invisible="1"/> <!-- TODO: to be removed in master -->
+                <div class="alert alert-warning" role="alert"
+                        invisible="not display_pan_warning">
+                        PAN number is not same as the 3rd to 12th characters of the GST number.
+                </div>
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
             </xpath>
         </field>
     </record>

@@ -10,8 +10,16 @@
                     <field name="max"/>
                     <field name="available" sum="Total Available"/>
                     <field name="company_id" groups="base.group_multi_company"/>
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                     <field name="company_id" column_invisible="True" groups="!base.group_multi_company"/>
                 </list>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                    <field name="company_id" column_invisible="True" groups="!base.group_multi_company"/>
+                </tree>
+=======
+                    <field name="company_id" column_invisible="True" groups="!base.group_multi_company"/> <!-- TODO: to be removed in master -->
+                </tree>
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
             </field>
         </record>
 

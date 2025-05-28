@@ -7,7 +7,19 @@
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
                 <field name="partner_shipping_id" position="before">
+<<<<<<< 4baf55a5d108063b0b60beddf332b6ae367f1871
                     <field name="l10n_id_need_kode_transaksi" invisible="1"/>
+||||||| 8c56804875498813af79e490c4db4667caddda5f
+                    <field name="l10n_id_need_kode_transaksi" invisible="1"/>
+                    <field name="l10n_id_attachment_id" invisible="1"/>
+                    <field name="l10n_id_kode_transaksi" invisible="country_code != 'ID' or not l10n_id_need_kode_transaksi" readonly="state in ['cancel', 'posted']" required="l10n_id_need_kode_transaksi"/>
+                    <field name="l10n_id_replace_invoice_id" invisible="country_code != 'ID'" readonly="state != 'draft'" options="{'m2o_dialog': False, 'no_create': True}"/>
+=======
+                    <field name="l10n_id_need_kode_transaksi" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="l10n_id_attachment_id" invisible="1"/> <!-- TODO: to be removed in master -->
+                    <field name="l10n_id_kode_transaksi" invisible="country_code != 'ID' or not l10n_id_need_kode_transaksi" readonly="state in ['cancel', 'posted']" required="l10n_id_need_kode_transaksi"/>
+                    <field name="l10n_id_replace_invoice_id" invisible="country_code != 'ID'" readonly="state != 'draft'" options="{'m2o_dialog': False, 'no_create': True}"/>
+>>>>>>> 3ab0285e88aef9d635340d874f45096338e9364f
                 </field>
                 <button name="button_draft" position="after">
                     <button name="reset_efaktur" string="Reset E-Faktur" type="object" invisible="country_code != 'ID' or not l10n_id_tax_number or state != 'cancel' or l10n_id_efaktur_document"/>

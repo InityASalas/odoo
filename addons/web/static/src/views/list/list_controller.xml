@@ -90,6 +90,7 @@
                     activeActions="activeActions"
                     archInfo="archInfo"
                     allowSelectors="props.allowSelectors"
+                    easySelect="props.easySelect"
                     editable="editable"
                     onOpenFormView="onOpenFormView"
                     hasOpenFormViewButton="hasOpenFormViewButton"

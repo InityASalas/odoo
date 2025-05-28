@@ -8,10 +8,14 @@ export class MessageReactions extends Record {
     content;
     /** @type {number} */
     count;
+    guests = fields.Many("Persona");
+    message = fields.One("mail.message");
+    partners = fields.Many("Persona");
+    get personas() {
+        return [...this.partners, ...this.guests];
+    }
     /** @type {number} */
     sequence;
-    personas = fields.Many("Persona");
-    message = fields.One("mail.message");
 
     async remove() {
         this.store.insert(

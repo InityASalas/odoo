@@ -8,8 +8,6 @@ export class MailMessageReaction extends models.ServerModel {
     _to_store(ids, store) {
         /** @type {import("mock_models").MailGuest} */
         const MailGuest = this.env["mail.guest"];
-        /** @type {import("mock_models").MailMessage} */
-        const MailMessage = this.env["mail.message"];
         /** @type {import("mock_models").ResPartner} */
         const ResPartner = this.env["res.partner"];
 
@@ -21,16 +19,19 @@ export class MailMessageReaction extends models.ServerModel {
             const partners = ResPartner.browse(
                 reactionGroup.map((reaction) => reaction.partner_id)
             );
-            store.add(guests, makeKwArgs({ fields: ["avatar_128", "name"] }));
-            store.add(partners, makeKwArgs({ fields: ["avatar_128", "name"] }));
             const data = {
                 content: content,
                 count: reactionGroup.length,
-                sequence: Math.min(reactionGroup.map((reaction) => reaction.id)),
-                personas: mailDataHelpers.Store.many_ids(guests).concat(
-                    mailDataHelpers.Store.many_ids(partners)
+                guests: mailDataHelpers.Store.many(
+                    guests,
+                    makeKwArgs({ fields: ["avatar_128", "name"] })
                 ),
-                message: mailDataHelpers.Store.one_id(MailMessage.browse(message_id)),
+                message: message_id,
+                partners: mailDataHelpers.Store.many(
+                    partners,
+                    makeKwArgs({ fields: ["avatar_128", "name"] })
+                ),
+                sequence: Math.min(reactionGroup.map((reaction) => reaction.id)),
             };
             store.add("MessageReactions", data);
         }

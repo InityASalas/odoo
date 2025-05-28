@@ -3114,6 +3114,7 @@ class MailThread(models.AbstractModel):
         return {
             'force_email_company',
             'force_email_lang',
+            'force_record_name',
             'force_send',
             'mail_auto_delete',
             'model_description',
@@ -3317,6 +3318,7 @@ class MailThread(models.AbstractModel):
     def _notify_thread_by_email(self, message, recipients_data, *, msg_vals=False,
                                 mail_auto_delete=True,  # mail.mail
                                 model_description=False, force_email_company=False, force_email_lang=False,  # rendering
+                                force_record_name=False,  # rendering
                                 subtitles=None,  # rendering
                                 resend_existing=False, force_send=True, send_after_commit=True,  # email send
                                 **kwargs):
@@ -3338,6 +3340,8 @@ class MailThread(models.AbstractModel):
           notification layout. Otherwise computed based on current record;
         :param str force_email_lang: lang used when rendering content, used
           notably to compute model name or translate access buttons;
+        :param str force_record_name: record_name to use instead of being
+          related record's display_name;
         :param list subtitles: optional list set as template value "subtitles";
 
         :param bool resend_existing: check for existing notifications to update
@@ -3378,6 +3382,7 @@ class MailThread(models.AbstractModel):
             model_description=model_description,
             force_email_company=force_email_company,
             force_email_lang=force_email_lang,
+            force_record_name=force_record_name,
             subtitles=subtitles,
         ):
             # generate notification email content
@@ -3447,6 +3452,7 @@ class MailThread(models.AbstractModel):
     def _notify_get_classified_recipients_iterator(
             self, message, recipients_data, msg_vals=False,
             model_description=False, force_email_company=False, force_email_lang=False,  # rendering
+            force_record_name=False,  # rendering
             subtitles=None):
         """ Make groups of recipients, based on 'recipients_data' which is a list
         of recipients informations. Purpose of this method is to group them by
@@ -3468,6 +3474,8 @@ class MailThread(models.AbstractModel):
         :param str force_email_lang: when no specific lang is found this is the
           default lang to use notably to compute model name or translate access
           buttons;
+        :param str force_record_name: record_name to use instead of being
+          related record's display_name;
         :param list subtitles: optional list set as template value "subtitles";
 
         :return: iterator based on recipients classified by lang, with their
@@ -3521,6 +3529,7 @@ class MailThread(models.AbstractModel):
                 model_description=lang_model_description,
                 force_email_company=force_email_company,
                 force_email_lang=lang,
+                force_record_name=force_record_name,
             ) # 10 queries
             if subtitles:
                 render_values['subtitles'] = subtitles
@@ -3537,7 +3546,8 @@ class MailThread(models.AbstractModel):
     def _notify_by_email_prepare_rendering_context(self, message, msg_vals=False,
                                                    model_description=False,
                                                    force_email_company=False,
-                                                   force_email_lang=False):
+                                                   force_email_lang=False,
+                                                   force_record_name=False):
         """ Prepare rendering context for notification email.
 
         Signature: if asked a default signature is computed based on author. Either
@@ -3565,6 +3575,8 @@ class MailThread(models.AbstractModel):
           notification layout. Otherwise computed based on current record;
         :param str force_email_lang: lang used when rendering content, used
           notably to compute model name or translate access buttons;
+        :param str force_record_name: record_name to use instead of being
+          related record's display_name;
 
         :return: dictionary of values used when rendering notification layout;
         """
@@ -3598,7 +3610,7 @@ class MailThread(models.AbstractModel):
         # record, model
         if not model_description:
             model_description = record_wlang._get_model_description(msg_vals['model'] if 'model' in msg_vals else message.model)
-        record_name = msg_vals['record_name'] if 'record_name' in msg_vals else message.record_name
+        record_name = force_record_name or (msg_vals['record_name'] if 'record_name' in msg_vals else message.record_name)
 
         # tracking: in case of missing value, perform search (skip only if sure we don't have any)
         check_tracking = msg_vals.get('tracking_value_ids', True) if msg_vals else bool(self)

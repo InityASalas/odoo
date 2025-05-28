@@ -468,7 +468,7 @@ export class RelationalModel extends Model {
                 if (nextLevelGroupBy.length) {
                     if (!groupConfig.isFolded) {
                         const { groups, length } = groupData["__groups"];
-                        group.groups = extractGroups(groupConfig.list, groups);
+                        group.groups = await extractGroups(groupConfig.list, groups);
                         group.length = length;
                     } else {
                         group.groups = [];

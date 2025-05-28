@@ -3569,9 +3569,8 @@ test("group order by count", async () => {
         if (readGroupCount < 2) {
             readGroupCount++;
         } else {
-            expect(kwargs.groupby).toHaveLength(1);
             expect.step(
-                `web_read_group_unity ${kwargs.groupby[0]} order by ${orderByToString(
+                `web_read_group_unity ${kwargs.groupby} order by ${orderByToString(
                     kwargs.forced_order
                 )}`
             );
@@ -3591,19 +3590,13 @@ test("group order by count", async () => {
     await selectGroup("currency_id");
     expect("tr.o_group_header").toHaveCount(3, { message: "list should be grouped" });
     await contains(".o_searchview_facet_label").click();
-    expect.verifySteps(["web_read_group_unity foo order by __count DESC, foo ASC"]);
+    expect.verifySteps(["web_read_group_unity foo,currency_id order by __count DESC"]);
     await contains("tr.o_group_header:eq(0)").click();
-    expect.verifySteps(["web_read_group_unity currency_id order by __count DESC, currency_id ASC"]);
+    expect.verifySteps(["web_read_group_unity currency_id order by __count DESC"]);
     await contains(".o_searchview_facet_label").click();
-    expect.verifySteps([
-        "web_read_group_unity foo order by __count ASC, foo ASC",
-        "web_read_group_unity currency_id order by __count ASC, currency_id ASC",
-    ]);
+    expect.verifySteps(["web_read_group_unity foo,currency_id order by __count ASC"]);
     await contains(".o_searchview_facet_label").click();
-    expect.verifySteps([
-        "web_read_group_unity foo order by __count DESC, foo ASC",
-        "web_read_group_unity currency_id order by __count DESC, currency_id ASC",
-    ]);
+    expect.verifySteps(["web_read_group_unity foo,currency_id order by __count DESC"]);
 });
 
 test("order by count reset", async () => {
@@ -3612,9 +3605,8 @@ test("order by count reset", async () => {
         if (readGroupCount < 2) {
             readGroupCount++;
         } else {
-            expect(kwargs.groupby).toHaveLength(1);
             expect.step(
-                `web_read_group_unity ${kwargs.groupby[0]} order by ${orderByToString(
+                `web_read_group_unity ${kwargs.groupby} order by ${orderByToString(
                     kwargs.forced_order
                 )}`
             );
@@ -3640,16 +3632,16 @@ test("order by count reset", async () => {
     await toggleMenuItem("My Filter");
     await contains(".o_searchview_facet_label").click();
     expect.verifySteps([
-        "web_read_group_unity foo order by ",
-        "web_read_group_unity foo order by __count DESC, foo ASC",
+        "web_read_group_unity foo,currency_id order by ",
+        "web_read_group_unity foo,currency_id order by __count DESC",
     ]);
     await toggleSearchBarMenu();
     await toggleMenuItem("My Filter");
-    expect.verifySteps(["web_read_group_unity foo order by __count DESC, foo ASC"]);
+    expect.verifySteps(["web_read_group_unity foo,currency_id order by __count DESC"]);
     await toggleMenuItem("My Filter");
-    expect.verifySteps(["web_read_group_unity foo order by __count DESC, foo ASC"]);
+    expect.verifySteps(["web_read_group_unity foo,currency_id order by __count DESC"]);
     await toggleMenuItem("Currency");
-    expect.verifySteps(["web_read_group_unity foo order by __count DESC, foo ASC"]);
+    expect.verifySteps(["web_read_group_unity foo order by __count DESC"]);
     await toggleMenuItem("Foo");
     await toggleMenuItem("Foo");
     expect.verifySteps(["web_read_group_unity foo order by "]);
@@ -4774,7 +4766,7 @@ test(`groups can be sorted on the first field of the groupBy`, async () => {
 
 test(`groups can be sorted on aggregates`, async () => {
     onRpc("web_read_group_unity", ({ kwargs }) => {
-        expect.step(kwargs.order || "default order");
+        expect.step(orderByToString(kwargs.forced_order));
     });
 
     await mountView({
@@ -4804,11 +4796,7 @@ test(`groups can be sorted on aggregates`, async () => {
         message: "initial order should be 17, 10, 5",
     });
     expect(`tfoot td:eq(-1)`).toHaveText("32", { message: "total should still be 32" });
-    expect.verifySteps([
-        "default order",
-        "int_field:sum ASC, foo ASC",
-        "int_field:sum DESC, foo ASC",
-    ]);
+    expect.verifySteps(["", "int_field ASC", "int_field DESC"]);
 });
 
 test(`groups cannot be sorted on non-aggregable fields if every group is folded`, async () => {
@@ -4818,7 +4806,7 @@ test(`groups cannot be sorted on non-aggregable fields if every group is folded`
     });
 
     onRpc("web_read_group_unity", ({ kwargs }) => {
-        expect.step(orderByToString(kwargs.forced_order) || "default order");
+        expect.step(orderByToString(kwargs.forced_order));
     });
 
     await mountView({
@@ -4833,7 +4821,7 @@ test(`groups cannot be sorted on non-aggregable fields if every group is folded`
             </list>
         `,
     });
-    expect.verifySteps(["default order"]);
+    expect.verifySteps([""]);
 
     // we cannot sort by sort_field since it doesn't have a aggregator
     await contains(`.o_column_sortable[data-name='sort_field']`).click();
@@ -4841,7 +4829,7 @@ test(`groups cannot be sorted on non-aggregable fields if every group is folded`
 
     // we can sort by int_field since it has a aggregator
     await contains(`.o_column_sortable[data-name='int_field']`).click();
-    expect.verifySteps(["int_field:sum ASC, foo ASC"]);
+    expect.verifySteps(["int_field ASC"]);
 
     // we keep previous order
     await contains(`.o_column_sortable[data-name='sort_field']`).click();
@@ -4849,15 +4837,16 @@ test(`groups cannot be sorted on non-aggregable fields if every group is folded`
 
     // we can sort on foo since we are groupped by foo + previous order
     await contains(`.o_column_sortable[data-name='foo']`).click();
-    expect.verifySteps(["foo ASC, int_field:sum ASC"]);
+    expect.verifySteps(["foo ASC, int_field ASC"]);
 });
 
 test(`groups can be sorted on non-aggregable fields if a group isn't folded`, async () => {
     onRpc("web_read_group_unity", ({ kwargs }) => {
-        expect.step(`web_read_group_unity.order: ${kwargs.order || "default order"}`);
+        const order = orderByToString(kwargs.forced_order) || "default order";
+        expect.step(`web_read_group_unity: ${order}`);
     });
     onRpc("web_search_read", ({ kwargs }) => {
-        expect.step(`web_search_read.order: ${kwargs.order || "default order"}`);
+        expect.step(`web_search_read: ${kwargs.order || "default order"}`);
     });
 
     await mountView({
@@ -4868,25 +4857,17 @@ test(`groups can be sorted on non-aggregable fields if a group isn't folded`, as
     });
     await contains(`.o_group_header:eq(1)`).click();
     expect(queryAllTexts(`.o_data_cell[name='foo']`)).toEqual(["yop", "blip", "gnap"]);
-    expect.verifySteps([
-        "web_read_group_unity.order: default order",
-        "web_search_read.order: default order",
-    ]);
+    expect.verifySteps(["web_read_group_unity: default order", "web_search_read: default order"]);
 
     await contains(`.o_column_sortable[data-name='foo']`).click();
     expect(queryAllTexts(`.o_data_cell[name='foo']`)).toEqual(["blip", "gnap", "yop"]);
-    expect.verifySteps([
-        "web_read_group_unity.order: default order",
-        "web_search_read.order: foo ASC",
-    ]);
+    expect.verifySteps(["web_read_group_unity: foo ASC"]);
 });
 
 test(`groups can be sorted on non-aggregable fields if a group isn't folded with expand='1'`, async () => {
     onRpc("web_read_group_unity", ({ kwargs }) => {
-        expect.step(`web_read_group_unity.order: ${kwargs.order || "default order"}`);
-    });
-    onRpc("web_search_read", ({ kwargs }) => {
-        expect.step(`web_search_read.order: ${kwargs.order || "default order"}`);
+        const order = orderByToString(kwargs.forced_order) || "default order";
+        expect.step(`web_read_group_unity: ${order}`);
     });
 
     await mountView({
@@ -4896,19 +4877,11 @@ test(`groups can be sorted on non-aggregable fields if a group isn't folded with
         groupBy: ["bar"],
     });
     expect(queryAllTexts(`.o_data_cell[name='foo']`)).toEqual(["blip", "yop", "blip", "gnap"]);
-    expect.verifySteps([
-        "web_read_group_unity.order: default order",
-        "web_search_read.order: default order",
-        "web_search_read.order: default order",
-    ]);
+    expect.verifySteps(["web_read_group_unity: default order"]);
 
     await contains(`.o_column_sortable[data-name='foo']`).click();
     expect(queryAllTexts(`.o_data_cell[name='foo']`)).toEqual(["blip", "blip", "gnap", "yop"]);
-    expect.verifySteps([
-        "web_read_group_unity.order: default order",
-        "web_search_read.order: foo ASC",
-        "web_search_read.order: foo ASC",
-    ]);
+    expect.verifySteps(["web_read_group_unity: foo ASC"]);
 });
 
 test(`properly apply onchange in simple case`, async () => {

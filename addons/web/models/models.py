@@ -336,14 +336,16 @@ class Base(models.AbstractModel):
         groupby_read_specification: dict[str, dict] | None = None,
     ) -> dict[str, int | list]:
         """
-        :return: dict such as::
+        :return: dict such as
+          ::
 
-            <result> := {
-                'groups': <groups>
-                'length': int
+            <result> = {
+                'groups': <groups>,
+                'length': int,
             }
-            <groups> := <formatted_read_group(domain, [groupby[i]], ...)> but add recursive
+            <groups> = <formatted_read_group(domain, [groupby[i]], ...)> but add recursive
             __groups: <result> or __records: <web_read(unfold_read_specification)> to each group
+
         """
         assert groupby and isinstance(groupby, (list, tuple))
         assert not (len(groupby) > 1 and unfolded_group_limit), "unfolded_group_limit cannot be used if multi level of groupby"

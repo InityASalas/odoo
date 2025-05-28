@@ -315,7 +315,7 @@ const formatFieldValue = (fields, groupByField, val) => {
 const getOrderByField = ({ _fields, _name }, fieldNameSpec) => {
     const fieldName = fieldNameSpec?.split(":")[0] || ("sequence" in _fields ? "sequence" : "id");
     if (!(fieldName in _fields)) {
-        throw fieldNotFoundError(_name, fieldName, "could not order records");
+        return null;
     }
     return _fields[fieldName];
 };
@@ -625,7 +625,7 @@ const orderByField = (model, orderBy, records) => {
     // Prepares a values map if needed to easily retrieve the ordering
     // factor associated to a certain id or value.
     let valuesMap;
-    if (field.type in DEFAULT_RELATIONAL_FIELD_VALUES) {
+    if (field && field.type in DEFAULT_RELATIONAL_FIELD_VALUES) {
         let valueLength;
         const coModel = getRelation(field);
         const coField = getOrderByField(coModel);
@@ -653,46 +653,53 @@ const orderByField = (model, orderBy, records) => {
                 }
             })
         );
-    } else if (field.type in DEFAULT_SELECTION_FIELD_VALUES) {
+    } else if (field && field.type in DEFAULT_SELECTION_FIELD_VALUES) {
         // Selection order is determined by the index of each value
         valuesMap = new Map(field.selection.map((v, i) => [v[0], i]));
     }
 
     // Actual sorting
     const sortedRecords = records.sort((r1, r2) => {
+        if (!Object.hasOwn(r1, fieldNameSpec) || !Object.hasOwn(r2, fieldNameSpec)) {
+            throw new MockServerError(
+                `Cannot order by ${fieldNameSpec} because the field/spec isn't not in the record/group`
+            );
+        }
         let v1 = r1[fieldNameSpec];
         let v2 = r2[fieldNameSpec];
-        switch (field.type) {
-            case "boolean": {
-                v1 = Number(v1);
-                v2 = Number(v2);
-                break;
-            }
-            case "many2one":
-            case "many2one_reference": {
-                v1 &&= valuesMap.get(v1[0]);
-                v2 &&= valuesMap.get(v2[0]);
-                break;
-            }
-            case "many2many":
-            case "one2many": {
-                // Co-records have already been sorted -> comparing the joined
-                // list of each of them will yield the proper result.
-                v1 &&= v1.map((id) => valuesMap.get(id)).join("");
-                v2 &&= v2.map((id) => valuesMap.get(id)).join("");
-                break;
-            }
-            case "date":
-            case "datetime": {
-                v1 = Array.isArray(v1) ? new Date(v1[0]).getTime() : v1;
-                v2 = Array.isArray(v2) ? new Date(v2[0]).getTime() : v2;
-                break;
-            }
-            case "reference":
-            case "selection": {
-                v1 &&= valuesMap.get(v1);
-                v2 &&= valuesMap.get(v2);
-                break;
+        if (field) {
+            switch (field.type) {
+                case "boolean": {
+                    v1 = Number(v1);
+                    v2 = Number(v2);
+                    break;
+                }
+                case "many2one":
+                case "many2one_reference": {
+                    v1 &&= valuesMap.get(v1[0]);
+                    v2 &&= valuesMap.get(v2[0]);
+                    break;
+                }
+                case "many2many":
+                case "one2many": {
+                    // Co-records have already been sorted -> comparing the joined
+                    // list of each of them will yield the proper result.
+                    v1 &&= v1.map((id) => valuesMap.get(id)).join("");
+                    v2 &&= v2.map((id) => valuesMap.get(id)).join("");
+                    break;
+                }
+                case "date":
+                case "datetime": {
+                    v1 = Array.isArray(v1) ? new Date(v1[0]).getTime() : v1;
+                    v2 = Array.isArray(v2) ? new Date(v2[0]).getTime() : v2;
+                    break;
+                }
+                case "reference":
+                case "selection": {
+                    v1 &&= valuesMap.get(v1);
+                    v2 &&= valuesMap.get(v2);
+                    break;
+                }
             }
         }
         let result;
@@ -703,7 +710,7 @@ const orderByField = (model, orderBy, records) => {
         } else {
             if (!["boolean", "number", "string"].includes(typeof v1) || typeof v1 !== typeof v2) {
                 throw new MockServerError(
-                    `cannot order by field "${field.name}" in model "${
+                    `cannot order by field "${fieldNameSpec}" in model "${
                         model._name
                     }": values must be of the same primitive type (got ${typeof v1} and ${typeof v2})`
                 );
@@ -2700,20 +2707,26 @@ export class Model extends Array {
                 }
 
                 const groupDomain = [...group.__extra_domain, ...mainDomain];
-                group.groups = this.formatted_read_group(
+
+                let groups = this.formatted_read_group(
                     groupDomain,
                     [remainingGroupby[1]],
                     aggregates,
                     [],
-                    groupInfo.offset,
-                    groupInfo.limit,
+                    null,
+                    null,
                     getReadGroupOrder(forcedOrder, [remainingGroupby[1]], aggregates)
                 );
+                const length = groups.length;
+                groups = groups.slice(groupInfo.offset ? groupInfo.offset - 1 : 0, groupInfo.limit);
+                group.__groups = { groups, length };
+
                 this._openGroups(
-                    group.groups,
+                    groups,
                     groupDomain,
                     remainingGroupby.slice(1),
                     aggregates,
+                    forcedOrder,
                     groupInfo.groups,
                     unfoldedGroupLimit,
                     webSearchArgs,

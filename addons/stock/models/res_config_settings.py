@@ -53,6 +53,13 @@ class ResConfigSettings(models.TransientModel):
         "Separator", config_parameter='stock.barcode_separator',
         help="Character(s) used to separate data contained within an aggregate barcode (i.e. a barcode containing multiple barcode encodings)")
     module_stock_fleet = fields.Boolean("Dispatch Management System")
+    cost_method = fields.Selection(
+        related="company_id.cost_method",
+        default='standard',
+        string="Costing Method",
+        required=True,
+        readonly=False,
+    )
 
     @api.onchange('group_stock_multi_locations')
     def _onchange_group_stock_multi_locations(self):
@@ -69,6 +76,11 @@ class ResConfigSettings(models.TransientModel):
     def onchange_adv_location(self):
         if self.group_stock_adv_location and not self.group_stock_multi_locations:
             self.group_stock_multi_locations = True
+
+    @api.onchange('company_id')
+    def _onchange_cost_method(self):
+        if self.cost_method != self.company_id.cost_method:
+            self.cost_method = self.company_id.cost_method
 
     def set_values(self):
         warehouse_grp = self.env.ref('stock.group_stock_multi_warehouses')

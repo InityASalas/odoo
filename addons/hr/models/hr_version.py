@@ -243,7 +243,7 @@ class HrVersion(models.Model):
                         'contract_date_start': values.get('contract_date_start', version.contract_date_start),
                         'contract_date_end': values.get('contract_date_end', version.contract_date_end),
                     })
-        super().write(values)
+        return super().write(values)
 
     @api.depends('date_version')
     def _compute_display_name(self):

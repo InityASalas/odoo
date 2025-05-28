@@ -7,6 +7,7 @@ import { Plugin } from "@html_editor/plugin";
 import { withSequence } from "@html_editor/utils/resource";
 import { rpc } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 const PRODUCT_IMAGE_OPTION_SELECTOR = `.o_wsale_product_images :is(${REPLACE_MEDIA_SELECTOR})`;
 
@@ -24,33 +25,11 @@ export class ProductImageOptionPlugin extends Plugin {
             /*
              * Change sequence of product page images
              */
-            setPosition: {
-                reload: {},
-                apply: async ({ editingElement: el, value }) => {
-                    const params = {
-                        image_res_model: el.parentElement.dataset.oeModel,
-                        image_res_id: el.parentElement.dataset.oeId,
-                        move: value,
-                    };
-
-                    await rpc("/shop/product/resequence-image", params);
-                },
-            },
+            setPosition: new SetPositionAction(this),
             /*
              * Removes the image in the back-end
              */
-            removeMedia: {
-                reload: {},
-                apply: async ({ editingElement: el }) => {
-                    if (el.parentElement.dataset.oeModel === "product.image") {
-                        // Unlink the "product.image" record as it is not the main product image.
-                        await this.services.orm.unlink("product.image", [
-                            parseInt(el.parentElement.dataset.oeId),
-                        ]);
-                    }
-                    el.remove();
-                },
-            },
+            removeMedia: new RemoveMediaAction(this),
         },
         patch_builder_options: [
             {
@@ -61,6 +40,41 @@ export class ProductImageOptionPlugin extends Plugin {
             },
         ],
     };
+}
+
+/*
+* Change sequence of product page images
+*/
+class SetPositionAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    async apply({ editingElement: el, value }) {
+        const params = {
+            image_res_model: el.parentElement.dataset.oeModel,
+            image_res_id: el.parentElement.dataset.oeId,
+            move: value,
+        };
+
+        await rpc("/shop/product/resequence-image", params);
+    }
+}
+/*
+ * Removes the image in the back-end
+ */
+class RemoveMediaAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    async apply({ editingElement: el }) {
+        if (el.parentElement.dataset.oeModel === "product.image") {
+            // Unlink the "product.image" record as it is not the main product image.
+            await this.services.orm.unlink("product.image", [
+                parseInt(el.parentElement.dataset.oeId),
+            ]);
+        }
+        el.remove();
+    }
 }
 
 registry.category("website-plugins").add(ProductImageOptionPlugin.id, ProductImageOptionPlugin);

@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { getScrollingElement } from "@web/core/utils/scrolling";
 import { AnimateOption } from "./animate_option";
 import { ANIMATE } from "@website/builder/option_sequence";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 class AnimateOptionPlugin extends Plugin {
     static id = "animateOption";
@@ -25,7 +26,12 @@ class AnimateOptionPlugin extends Plugin {
             }),
         ],
         system_classes: ["o_animating"],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setAnimationMode: new SetAnimationModeAction(this),
+            setAnimateIntensity: new SetAnimateIntensityAction(this),
+            forceAnimation: new ForceAnimationAction(this),
+            setAnimationEffect: new SetAnimationEffectAction(this),
+        },
         normalize_handlers: this.normalize.bind(this),
         clean_for_save_handlers: this.cleanForSave.bind(this),
     };
@@ -71,118 +77,6 @@ class AnimateOptionPlugin extends Plugin {
             { className: "o_anim_from_bottom_left", label: "From bottom left", check: isRotate },
         ];
     }
-
-    getActions() {
-        const animationWithFadein = ["onAppearance", "onScroll"];
-        return {
-            setAnimationMode: {
-                // todo: to remove after having the commit of louis
-                isApplied: () => true,
-                clean: ({ editingElement, value: effectName, nextAction }) => {
-                    this.scrollingElement.classList.remove("o_wanim_overflow_xy_hidden");
-                    editingElement.classList.remove(
-                        "o_animating",
-                        "o_animate_both_scroll",
-                        "o_visible",
-                        "o_animated",
-                        "o_animate_out"
-                    );
-                    editingElement.style.animationDelay = "";
-                    editingElement.style.animationPlayState = "";
-                    editingElement.style.animationName = "";
-                    editingElement.style.visibility = "";
-
-                    if (effectName === "onScroll") {
-                        delete editingElement.dataset.scrollZoneStart;
-                        delete editingElement.dataset.scrollZoneEnd;
-                    }
-                    if (effectName === "onHover") {
-                        // todo: to implement
-                        // this.trigger_up("option_update", {
-                        //     optionName: "ImageTools",
-                        //     name: "disable_hover_effect",
-                        // });
-                    }
-
-                    const isNextAnimationFadein = animationWithFadein.includes(nextAction.value);
-                    if (!isNextAnimationFadein) {
-                        this.removeEffectAndDirectionClasses(editingElement.classList);
-                        editingElement.style.setProperty("--wanim-intensity", "");
-                        editingElement.style.animationDuration = "";
-                        this.setImagesLazyLoading(editingElement);
-                    }
-                },
-                apply: ({ editingElement, value: effectName, params: { forceAnimation } }) => {
-                    if (animationWithFadein.includes(effectName)) {
-                        editingElement.classList.add("o_anim_fade_in");
-                    }
-                    if (effectName === "onScroll") {
-                        editingElement.dataset.scrollZoneStart = 0;
-                        editingElement.dataset.scrollZoneEnd = 100;
-                    }
-                    if (effectName === "onHover") {
-                        // todo: to implement
-                        // Pause the history until the hover effect is applied in
-                        // "setImgShapeHoverEffect". This prevents saving the intermediate
-                        // steps done (in a tricky way) up to that point.
-                        // this.options.wysiwyg.odooEditor.historyPauseSteps();
-                        // this.trigger_up("option_update", {
-                        //     optionName: "ImageTools",
-                        //     name: "enable_hover_effect",
-                        // });
-                    }
-                    if (forceAnimation) {
-                        this.forceAnimation(editingElement);
-                    }
-                },
-            },
-            setAnimateIntensity: {
-                getValue: ({ editingElement }) => {
-                    const intensity = parseInt(
-                        this.window
-                            .getComputedStyle(editingElement)
-                            .getPropertyValue("--wanim-intensity")
-                    );
-                    return intensity;
-                },
-                apply: ({ editingElement, value }) => {
-                    editingElement.style.setProperty("--wanim-intensity", `${value}`);
-                    this.forceAnimation(editingElement);
-                },
-            },
-            forceAnimation: {
-                // todo: to remove after having the commit of louis
-                isActive: () => true,
-                apply: ({ editingElement }) => this.forceAnimation(editingElement),
-            },
-            setAnimationEffect: {
-                isApplied({ editingElement, value: className }) {
-                    return editingElement.classList.contains(className);
-                },
-                clean: ({ editingElement }) => {
-                    const classNames = this.getEffectsItems()
-                        .map(({ className }) => className)
-                        .concat(this.getDirectionsItems().map(({ className }) => className));
-                    for (const className of classNames) {
-                        if (editingElement.classList.contains(className)) {
-                            editingElement.classList.remove(className);
-                        }
-                    }
-                },
-                apply: ({
-                    editingElement,
-                    params: { mainParam: directionClassName },
-                    value: effectClassName,
-                }) => {
-                    if (directionClassName) {
-                        editingElement.classList.add(directionClassName);
-                    }
-                    editingElement.classList.add(effectClassName);
-                    this.forceAnimation(editingElement);
-                },
-            },
-        };
-    }
     async forceAnimation(editingElement) {
         editingElement.style.animationName = "dummy";
         if (editingElement.classList.contains("o_animate_on_scroll")) {
@@ -205,39 +99,6 @@ class AnimateOptionPlugin extends Plugin {
                 },
                 { once: true }
             );
-        }
-    }
-
-    removeEffectAndDirectionClasses(targetClassList) {
-        const classes = this.getEffectsItems()
-            .map(({ className }) => className)
-            .concat(
-                this.getDirectionsItems()
-                    .map(({ className }) => className)
-                    .filter(Boolean)
-            );
-
-        const classesToRemove = intersect(classes, [...targetClassList]);
-        for (const className of classesToRemove) {
-            targetClassList.remove(className);
-        }
-    }
-
-    /**
-     * Adds the lazy loading on images because animated images can appear before
-     * or after their parents and cause bugs in the animations. To put "lazy"
-     * back on the "loading" attribute, we simply remove the attribute as it is
-     * automatically added on page load.
-     *
-     * @private
-     */
-    setImagesLazyLoading(editingElement) {
-        const imgEls = editingElement.matches("img")
-            ? [editingElement]
-            : editingElement.querySelectorAll("img");
-        for (const imgEl of imgEls) {
-            // Let the automatic system add the loading attribute
-            imgEl.removeAttribute("loading");
         }
     }
 
@@ -275,6 +136,151 @@ class AnimateOptionPlugin extends Plugin {
         }
     }
 }
+
+class SetAnimationModeAction extends BuilderAction {
+    setup() {
+        this.animationWithFadein = ["onAppearance", "onScroll"];
+    }
+    // todo: to remove after having the commit of louis
+    isApplied() {
+        return true;
+    }
+    clean({ editingElement, value: effectName, nextAction }) {
+        this.plugin.scrollingElement.classList.remove("o_wanim_overflow_xy_hidden");
+        editingElement.classList.remove(
+            "o_animating",
+            "o_animate_both_scroll",
+            "o_visible",
+            "o_animated",
+            "o_animate_out"
+        );
+        editingElement.style.animationDelay = "";
+        editingElement.style.animationPlayState = "";
+        editingElement.style.animationName = "";
+        editingElement.style.visibility = "";
+
+        if (effectName === "onScroll") {
+            delete editingElement.dataset.scrollZoneStart;
+            delete editingElement.dataset.scrollZoneEnd;
+        }
+        if (effectName === "onHover") {
+            // todo: to implement
+            // this.trigger_up("option_update", {
+            //     optionName: "ImageTools",
+            //     name: "disable_hover_effect",
+            // });
+        }
+
+        const isNextAnimationFadein = this.animationWithFadein.includes(nextAction.value);
+        if (!isNextAnimationFadein) {
+            this._removeEffectAndDirectionClasses(editingElement.classList);
+            editingElement.style.setProperty("--wanim-intensity", "");
+            editingElement.style.animationDuration = "";
+            this._setImagesLazyLoading(editingElement);
+        }
+    }
+    apply({ editingElement, value: effectName, params: { forceAnimation } }) {
+        if (this.animationWithFadein.includes(effectName)) {
+            editingElement.classList.add("o_anim_fade_in");
+        }
+        if (effectName === "onScroll") {
+            editingElement.dataset.scrollZoneStart = 0;
+            editingElement.dataset.scrollZoneEnd = 100;
+        }
+        if (effectName === "onHover") {
+            // todo: to implement
+            // Pause the history until the hover effect is applied in
+            // "setImgShapeHoverEffect". This prevents saving the intermediate
+            // steps done (in a tricky way) up to that point.
+            // this.options.wysiwyg.odooEditor.historyPauseSteps();
+            // this.trigger_up("option_update", {
+            //     optionName: "ImageTools",
+            //     name: "enable_hover_effect",
+            // });
+        }
+        if (forceAnimation) {
+            this.plugin.forceAnimation(editingElement);
+        }
+    }
+    /**
+     * Adds the lazy loading on images because animated images can appear before
+     * or after their parents and cause bugs in the animations. To put "lazy"
+     * back on the "loading" attribute, we simply remove the attribute as it is
+     * automatically added on page load.
+     *
+     * @private
+     */
+    _setImagesLazyLoading(editingElement) {
+        const imgEls = editingElement.matches("img")
+            ? [editingElement]
+            : editingElement.querySelectorAll("img");
+        for (const imgEl of imgEls) {
+            // Let the automatic system add the loading attribute
+            imgEl.removeAttribute("loading");
+        }
+    }
+    _removeEffectAndDirectionClasses(targetClassList) {
+        const classes = this.plugin
+            .getEffectsItems()
+            .map(({ className }) => className)
+            .concat(
+                this.plugin
+                    .getDirectionsItems()
+                    .map(({ className }) => className)
+                    .filter(Boolean)
+            );
+
+        const classesToRemove = intersect(classes, [...targetClassList]);
+        for (const className of classesToRemove) {
+            targetClassList.remove(className);
+        }
+    }
+}
+class SetAnimateIntensityAction extends BuilderAction {
+    getValue({ editingElement }) {
+        const intensity = parseInt(
+            this.window.getComputedStyle(editingElement).getPropertyValue("--wanim-intensity")
+        );
+        return intensity;
+    }
+    apply({ editingElement, value }) {
+        editingElement.style.setProperty("--wanim-intensity", `${value}`);
+        this.plugin.forceAnimation(editingElement);
+    }
+}
+class ForceAnimationAction extends BuilderAction {
+    // todo: to remove after having the commit of louis
+    isActive() {
+        return true;
+    }
+    apply({ editingElement }) {
+        this.plugin.forceAnimation(editingElement);
+    }
+}
+class SetAnimationEffectAction extends BuilderAction {
+    isApplied({ editingElement, value: className }) {
+        return editingElement.classList.contains(className);
+    }
+    clean({ editingElement }) {
+        const classNames = this.plugin
+            .getEffectsItems()
+            .map(({ className }) => className)
+            .concat(this.plugin.getDirectionsItems().map(({ className }) => className));
+        for (const className of classNames) {
+            if (editingElement.classList.contains(className)) {
+                editingElement.classList.remove(className);
+            }
+        }
+    }
+    apply({ editingElement, params: { mainParam: directionClassName }, value: effectClassName }) {
+        if (directionClassName) {
+            editingElement.classList.add(directionClassName);
+        }
+        editingElement.classList.add(effectClassName);
+        this.plugin.forceAnimation(editingElement);
+    }
+}
+
 registry.category("website-plugins").add(AnimateOptionPlugin.id, AnimateOptionPlugin);
 
 function intersect(a, b) {

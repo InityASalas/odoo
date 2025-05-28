@@ -1,7 +1,8 @@
 import { Plugin } from "@html_editor/plugin";
+import { BuilderAction } from "./core_builder_action_plugin";
 
 /**
- * @typedef {Object} BuilderAction
+ * @typedef {Class} BuilderAction
  * @property {string} id
  * @property {Function} apply
  * @property {Function} [isApplied]
@@ -21,7 +22,13 @@ export class BuilderActionsPlugin extends Plugin {
                 if (actionId in this.actions) {
                     throw new Error(`Duplicate builder action id: ${actionId}`);
                 }
-                this.actions[actionId] = { id: actionId, ...action };
+                // Attach ID to the instance if it supports it
+                if (action instanceof BuilderAction) {
+                    action.id = actionId;
+                    this.actions[actionId] = action;
+                } else {
+                    this.actions[actionId] = { id: actionId, ...action };
+                }
             }
         }
         Object.freeze(this.actions);

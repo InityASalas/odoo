@@ -1,9 +1,21 @@
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { classAction } from "@html_builder/core/core_builder_action_plugin";
+import { ClassAction } from "@html_builder/core/core_builder_action_plugin";
 import { VerticalAlignmentOption } from "./vertical_alignment_option";
 import { withSequence } from "@html_editor/utils/resource";
 import { VERTICAL_ALIGNMENT } from "@website/builder/option_sequence";
+
+class SetVerticalAlignmentAction extends ClassAction {
+    getPriority({ params: { mainParam: classNames } = { mainParam: "" } }) {
+        return classNames === "align-items-stretch" ? 0 : 1;
+    }
+    isApplied({ params: { mainParam: classNames } }) {
+        if (classNames === "align-items-stretch") {
+            return true;
+        }
+        return super.isApplied(...arguments);
+    }
+}
 
 class VerticalAlignmentOptionPlugin extends Plugin {
     static id = "verticalAlignmentOption";
@@ -19,27 +31,10 @@ class VerticalAlignmentOptionPlugin extends Plugin {
                 },
             }),
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setVerticalAlignment: new SetVerticalAlignmentAction(this),
+        },
     };
-
-    getActions() {
-        return {
-            setVerticalAlignment: {
-                ...classAction,
-                getPriority: ({ params: { mainParam: classNames } = { mainParam: "" } }) =>
-                    classNames === "align-items-stretch" ? 0 : 1,
-                isApplied: (...args) => {
-                    const {
-                        params: { mainParam: classNames },
-                    } = args[0];
-                    if (classNames === "align-items-stretch") {
-                        return true;
-                    }
-                    return classAction.isApplied(...args);
-                },
-            },
-        };
-    }
 }
 registry
     .category("website-plugins")

@@ -3,36 +3,16 @@ import { getSelectorParams } from "@html_builder/utils/utils";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 import { WebsiteBackgroundOption } from "./background_option";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 class WebsiteParallaxPlugin extends Plugin {
     static id = "websiteParallaxPlugin";
     static dependencies = ["builderActions", "backgroundImageOption"];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setParallaxType: new SetParallaxTypeAction(this),
+        },
         on_bg_image_hide_handlers: this.onBgImageHide.bind(this),
     };
-    getActions() {
-        return {
-            setParallaxType: {
-                apply: this.applyParallaxType.bind(this),
-                isApplied: ({ editingElement, value }) => {
-                    const attributeValue = parseFloat(
-                        editingElement.dataset.scrollBackgroundRatio?.trim() || 0
-                    );
-                    if (attributeValue === 0) {
-                        return value === "none";
-                    }
-                    if (attributeValue === 1) {
-                        return value === "fixed";
-                    }
-                    const parallaxType = editingElement.dataset.parallaxType;
-                    if (parallaxType) {
-                        return value === parallaxType;
-                    }
-                    return attributeValue > 0 ? value === "top" : value === "bottom";
-                },
-            },
-        };
-    }
     setup() {
         this.backgroundOptionSelectorParams = getSelectorParams(
             this.getResource("builder_options"),
@@ -105,4 +85,26 @@ class WebsiteParallaxPlugin extends Plugin {
         }
     }
 }
+class SetParallaxTypeAction extends BuilderAction {
+    apply(context) {
+        this.plugin.applyParallaxType(context);
+    }
+    isApplied({ editingElement, value }) {
+        const attributeValue = parseFloat(
+            editingElement.dataset.scrollBackgroundRatio?.trim() || 0
+        );
+        if (attributeValue === 0) {
+            return value === "none";
+        }
+        if (attributeValue === 1) {
+            return value === "fixed";
+        }
+        const parallaxType = editingElement.dataset.parallaxType;
+        if (parallaxType) {
+            return value === parallaxType;
+        }
+        return attributeValue > 0 ? value === "top" : value === "bottom";
+    }
+}
+
 registry.category("website-plugins").add(WebsiteParallaxPlugin.id, WebsiteParallaxPlugin);

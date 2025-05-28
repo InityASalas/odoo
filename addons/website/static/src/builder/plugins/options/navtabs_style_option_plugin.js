@@ -1,3 +1,4 @@
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 import { SNIPPET_SPECIFIC_END } from "@html_builder/utils/option_sequence";
 import { Plugin } from "@html_editor/plugin";
 import { withSequence } from "@html_editor/utils/resource";
@@ -18,7 +19,10 @@ class NavTabsStyleOptionPlugin extends Plugin {
                 applyTo: ".s_tabs_main",
             }),
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setStyle: new SetStyleAction(this),
+            setDirection: new SetDirectionAction(this),
+        },
     };
 
     setup() {
@@ -36,74 +40,6 @@ class NavTabsStyleOptionPlugin extends Plugin {
 
     getNavEl(editingElement) {
         return editingElement.querySelector(".s_tabs_nav .nav");
-    }
-
-    getActions() {
-        const getTabsEl = (editingElement) => editingElement.querySelector(".s_tabs_nav");
-        return {
-            setStyle: {
-                isApplied: ({ editingElement, value }) => {
-                    const navEl = this.getNavEl(editingElement);
-                    // 'nav-buttons' also applies 'nav-pills'
-                    if (navEl.classList.contains("nav-buttons")) {
-                        return value === "nav-buttons";
-                    }
-                    return navEl.classList.contains(value);
-                },
-                apply: ({ editingElement, value }) => {
-                    const isTabs = value === "nav-tabs";
-                    const isBtns = value === "nav-buttons";
-                    const tabsEl = getTabsEl(editingElement);
-                    const navEl = this.getNavEl(editingElement);
-
-                    if (isTabs || isBtns) {
-                        this.applyDirection(editingElement, "horizontal");
-                    }
-
-                    if (isTabs) {
-                        tabsEl.classList.add(...this.tabsTabsClasses);
-                        navEl.classList.add(...this.navTabsClasses);
-                    } else if (isBtns) {
-                        tabsEl.classList.add(...this.tabsBtnClasses);
-                        navEl.classList.add(...this.navBtnClasses);
-                    }
-                    navEl.classList.add(value);
-
-                    editingElement.classList.toggle("card", isTabs);
-                    tabsEl.classList.toggle("mb-3", !isTabs);
-                    navEl.classList.toggle("overflow-x-auto", !isTabs);
-                    navEl.classList.toggle("overflow-y-hidden", !isTabs);
-                    editingElement.querySelector(".s_tabs_content").classList.toggle("p-3", isTabs);
-                },
-                clean: ({ editingElement, value }) => {
-                    const isTabs = value === "nav-tabs";
-                    const isBtns = value === "nav-buttons";
-                    const tabsEl = getTabsEl(editingElement);
-                    const navEl = this.getNavEl(editingElement);
-
-                    if (isTabs) {
-                        tabsEl.classList.remove(...this.tabsTabsClasses);
-                        navEl.classList.remove(...this.navTabsClasses);
-                    } else if (isBtns) {
-                        tabsEl.classList.remove(...this.tabsBtnClasses);
-                        navEl.classList.remove(...this.navBtnClasses);
-                    }
-                    navEl.classList.remove(value);
-                },
-            },
-            setDirection: {
-                isApplied: ({ editingElement, value }) => {
-                    const classList = this.getNavEl(editingElement).classList;
-                    const containsFlexColumn =
-                        classList.contains("flex-sm-column") ||
-                        classList.contains("flex-md-column");
-                    return value === "vertical" ? containsFlexColumn : !containsFlexColumn;
-                },
-                apply: ({ editingElement, value }) => {
-                    this.applyDirection(editingElement, value);
-                },
-            },
-        };
     }
 
     applyDirection(editingElement, direction) {
@@ -141,6 +77,69 @@ class NavTabsStyleOptionPlugin extends Plugin {
                 "mx-auto"
             );
         }
+    }
+}
+
+const getTabsEl = (editingElement) => editingElement.querySelector(".s_tabs_nav");
+class SetStyleAction extends BuilderAction {
+    isApplied({ editingElement, value }) {
+        const navEl = this.plugin.getNavEl(editingElement);
+        // 'nav-buttons' also applies 'nav-pills'
+        if (navEl.classList.contains("nav-buttons")) {
+            return value === "nav-buttons";
+        }
+        return navEl.classList.contains(value);
+    }
+    apply({ editingElement, value }) {
+        const isTabs = value === "nav-tabs";
+        const isBtns = value === "nav-buttons";
+        const tabsEl = getTabsEl(editingElement);
+        const navEl = this.plugin.getNavEl(editingElement);
+
+        if (isTabs || isBtns) {
+            this.plugin.applyDirection(editingElement, "horizontal");
+        }
+
+        if (isTabs) {
+            tabsEl.classList.add(...this.plugin.tabsTabsClasses);
+            navEl.classList.add(...this.plugin.navTabsClasses);
+        } else if (isBtns) {
+            tabsEl.classList.add(...this.plugin.tabsBtnClasses);
+            navEl.classList.add(...this.plugin.navBtnClasses);
+        }
+        navEl.classList.add(value);
+
+        editingElement.classList.toggle("card", isTabs);
+        tabsEl.classList.toggle("mb-3", !isTabs);
+        navEl.classList.toggle("overflow-x-auto", !isTabs);
+        navEl.classList.toggle("overflow-y-hidden", !isTabs);
+        editingElement.querySelector(".s_tabs_content").classList.toggle("p-3", isTabs);
+    }
+    clean({ editingElement, value }) {
+        const isTabs = value === "nav-tabs";
+        const isBtns = value === "nav-buttons";
+        const tabsEl = getTabsEl(editingElement);
+        const navEl = this.plugin.getNavEl(editingElement);
+
+        if (isTabs) {
+            tabsEl.classList.remove(...this.tabsTabsClasses);
+            navEl.classList.remove(...this.navTabsClasses);
+        } else if (isBtns) {
+            tabsEl.classList.remove(...this.tabsBtnClasses);
+            navEl.classList.remove(...this.navBtnClasses);
+        }
+        navEl.classList.remove(value);
+    }
+}
+class SetDirectionAction extends BuilderAction {
+    isApplied({ editingElement, value }) {
+        const classList = this.plugin.getNavEl(editingElement).classList;
+        const containsFlexColumn =
+            classList.contains("flex-sm-column") || classList.contains("flex-md-column");
+        return value === "vertical" ? containsFlexColumn : !containsFlexColumn;
+    }
+    apply({ editingElement, value }) {
+        this.plugin.applyDirection(editingElement, value);
     }
 }
 

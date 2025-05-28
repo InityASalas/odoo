@@ -14,6 +14,8 @@ import {
     convertRgbToHsl,
 } from "@web/core/utils/colors";
 import { reactive } from "@odoo/owl";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
+import { CustomizeWebsiteVariableAction } from "../customize_website_plugin";
 
 export const GRAY_PARAMS = {
     EXTRA_SATURATION: "gray-extra-saturation",
@@ -40,7 +42,10 @@ export class ThemeTabPlugin extends Plugin {
 
     resources = {
         builder_components: { BuilderFontFamilyPicker },
-        builder_actions: this.getActions(),
+        builder_actions: {
+            customizeGray: new CustomizeGrayAction(this),
+            changeColorPalette: new ChangeColorPaletteAction(this),
+        },
         theme_options: [
             withSequence(
                 OPTION_POSITIONS.COLORS,
@@ -167,57 +172,6 @@ export class ThemeTabPlugin extends Plugin {
             ? -100
             : 100;
     }
-    getActions() {
-        const getAction = this.dependencies.builderActions.getAction;
-        const dialogService = this.services.dialog;
-        return {
-            customizeGray: this.dependencies.customizeWebsite.withCustomHistory({
-                getValue: ({ params: { mainParam: grayParamName } }) =>
-                    this.grayParams[grayParamName],
-                apply: async ({ params: { mainParam: grayParamName }, value }) => {
-                    // Gray parameters are used *on the JS side* to compute the grays that
-                    // will be saved in the database. We indeed need those grays to be
-                    // computed here for faster previews so this allows to not duplicate
-                    // most of the logic. Also, this gives flexibility to maybe allow full
-                    // customization of grays in custo and themes. Also, this allows to ease
-                    // migration if the computation here was to change: the user grays would
-                    // still be unchanged as saved in the database.
-
-                    this.grayParams[grayParamName] = parseInt(value);
-                    for (let i = 1; i < 10; i++) {
-                        const key = (100 * i).toString();
-                        this.grays[key] = this.buildGray(key);
-                    }
-
-                    // Save all computed (JS side) grays in database
-                    await this.dependencies.customizeWebsite.customizeWebsiteColors(this.grays, {
-                        colorType: "gray",
-                    });
-                },
-            }),
-            get changeColorPalette() {
-                const customizeWebsiteVariable = getAction("customizeWebsiteVariable");
-                return {
-                    ...customizeWebsiteVariable,
-                    apply: async (action) => {
-                        const confirmed = await new Promise((resolve) => {
-                            dialogService.add(ConfirmationDialog, {
-                                body: _t(
-                                    "Changing the color palette will reset all your color customizations, are you sure you want to proceed?"
-                                ),
-                                confirm: () => resolve(true),
-                                cancel: () => resolve(false),
-                            });
-                        });
-                        if (!confirmed) {
-                            return;
-                        }
-                        await customizeWebsiteVariable.apply(action);
-                    },
-                };
-            },
-        };
-    }
     buildGray(id) {
         // Getting base grays defined in color_palette.scss
         const gray = getCSSVariableValue(`base-${id}`, getComputedStyle(document.documentElement));
@@ -257,6 +211,52 @@ export class ThemeTabPlugin extends Plugin {
             optionsContainerTopButtons: [],
             snippetModel: {},
         };
+    }
+}
+
+class CustomizeGrayAction extends BuilderAction {
+    setup() {
+        this.customHistory = this.dependencies.customizeWebsite.withCustomHistory;
+    }
+    getValue({ params: { mainParam: grayParamName } }) {
+        return this.plugin.grayParams[grayParamName];
+    }
+    async apply({ params: { mainParam: grayParamName }, value }) {
+        // Gray parameters are used *on the JS side* to compute the grays that
+        // will be saved in the database. We indeed need those grays to be
+        // computed here for faster previews so this allows to not duplicate
+        // most of the logic. Also, this gives flexibility to maybe allow full
+        // customization of grays in custo and themes. Also, this allows to ease
+        // migration if the computation here was to change: the user grays would
+        // still be unchanged as saved in the database.
+
+        this.plugin.grayParams[grayParamName] = parseInt(value);
+        for (let i = 1; i < 10; i++) {
+            const key = (100 * i).toString();
+            this.plugin.grays[key] = this.plugin.buildGray(key);
+        }
+
+        // Save all computed (JS side) grays in database
+        await this.dependencies.customizeWebsite.customizeWebsiteColors(this.plugin.grays, {
+            colorType: "gray",
+        });
+    }
+}
+class ChangeColorPaletteAction extends CustomizeWebsiteVariableAction {
+    async apply(context) {
+        const confirmed = await new Promise((resolve) => {
+            this.services.dialog.add(ConfirmationDialog, {
+                body: _t(
+                    "Changing the color palette will reset all your color customizations, are you sure you want to proceed?"
+                ),
+                confirm: () => resolve(true),
+                cancel: () => resolve(false),
+            });
+        });
+        if (!confirmed) {
+            return;
+        }
+        await super.apply(context);
     }
 }
 

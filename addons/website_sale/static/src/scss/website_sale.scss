@@ -1321,6 +1321,7 @@ body.modal-open:has(.js_sale.o_wsale_product_page) {
 .o_tag{
     @include o-ribbon-tag();
     padding: 0.25rem 0.7rem;
+    border-radius: var(--border-radius) !important;
 }
 
 .o_ribbon.o_right{

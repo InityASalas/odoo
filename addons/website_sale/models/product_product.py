@@ -460,26 +460,26 @@ class ProductProduct(models.Model):
         # Check if a discount is applied to the product using a pricelist, comparison price, or
         # others.
         is_sale_assign = (
-            ribbon.assign == "sale"
+            ribbon.assign == 'sale'
             and product_prices
             and (
                 # for /shop page
                 (
-                    "base_price" in product_prices
-                    and (product_prices["base_price"] > product_prices["price_reduce"])
+                    'base_price' in product_prices
+                    and (product_prices['base_price'] > product_prices['price_reduce'])
                 )
                 # for /product page
                 or (
                     "compare_list_price" in product_prices
-                    and product_prices["compare_list_price"] > product_prices["price"]
+                    and product_prices['compare_list_price'] > product_prices['price']
                 )
-                or product_prices.get("has_discounted_price")
+                or product_prices.get('has_discounted_price')
             )
         )
 
         # Check if the product is published within the ribbon's new period.
         is_new_assign = (
-            ribbon.assign == "new"
+            ribbon.assign == 'new'
             and ribbon.new_period >= (fields.Datetime.today() - self.publish_date).days
         )
 

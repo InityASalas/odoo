@@ -3411,13 +3411,14 @@
             t-elif="len(product_images) == 1 and website.product_page_image_layout != 'grid'"
             class="position-relative d-inline-flex overflow-hidden m-auto w-100"
         >
+            <div>
+                <span
+                    t-attf-class="o_ribbons #{ribbon._get_css_classes()} z-1"
+                    t-attf-style="#{text_color and ('color: %s; ' % text_color)}#{bg_color and 'background-color:' + bg_color}"
+                    t-out="ribbon['name'] or ''"
+                    t-att-data-ribbon-id="ribbon['id']"
+                />
             <span
-                t-attf-class="o_ribbons #{ribbon._get_css_classes()} z-1"
-                t-attf-style="#{text_color and ('color: %s; ' % text_color)}#{bg_color and 'background-color:' + bg_color}"
-                t-out="ribbon['name'] or ''"
-                t-att-data-ribbon-id="ribbon['id']"
-            />
-            <div
                 t-field="product_image.image_1920"
                 name="o_img_with_max_suggested_width"
                 class="d-flex align-items-start justify-content-center w-100 oe_unmovable"
@@ -3429,6 +3430,8 @@
                     'zoom': product_image.can_image_1024_be_zoomed and 'image_1920',
                 }"
             />
+
+            </div>
         </div>
         <div
             t-else=""

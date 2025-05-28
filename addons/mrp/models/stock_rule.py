@@ -54,7 +54,7 @@ class StockRule(models.Model):
                 mo = self.env['mrp.production'].sudo().search(domain, limit=1)
             if not mo:
                 procurement_qty = procurement.product_qty
-                batch_size = procurement.values.get('batch_size', procurement_qty)
+                batch_size = bom.batch_size if bom.enable_batch_size else procurement_qty
                 if batch_size <= 0:
                     batch_size = procurement_qty
                 vals = rule._prepare_mo_vals(*procurement, bom)

@@ -17,19 +17,19 @@ class TestHolidaysMultiContract(TestHolidayContract):
         # test move contract dates such that a leave is across two contracts
         start = datetime.strptime('2015-11-05 07:00:00', '%Y-%m-%d %H:%M:%S')
         end = datetime.strptime('2015-12-15 18:00:00', '%Y-%m-%d %H:%M:%S')
-        self.contract_cdi.write({'date_start': datetime.strptime('2015-12-30', '%Y-%m-%d').date()})
+        self.contract_cdi.write({'contract_date_start': datetime.strptime('2015-12-30', '%Y-%m-%d').date()})
         # begins during contract, ends after contract
         leave = self.create_leave(start, end, name="Doctor Appointment", employee_id=self.jules_emp.id)
         leave.action_approve()
         # move contract in the middle of the leave
         with self.assertRaises(ValidationError):
-            self.contract_cdi.date_start = datetime.strptime('2015-11-17', '%Y-%m-%d').date()
+            self.contract_cdi.contract_date_start = datetime.strptime('2015-11-17', '%Y-%m-%d').date()
 
     def test_create_contract_in_leave(self):
         # test create contract such that a leave is across two contracts
         start = datetime.strptime('2015-11-05 07:00:00', '%Y-%m-%d %H:%M:%S')
         end = datetime.strptime('2015-12-15 18:00:00', '%Y-%m-%d %H:%M:%S')
-        self.contract_cdi.date_start = datetime.strptime('2015-12-30', '%Y-%m-%d').date()  # remove this contract to be able to create the leave
+        self.contract_cdi.contract_date_start = datetime.strptime('2015-12-30', '%Y-%m-%d').date()  # remove this contract to be able to create the leave
         # begins during contract, ends after contract
         leave = self.create_leave(start, end, name="Doctor Appointment", employee_id=self.jules_emp.id)
         leave.action_approve()
@@ -90,12 +90,12 @@ class TestHolidaysMultiContract(TestHolidayContract):
         # resource calendar
         leave = self.create_leave(datetime(2022, 6, 1, 7, 0, 0), datetime(2022, 6, 30, 18, 0, 0), name="Doctor Appointment", employee_id=self.jules_emp.id)
         leave.action_approve()
-        self.contract_cdi.date_end = date(2022, 6, 15)
+        self.contract_cdi.contract_date_end = date(2022, 6, 15)
 
         self.jules_emp.create_version({
             'date_version': date(2022, 6, 16),
             'contract_date_start': date(2022, 6, 16),
-            'date_end': False,
+            'contract_date_end': False,
             'name': 'New Contract for Jules',
             'resource_calendar_id': self.calendar_35h.id,
             'wage': 5000.0,
@@ -111,7 +111,7 @@ class TestHolidaysMultiContract(TestHolidayContract):
         self.assertEqual(leave.number_of_days, 22)
         self.assertEqual(leave.state, 'validate')
 
-        self.contract_cdi.date_end = date(2022, 6, 15)
+        self.contract_cdi.contract_date_end = date(2022, 6, 15)
         self.jules_emp.create_version({
             'date_version': date(2022, 6, 16),
             'contract_date_start': date(2022, 6, 16),

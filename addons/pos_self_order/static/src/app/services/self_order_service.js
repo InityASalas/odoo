@@ -859,7 +859,7 @@ export class SelfOrder extends Reactive {
             price,
             1,
             product,
-            this.config._product_default_values,
+            {},
             this.company,
             this.currency
         );

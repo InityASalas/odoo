@@ -15,12 +15,22 @@ class ResourceResource(models.Model):
     user_id = fields.Many2one(copy=False)
     employee_id = fields.One2many('hr.employee', 'resource_id', check_company=True, context={'active_test': False})
 
-    job_title = fields.Char(related='employee_id.job_title')
-    department_id = fields.Many2one(related='employee_id.department_id')
+    job_title = fields.Char(compute='_compute_job_title', compute_sudo=True)
+    department_id = fields.Many2one('hr.department', compute='_compute_department_id', compute_sudo=True)
     work_email = fields.Char(related='employee_id.work_email')
     work_phone = fields.Char(related='employee_id.work_phone')
     show_hr_icon_display = fields.Boolean(related='employee_id.show_hr_icon_display')
     hr_icon_display = fields.Selection(related='employee_id.hr_icon_display')
+
+    @api.depends('employee_id')
+    def _compute_job_title(self):
+        for resource in self:
+            resource.job_title = resource.employee_id.job_title
+
+    @api.depends('employee_id')
+    def _compute_department_id(self):
+        for resource in self:
+            resource.department_id = resource.employee_id.department_id
 
     @api.depends('employee_id')
     def _compute_avatar_128(self):

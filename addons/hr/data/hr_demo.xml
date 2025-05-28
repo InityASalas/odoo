@@ -314,6 +314,7 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="create_date">2010-01-01 00:00:00</field>
             <field name="date_version" eval="(DateTime.today() + relativedelta(years=-1, month=9))"/>
             <field name="contract_date_start" eval="(DateTime.today() + relativedelta(years=-1, month=9))"/>
+            <field name="contract_date_end" eval="(DateTime.today() + relativedelta(years=-1, month=12, day=31))"/>
             <field name="contract_type_id" ref="contract_type_permanent"/>
             <field name="structure_type_id" ref="structure_type_employee"/>
             <field name="wage">3750.00</field>

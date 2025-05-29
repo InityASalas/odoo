@@ -214,7 +214,7 @@ def get_extension(filename):
     # of hidden files) or that what follow the last dot is not a single
     # word, e.g. "Mr. Doe"
     _stem, dot, ext = filename.lstrip('.').rpartition('.')
-    if not dot or not ext.isalnum():
+    if not dot or not re.match(r'^[a-zA-Z0-9_]+$', ext):
         return ''
 
     # Assume all 4-chars extensions to be valid extensions even if it is

@@ -202,7 +202,7 @@ class AccountWithholdingLine(models.AbstractModel):
             line.original_base_amount = line_curr.round(base_amount * rate)
             line.original_tax_amount = line_curr.round(tax_amount * rate)
 
-    @api.depends('original_base_amount', 'comodel_percentage_paid_factor')
+    @api.depends('original_base_amount', 'comodel_percentage_paid_factor', 'comodel_currency_id')
     def _compute_base_amount(self):
         for line in self:
             line_curr = line.comodel_currency_id
@@ -210,7 +210,7 @@ class AccountWithholdingLine(models.AbstractModel):
                 percentage_paid_factor = line.comodel_percentage_paid_factor
                 line.base_amount = line_curr.round(line.original_base_amount * percentage_paid_factor)
 
-    @api.depends('source_tax_id', 'tax_id', 'base_amount')
+    @api.depends('source_tax_id', 'tax_id', 'base_amount', 'comodel_currency_id')
     def _compute_amount(self):
         for line in self:
             line_curr = line.comodel_currency_id

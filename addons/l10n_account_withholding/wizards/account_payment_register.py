@@ -122,7 +122,6 @@ class AccountPaymentRegister(models.TransientModel):
     @api.depends(
         'can_edit_wizard',
         'display_withholding',
-        'currency_id',
     )
     def _compute_withholding_line_ids(self):
         for wizard in self:
@@ -131,19 +130,20 @@ class AccountPaymentRegister(models.TransientModel):
                 wizard.withholding_line_ids = [Command.clear()]
                 continue
 
-            # Recompute the lines themselves.
-            batch = wizard.batches[0]
-            base_lines = []
-            for move in batch['lines'].move_id:
-                move_base_lines, _move_tax_lines = move._get_rounded_base_and_tax_lines()
-                base_lines += move_base_lines
+            # Compute the lines themselves once; when opening the wizard.
+            if not wizard.withholding_line_ids:
+                batch = wizard.batches[0]
+                base_lines = []
+                for move in batch['lines'].move_id:
+                    move_base_lines, _move_tax_lines = move._get_rounded_base_and_tax_lines()
+                    base_lines += move_base_lines
 
-            wizard.withholding_line_ids = wizard.withholding_line_ids._prepare_withholding_lines_commands(
-                base_lines=base_lines,
-                company=wizard.company_id or self.env.company,
-            )
-            if wizard.withholding_line_ids._need_update_withholding_lines_placeholder():
-                wizard.withholding_line_ids = wizard.withholding_line_ids._prepare_update_withholding_lines_placeholder_commands()
+                wizard.withholding_line_ids = wizard.withholding_line_ids._prepare_withholding_lines_commands(
+                    base_lines=base_lines,
+                    company=wizard.company_id or self.env.company,
+                )
+                if wizard.withholding_line_ids._need_update_withholding_lines_placeholder():
+                    wizard.withholding_line_ids = wizard.withholding_line_ids._prepare_update_withholding_lines_placeholder_commands()
 
     @api.depends('withholding_line_ids')
     def _compute_should_withhold_tax(self):

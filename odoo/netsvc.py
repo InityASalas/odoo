@@ -15,6 +15,7 @@ import warnings
 
 import werkzeug.serving
 
+from . import _monkeypatches
 from . import release
 from . import sql_db
 from . import tools
@@ -199,11 +200,13 @@ def init_logger():
     warnings.simplefilter('default', category=DeprecationWarning)
     # https://github.com/urllib3/urllib3/issues/2680
     warnings.filterwarnings('ignore', r'^\'urllib3.contrib.pyopenssl\' module is deprecated.+', category=DeprecationWarning)
+
     # ofxparse use an html parser to parse ofx xml files and triggers a warning since bs4 4.11.0
     # https://github.com/jseutter/ofxparse/issues/170
-    with contextlib.suppress(ImportError):
-        from bs4 import XMLParsedAsHTMLWarning
+    def bs4_mask_warning():
+        from bs4 import XMLParsedAsHTMLWarning  # noqa: PLC0415
         warnings.filterwarnings('ignore', category=XMLParsedAsHTMLWarning)
+    _monkeypatches.HOOK_IMPORT.add_hook('bs4', bs4_mask_warning)
     # ignore a bunch of warnings we can't really fix ourselves
     for module in [
         'babel.util', # deprecated parser module, no release yet

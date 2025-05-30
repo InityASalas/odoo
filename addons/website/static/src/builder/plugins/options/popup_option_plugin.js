@@ -65,6 +65,7 @@ class PopupOptionPlugin extends Plugin {
                 },
                 apply: ({ editingElement }) => {
                     editingElement.classList.remove("s_popup_no_backdrop");
+                    // window.dispatchEvent(new Event("resize"));
                     editingElement.style.setProperty(
                         "background-color",
                         "var(--black-50)",
@@ -73,6 +74,7 @@ class PopupOptionPlugin extends Plugin {
                 },
                 clean: ({ editingElement }) => {
                     editingElement.classList.add("s_popup_no_backdrop");
+                    // window.dispatchEvent(new Event("resize"));
                     editingElement.style.removeProperty("background-color");
                 },
             },

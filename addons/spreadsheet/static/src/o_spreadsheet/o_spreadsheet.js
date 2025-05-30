@@ -82670,6 +82670,7 @@ const stores = {
     ModelStore,
     NotificationStore,
     RendererStore,
+    GridRenderer,
     SelectionInputStore,
     SpreadsheetStore,
     useStore,

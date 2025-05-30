@@ -710,9 +710,9 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         initial_product = sale_order.order_line.product_id
         picking.picking_type_id.show_operations = True  # Could be false without demo data, as the lot group is disabled
         picking_form = Form(picking)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 5
-        with picking_form.move_ids_without_package.new() as new_move:
+        with picking_form.move_ids.new() as new_move:
             new_move.product_id = product_inv_on_order
             new_move.quantity = 5
         picking = picking_form.save()
@@ -751,9 +751,9 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         picking = sale_order.picking_ids
 
         picking_form = Form(picking)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 5
-        with picking_form.move_ids_without_package.new() as new_move:
+        with picking_form.move_ids.new() as new_move:
             new_move.product_id = product_inv_on_delivered
             new_move.quantity = 5
         picking = picking_form.save()
@@ -800,7 +800,7 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick = sale_order.picking_ids.filtered(lambda p: p.picking_type_code == 'internal')
         pick.picking_type_id.show_operations = True  # Could be false without demo data, as the lot group is disabled
         picking_form = Form(pick)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 10
         pick = picking_form.save()
         pick.move_ids.picked = True
@@ -809,7 +809,7 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         delivery = sale_order.picking_ids.filtered(lambda p: p.picking_type_code == 'outgoing')
         delivery.picking_type_id.show_operations = True  # Could be false without demo data, as the lot group is disabled
         picking_form = Form(delivery)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 10
         delivery = picking_form.save()
         delivery.move_ids.picked = True
@@ -831,9 +831,9 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick = sale_order.picking_ids.filtered(lambda p: p.picking_type_code == 'internal')
 
         picking_form = Form(pick)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 10
-        with picking_form.move_ids_without_package.new() as new_move:
+        with picking_form.move_ids.new() as new_move:
             new_move.product_id = product_inv_on_order
             new_move.quantity = 10
         pick = picking_form.save()
@@ -842,9 +842,9 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
 
         delivery = sale_order.picking_ids.filtered(lambda p: p.picking_type_code == 'outgoing')
         picking_form = Form(delivery)
-        with picking_form.move_ids_without_package.edit(0) as move:
+        with picking_form.move_ids.edit(0) as move:
             move.quantity = 10
-        with picking_form.move_ids_without_package.edit(1) as new_move:
+        with picking_form.move_ids.edit(1) as new_move:
             new_move.quantity = 10
         delivery = picking_form.save()
         delivery.move_ids.picked = True
@@ -1125,7 +1125,7 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         self.product_a.is_storable = True
         self.env['stock.quant']._update_available_quantity(
             self.product_a, self.company_data['default_warehouse'].lot_stock_id, 10,
-            package_id=self.env['stock.quant.package'].create({'name': 'PacMan'}))
+            package_id=self.env['stock.package'].create({'name': 'PacMan'}))
 
         # Create sale order
         sale_order = self._get_new_sale_order(product=self.product_a)
@@ -1136,7 +1136,6 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
             with so_form.order_line.edit(0) as line:
                 line.product_uom_qty = 0
 
-        self.assertFalse(sale_order.picking_ids.package_level_ids)
         self.assertFalse(sale_order.picking_ids.move_line_ids)
 
     def test_multiple_returns(self):
@@ -1447,7 +1446,8 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick_picking = so_1.picking_ids.filtered(lambda p: p.picking_type_id == warehouse.pick_type_id)
 
         pick_picking.move_ids.write({'quantity': 2, 'picked': True})
-        pick_picking.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, pick_picking.action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         Form.from_action(self.env, pick_picking.button_validate()).save().process()
 
         pack_picking = so_1.picking_ids.filtered(lambda p: p.picking_type_id == warehouse.pack_type_id)
@@ -1462,7 +1462,8 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         pick_picking_2 = so_1.picking_ids.filtered(lambda x: x.picking_type_id == warehouse.pick_type_id and x.state != 'done')
 
         pick_picking_2.move_ids.write({'quantity': 2, 'picked': True})
-        package_2 = pick_picking_2.action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, pick_picking_2.action_put_in_pack()).save()
+        package_2 = pack_wizard.action_put_in_pack()
         Form.from_action(self.env, pick_picking_2.button_validate()).save().process()
 
         self.assertEqual(out_picking.move_line_ids.package_id.id, False)

@@ -22,7 +22,7 @@ class TestStockMoveLine(TestStockCommon):
             'is_storable': True,
             'tracking': 'lot',
         })
-        cls.pack = cls.env['stock.quant.package'].create({
+        cls.pack = cls.env['stock.package'].create({
             'name': 'Pack A',
         })
         cls.lot = cls.env['stock.lot'].create({
@@ -148,10 +148,9 @@ class TestStockMoveLine(TestStockCommon):
             'product_id': self.productA.id,
             'quantity': 1,
         })
-        (move_line1 | move_line2).action_put_in_pack()
+        pack_wizard = Form.from_action(self.env, (move_line1 | move_line2).action_put_in_pack()).save()
+        pack_wizard.action_put_in_pack()
         self.assertEqual(move_line1.result_package_id, move_line2.result_package_id)
-        self.assertEqual(len(picking1.package_level_ids), 0)
-        self.assertEqual(len(picking2.package_level_ids), 0)
 
     def test_multi_edit_quant_and_lot(self):
         """

@@ -67,7 +67,7 @@
                         <i class="fa fa-envelope-o"/> Send Email
                     </button>
                 </div>
-                <div class="alert alert-info d-none" role="alert"><strong>Sharing is caring!</strong> Email(s) sent. </div>
+                <div class="alert alert-info d-none" role="alert"><strong>Sharing is caring!</strong> Your email(s) will arrive shortly.</div>
             </form>
         </div>
         <div t-if="widget.session.is_website_user" class="alert alert-info d-inline-block">

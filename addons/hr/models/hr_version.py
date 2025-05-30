@@ -1,9 +1,11 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from collections import defaultdict
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
+from odoo.fields import Domain
 from odoo.exceptions import ValidationError
 
 import logging
@@ -179,30 +181,40 @@ class HrVersion(models.Model):
 
     @api.constrains('contract_date_start', 'contract_date_end')
     def _check_dates(self):
+        version_read_group = self.env['hr.version']._read_group(
+            [
+                ('id', 'not in', self.ids),
+                ('employee_id', 'in', self.employee_id.ids),
+                ('contract_date_start', '!=', False),
+            ],
+            ['employee_id', 'contract_date_start:day', 'contract_date_end:day'],
+            ['id:recordset'],
+        )
+        dates_per_employee = defaultdict(list)
+        for employee, date_start, date_end, versions in version_read_group:
+            dates_per_employee[employee].append((date_start, date_end, versions))
         for version in self:
-            if version.contract_date_end and not version.contract_date_start:
-                raise ValidationError(_('The contract must have a start date.'))
-            elif version.contract_date_end and version.contract_date_start > version.contract_date_end:
+            if not version.contract_date_start:
+                continue
+            if version.contract_date_end and version.contract_date_start > version.contract_date_end:
                 raise ValidationError(_(
                     'Start date (%(start)s) must be earlier than contract end date (%(end)s).',
                     start=version.contract_date_start, end=version.contract_date_end,
                 ))
-            if version.active and version._check_overlap():
-                # YTI TODO: Raise user friendly error message explaining which contracts and which dates
-                raise ValidationError(_('You cannot have overlapping contracts.'))
-
-    def _check_overlap(self):
-        self.ensure_one()
-        if not self.contract_date_start or not self.employee_id:
-            return False
-        contract_date_end = self.contract_date_end or date.max
-        for date_from, date_to in self.employee_id._get_all_contract_dates():
-            if self.contract_date_start == date_from and self.contract_date_end == date_to:
+            if not version.active:
                 continue
-            date_to = date_to or date.max
-            if date_from <= contract_date_end and self.contract_date_start <= date_to:
-                return True
-        return False
+            contract_date_end = version.contract_date_end or date.max
+            contract_period_exists = False
+            for date_start, date_end, versions in dates_per_employee[version.employee_id]:
+                date_to = date_end or date.max
+                if date_start == version.contract_date_start and date_to == contract_date_end:
+                    contract_period_exists = True
+                    continue
+                if date_start <= contract_date_end and version.contract_date_start <= date_to:
+                    # YTI TODO: Raise user friendly error message explaining which contracts and which dates
+                    raise ValidationError(_('You cannot have overlapping contracts.'))
+            if not contract_period_exists:
+                dates_per_employee[version.employee_id].append((version.contract_date_start, version.contract_date_end, version))
 
     @api.model_create_multi
     def create(self, vals_list):

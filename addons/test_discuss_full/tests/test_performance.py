@@ -390,6 +390,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "is_company": False,
                     "name": "OdooBot",
                     "leave_date_to": False,
+                    'tz': False,
                     "userId": self.user_root.id,
                     "write_date": fields.Datetime.to_string(self.user_root.partner_id.write_date),
                 },
@@ -402,6 +403,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "name": "Ernest Employee",
                     "notification_preference": "inbox",
                     "signature": ["markup", self.users[0].signature],
+                    'tz': False,
                     "userId": self.users[0].id,
                     "write_date": fields.Datetime.to_string(self.users[0].partner_id.write_date),
                 },
@@ -1628,6 +1630,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "Ernest Employee",
                 "leave_date_to": False,
+                'tz': False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
@@ -1682,6 +1685,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test2",
                 "leave_date_to": False,
+                "tz": False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
@@ -1697,6 +1701,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test3",
                 "leave_date_to": False,
+                "tz": False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(self.users[3].partner_id.write_date),
             }
@@ -1712,6 +1717,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test12",
                 "leave_date_to": False,
+                "tz": False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
@@ -1727,6 +1733,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test14",
                 "leave_date_to": False,
+                'tz': False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
@@ -1742,6 +1749,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "isInternalUser": True,
                 "name": "test15",
                 "leave_date_to": False,
+                'tz': False,
                 "userId": user.id,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }

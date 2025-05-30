@@ -1,5 +1,6 @@
 import { useService } from "@web/core/utils/hooks";
-import { Component, onWillStart } from "@odoo/owl";
+import { session } from "@web/session";
+import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { useOpenChat } from "@mail/core/web/open_chat_hook";
 
 export class AvatarCardPopover extends Component {
@@ -14,13 +15,65 @@ export class AvatarCardPopover extends Component {
         this.actionService = useService("action");
         this.orm = useService("orm");
         this.openChat = useOpenChat("res.users");
+        this.state = useState({
+            showUserTime: false,
+            userTime: null,
+            userDate: null,
+            userTz: null
+        });
+        let intervalId;
+        let timeoutId;
+        const currentLanguage = (session.bundle_params.lang || "en-US").replace("_", "-");
+        const updateDisplayedTime = (currentUserTz, targetUserTz) => {
+            const now = new Date();
+            const currentTime = new Intl.DateTimeFormat(currentLanguage, {
+                hour: "2-digit",
+                minute: "2-digit",
+                timeZone: targetUserTz
+            }).format(now);
+            const currentUserDate = new Intl.DateTimeFormat(currentLanguage, {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                timeZone: currentUserTz
+            }).format(now);
+            const targetUserDate = new Intl.DateTimeFormat(currentLanguage, {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                timeZone: targetUserTz
+            }).format(now);
+            this.state.showUserTime = true;
+            this.state.userTime = currentTime;
+            this.state.userTz = targetUserTz;
+            this.state.userDate = currentUserDate !== targetUserDate ? targetUserDate : null;
+        };
         onWillStart(async () => {
-            [this.user] = await this.orm.read("res.users", [this.props.id], this.fieldNames);
+            let targetUserTz;
+            const recordModel = this.props.recordModel || "res.users";
+            [this.user] = await this.orm.read(recordModel, [this.props.id], this.fieldNames);
+            targetUserTz = this.user.tz || null;
+            const currentPartner = Object.values(session.storeData?.["res.partner"] || {}).find(p => p.active);
+            const currentUserTz = currentPartner?.tz || null;
+            if (targetUserTz && currentUserTz && targetUserTz !== currentUserTz) {
+                updateDisplayedTime(currentUserTz, targetUserTz);
+                const msUntilNextMinute = 60000 - (Date.now() % 60000);
+                timeoutId = setTimeout(() => {
+                    updateDisplayedTime(currentUserTz, targetUserTz);
+                    intervalId = setInterval(() => {
+                        updateDisplayedTime(currentUserTz, targetUserTz);
+                    }, 60000);
+                }, msUntilNextMinute);
+            }
+        });
+        onWillUnmount(() => {
+            if (intervalId) clearInterval(intervalId);
+            if (timeoutId) clearTimeout(timeoutId);
         });
     }
 
     get fieldNames() {
-        return ["name", "email", "phone", "im_status", "share", "partner_id"];
+        return ["name", "email", "phone", "im_status", "share", "partner_id", "tz"];
     }
 
     get email() {

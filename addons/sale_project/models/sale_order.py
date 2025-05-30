@@ -122,9 +122,8 @@ class SaleOrder(models.Model):
         for project in projects:
             projects_per_so[project.sale_order_id.id] |= project
         for order in self:
-            projects = order.order_line.mapped('product_id.project_id')
-            projects |= order.order_line.mapped('project_id')
-            projects |= projects_per_so[order.id or order._origin.id]
+            projects = projects_per_so[order.id or order._origin.id]
+            projects |= order.order_line.mapped(lambda l: l.task_id.project_id + l.project_id)
             if not is_project_manager:
                 projects = projects._filtered_access('read')
             order.project_ids = projects
@@ -201,7 +200,7 @@ class SaleOrder(models.Model):
         return action
 
     def _tasks_ids_domain(self):
-        return ['&', ('project_id', '!=', False), '|', ('sale_line_id', 'in', self.order_line.ids), ('sale_order_id', 'in', self.ids)]
+        return ['&', ('is_template', '=', False), '&', ('project_id', '!=', False), '|', ('sale_line_id', 'in', self.order_line.ids), ('sale_order_id', 'in', self.ids)]
 
     def action_create_project(self):
         self.ensure_one()

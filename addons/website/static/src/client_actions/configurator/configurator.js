@@ -459,10 +459,178 @@ class ThemeSelectionScreen extends ApplyConfiguratorScreen {
         this.themeSVGPreviews = [useRef('ThemePreview1'), useRef('ThemePreview2'), useRef('ThemePreview3')];
 
         onMounted(() => {
-            this.state.themes.forEach((theme, idx) => {
-                $(this.themeSVGPreviews[idx].el).append(theme.svg);
-            });
+            this.blockUiDuringImageLoading(this.state.themes, this.themeSVGPreviews);
         });
+
+        useEffect(
+            () => this.blockUiDuringImageLoading(this.state.extraThemes, this.extraThemeSVGPreviews),
+            () => [this.state.extraThemes]
+        );
+    }
+
+    /**
+     * The button should be shown if we never tried to load the extra themes and
+     * if they are enough main themes already displayed. If this last condition
+     * is not fulfilled, there is no need to display the button as no more will
+     * be displayed.
+     */
+    get showViewMoreThemesButton() {
+        return !this.state.extraThemesLoaded
+            && this.state.themes.length === MAX_NBR_DISPLAY_MAIN_THEMES;
+    }
+
+    /**
+     * Transforms text svgs into svg elements and adds a loading effect that
+     * blocks the UI during the loading of the images inside those svg elements.
+     *
+     * @param {Array<Object>} themes - The text svgs.
+     * @param {Array} themeSVGPreviews - A reference to the svg elements.
+     */
+    blockUiDuringImageLoading(themes, themeSVGPreviews) {
+        if (!themes.length) {
+            // There is no svg to transform
+            return;
+        }
+        const proms = [];
+        this.uiService.block({delay: 700});
+        themes.forEach((theme, idx) => {
+            const parsedSvg = new DOMParser().parseFromString(theme.svg, "image/svg+xml");
+            const svgEl = this.translateSVG(parsedSvg).documentElement;
+            for (const imgEl of svgEl.querySelectorAll("image")) {
+                proms.push(new Promise((resolve, reject) => {
+                    imgEl.addEventListener("load", () => {
+                        resolve(imgEl);
+                    }, {once: true});
+                    imgEl.addEventListener("error", () => {
+                        reject(imgEl);
+                    }, {once: true});
+                }));
+            }
+            themeSVGPreviews[idx].el.appendChild(svgEl);
+        });
+        // When all the images inside the svgs are loaded then remove the
+        // loading effect.
+        Promise.allSettled(proms).then(() => {
+            this.uiService.unblock();
+        });
+    }
+
+    translateSVG(doc) {
+        doc.querySelectorAll("text").forEach((elem) => {
+            const sanitizedTextContent = elem.textContent
+                .trim()
+                .split("\n")
+                .map((word) => word.trim());
+            var translatedTextContent = sanitizedTextContent.join(" ");
+            switch (translatedTextContent) {
+                case "Welcome Message":
+                    translatedTextContent = _t("Welcome Message");
+                    break;
+                case "A Welcome Message":
+                    translatedTextContent = _t("A Welcome Message");
+                    break;
+                case "A Welcoming Message":
+                    translatedTextContent = _t("A Welcoming Message");
+                    break;
+                case "Discover":
+                    translatedTextContent = _t("Discover");
+                    break;
+                case "Section Title":
+                    translatedTextContent = _t("Section Title");
+                    break;
+                case "Entry Title":
+                    translatedTextContent = _t("Entry Title");
+                    break;
+                case "Team Member":
+                    translatedTextContent = _t("Team Member");
+                    break;
+                case "A Section Title":
+                    translatedTextContent = _t("A Section Title");
+                    break;
+                case "A Very Long Title":
+                    translatedTextContent = _t("A Very Long Title");
+                    break;
+                case "A Big Title":
+                    translatedTextContent = _t("A Big Title");
+                    break;
+                case "A Very Long Subtitle":
+                    translatedTextContent = _t("A Very Long Subtitle");
+                    break;
+                case "Block Title":
+                    translatedTextContent = _t("Block Title");
+                    break;
+                case "BLOCK":
+                    translatedTextContent = _t("BLOCK");
+                    break;
+                case "TITLE":
+                    translatedTextContent = _t("TITLE");
+                    break;
+                case "Feature #01":
+                    translatedTextContent = _t("Feature") + " #01";
+                    break;
+                case "Feature #02":
+                    translatedTextContent = _t("Feature") + " #02";
+                    break;
+                case "Feature #03":
+                    translatedTextContent = _t("Feature") + " #03";
+                    break;
+                case "Section Entry":
+                    translatedTextContent = _t("Section Entry");
+                    break;
+                case "Contact Us":
+                    translatedTextContent = _t("Contact Us");
+                    break;
+                case "Card Title":
+                    translatedTextContent = _t("Card Title");
+                    break;
+                case "Call-To-Action Title":
+                    translatedTextContent = _t("Call-To-Action Title");
+                    break;
+                case "Subtitle #01":
+                    translatedTextContent = _t("Subtitle") + " #01";
+                    break;
+                case "Subtitle #02":
+                    translatedTextContent = _t("Subtitle") + " #02";
+                    break;
+            }
+
+            /*
+             * This code handles translating multiline phrases into languages
+             * whose corresponding phrases have more words, while keeping the
+             * same amount of lines
+             *
+             * Example: translating     Welcome     into    Messaggio di
+             *                          Message             Benvenuto
+             *
+             * starting phrase = 2 lines, 2 words
+             * translated phrase = 2 lines, 3 words
+             */
+            if (sanitizedTextContent.length > 1) {
+                const distributedTranslatedTextContent = [];
+                const splitTranslatedTextContent = translatedTextContent.split(/\s/);
+                const wordsPerLine = Math.ceil(
+                    splitTranslatedTextContent.length / sanitizedTextContent.length
+                );
+
+                for (let i = 0; i < splitTranslatedTextContent.length; i += wordsPerLine) {
+                    distributedTranslatedTextContent.push(
+                        splitTranslatedTextContent.slice(i, i + wordsPerLine).join(" ")
+                    );
+                }
+
+                distributedTranslatedTextContent.forEach((word, index) => {
+                    elem.querySelectorAll("tspan")[index].textContent = word;
+                });
+            } else {
+                const tspanEl = elem.querySelector("tspan");
+                if (tspanEl) {
+                    tspanEl.textContent = translatedTextContent;
+                } else {
+                    elem.textContent = translatedTextContent;
+                }
+            }
+        });
+        return doc;
     }
 
     async chooseTheme(themeName) {

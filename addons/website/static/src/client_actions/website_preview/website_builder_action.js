@@ -44,6 +44,7 @@ export class WebsiteBuilder extends Component {
         this.title = useService("title");
         this.hotkeyService = useService("hotkey");
         this.websiteService.websiteRootInstance = undefined;
+        this.builderAssetsLoaded = false;
 
         this.websiteContent = useRef("iframe");
         useSubEnv({
@@ -114,12 +115,6 @@ export class WebsiteBuilder extends Component {
             const edition = !!(enable_editor || edit_translations);
             if (edition) {
                 this.onEditPage();
-            }
-            if (!this.ui.isSmall) {
-                // preload builder and snippets so clicking on "edit" is faster
-                loadBundle("html_builder.assets").then(() => {
-                    this.env.services["html_builder.snippets"].load();
-                });
             }
         });
         this.publicRootReady = new Deferred();
@@ -274,6 +269,14 @@ export class WebsiteBuilder extends Component {
         if (this.props.action.context.params?.with_loader) {
             this.websiteService.hideLoader();
             this.props.action.context.params.with_loader = false;
+        }
+
+        if (!this.ui.isSmall && !this.builderAssetsLoaded) {
+            // Preload the snippets so clicking on "Edit" is faster
+            loadBundle("html_builder.assets").then(() => {
+                this.env.services["html_builder.snippets"].load();
+                this.builderAssetsLoaded = true;
+            });
         }
     }
 

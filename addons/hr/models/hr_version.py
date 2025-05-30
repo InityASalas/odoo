@@ -165,6 +165,11 @@ class HrVersion(models.Model):
     contract_type_id = fields.Many2one('hr.contract.type', "Contract Type", tracking=True,
                                        groups="hr.group_hr_user")
 
+    _check_contract_start_date_defined = models.Constraint(
+        'CHECK(contract_date_end IS NULL OR contract_date_start IS NOT NULL)',
+        'The contract must have a start date.',
+    )
+
     def _get_hr_responsible_domain(self):
         return "[('share', '=', False), ('company_ids', 'in', company_id), ('all_group_ids', 'in', %s)]" % self.env.ref('hr.group_hr_user').id
 

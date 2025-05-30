@@ -27,6 +27,7 @@ class TestFrenchWorkEntries(TransactionCase):
             'birthday': '1973-03-29',
             'country_id': country_fr.id,
             'company_id': cls.company.id,
+            'date_version': '2020-01-01',
             'contract_date_start': '2020-01-01',
             'contract_date_end': '2023-01-01',
             'wage': 2,

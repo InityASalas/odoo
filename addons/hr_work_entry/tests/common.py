@@ -26,6 +26,7 @@ class TestWorkEntryBase(TransactionCase):
             'country_id': cls.env.ref('base.be').id,
             'department_id': cls.dep_rd.id,
             'wage': 5000.0,
+            'date_version': Date.to_date('2018-01-01'),
             'contract_date_start': Date.to_date('2018-01-01'),
             'contract_date_end': Date.today() + relativedelta(years=2),
         })

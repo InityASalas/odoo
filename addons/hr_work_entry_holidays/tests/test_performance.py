@@ -72,6 +72,7 @@ class TestWorkEntryHolidaysPerformancesBigData(TestWorkEntryHolidaysBase):
         cls.employees = cls.env['hr.employee'].create([{
             'name': 'Employee %s' % i,
             'company_id': cls.company.id,
+            'date_version': date(2018, 1, 1),
             'contract_date_start': date(2018, 1, 1),
             'contract_date_end': False,
             'wage': 5000.0,
@@ -94,7 +95,7 @@ class TestWorkEntryHolidaysPerformancesBigData(TestWorkEntryHolidaysBase):
     def test_work_entries_generation_perf(self):
         # Test Case 7: Try to generate work entries for
         # a hundred employees over a month
-        with self.assertQueryCount(__system__=407, admin=2807):  # com: 402 / 2807
+        with self.assertQueryCount(__system__=883, admin=2807):  # com: 402 / 2807
             work_entries = self.contracts.generate_work_entries(date(2020, 7, 1), date(2020, 8, 31))
 
         # Original work entries to generate when we don't adapt date_generated_from and

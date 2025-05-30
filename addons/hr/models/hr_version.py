@@ -248,28 +248,50 @@ class HrVersion(models.Model):
         if self.env.context.get('sync_contract_dates'):
             return super().write(values)
 
-        if values.get('contract_date_start') or 'contract_date_end' in values:
+        new_vals = {
+            f_name: f_value
+            for f_name, f_value in values.items()
+            if (f_name != 'contract_date_start' or f_value) and f_name != 'contract_date_end'
+        }
+        dates_vals = {}
+        if date_start := values.get('contract_date_start'):
+            dates_vals['contract_date_start'] = date_start
+        if 'contract_date_end' in values:
+            dates_vals['contract_date_end'] = values['contract_date_end']
+        if dates_vals:
+            new_contract_date_start = dates_vals.get('contract_date_start')
+            if new_contract_date_start:
+                new_contract_date_start = fields.Date.to_date(new_contract_date_start)
+            version_domain = [
+                ('contract_date_start', '>=', min(*self.mapped('contract_date_start'), new_contract_date_start or date.max)),
+                ('id', 'not in', self.ids),
+            ]
+            max_date_end = date.min
             for version in self:
-
-                domain = [('id', '!=', version.id)]
-                if values.get('contract_date_start'):
-                    if isinstance(values['contract_date_start'], str):
-                        contract_date_start = fields.Date.from_string(values['contract_date_start'])
-                    else:
-                        contract_date_start = values['contract_date_start']
-                    domain += [('contract_date_start', '=', contract_date_start)]
-                if version.contract_date_start:
-                    domain += [('contract_date_start', '=', version.contract_date_start)]
-                if values.get('contract_date_start') and version.contract_date_start:
-                    domain.insert(1, '|')
-
-                if len(domain) > 1:
-                    sync_versions = version.employee_id.version_ids.filtered_domain(domain)
-                    sync_versions.with_context(sync_contract_dates=True).write({
-                        'contract_date_start': values.get('contract_date_start', version.contract_date_start),
-                        'contract_date_end': values.get('contract_date_end', version.contract_date_end),
-                    })
-        return super().write(values)
+                if not version.contract_date_end:
+                    max_date_end = False
+                    break
+                max_date_end = max(max_date_end, version.contract_date_end)
+            date_end_domain = [('contract_date_end', '=', False)]
+            if max_date_end:
+                date_end_domain = Domain.OR([date_end_domain, [('contract_date_end', '<=', max_date_end)]])
+            version_domain = Domain.AND([version_domain, date_end_domain])
+            versions_to_sync_per_employee = dict(self.env['hr.version']._read_group(version_domain, ['employee_id'], ['id:recordset']))
+            for version in self:
+                versions_to_sync = versions_to_sync_per_employee.get(version.employee_id)
+                if versions_to_sync:
+                    sync_versions = versions_to_sync.filtered(
+                        lambda v:
+                            v.contract_date_start == version.contract_date_start
+                            or (
+                                new_contract_date_start
+                                and new_contract_date_start == v.contract_date_start
+                            )
+                    )
+                    if new_contract_date_start and 'contract_date_end' not in dates_vals:
+                        dates_vals['contract_date_end'] = version.contract_date_end
+                    (sync_versions + version).with_context(sync_contract_dates=True).write(dates_vals)
+        return super().write(new_vals)
 
     @api.depends('date_version')
     def _compute_display_name(self):

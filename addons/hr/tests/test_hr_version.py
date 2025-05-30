@@ -262,26 +262,26 @@ class TestHrVersion(TransactionCase):
             'name': 'John Doe',
             'date_version': '2020-01-01',
             'contract_date_start': '2020-01-01',
-            'contract_date_end': '2021-12-31'
+            'contract_date_end': '2021-12-31',
         })
         v1 = employee.version_id
 
         v2 = employee.create_version({
             'date_version': '2021-01-01',
-            'contract_date_end': '2022-12-31'
+            'contract_date_end': '2022-12-31',
         })
         self.assertEqual(v2.contract_date_end, date(2022, 12, 31))
         self.assertEqual(v1.contract_date_end, v2.contract_date_end)
 
         v1.write({
-            'contract_date_start': '2021-01-01'
+            'contract_date_start': '2021-01-01',
         })
         self.assertEqual(v1.contract_date_start, date(2021, 1, 1))
         self.assertEqual(v1.contract_date_start, v2.contract_date_start)
 
         v2.write({
             'contract_date_start': '2020-01-01',
-            'contract_date_end': '2020-12-31'
+            'contract_date_end': '2020-12-31',
         })
         self.assertEqual(v2.contract_date_start, date(2020, 1, 1))
         self.assertEqual(v1.contract_date_start, v2.contract_date_start)
@@ -298,7 +298,7 @@ class TestHrVersion(TransactionCase):
                 'date_version': f'20{31 + i}-01-01',
             }))
         v3.write({
-            'contract_date_end': '2040-12-31'
+            'contract_date_end': '2040-12-31',
         })
         for version in versions:
             self.assertEqual(version.contract_date_end, date(2040, 12, 31))
@@ -306,14 +306,14 @@ class TestHrVersion(TransactionCase):
         v4 = employee.create_version({
             'date_version': '2050-01-01',
             'contract_date_start': '2050-01-01',
-            'contract_date_end': '2050-12-31'
+            'contract_date_end': '2050-12-31',
         })
         v5 = employee.create_version({
             'date_version': '2051-01-01',
             'contract_date_start': '2051-01-01',
-            'contract_date_end': '2051-12-31'
+            'contract_date_end': '2051-12-31',
         })
         v5.write({
-            'contract_date_start': '2050-01-01'
+            'contract_date_start': '2050-01-01',
         })
         self.assertEqual(v4.contract_date_end, date(2051, 12, 31))

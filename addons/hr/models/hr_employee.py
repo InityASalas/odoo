@@ -4,7 +4,6 @@ import re
 
 from collections import defaultdict
 
-from dateutil.parser import parse
 from pytz import timezone, UTC, utc
 from datetime import datetime, time, timedelta, date
 from random import choice
@@ -363,7 +362,7 @@ class HrEmployee(models.Model):
         if 'date_version' not in values:
             raise ValueError("date_version is required")
         if isinstance(values['date_version'], str):
-            date = parse(values['date_version']).date()
+            date = fields.Date.to_date(values['date_version'])
         elif isinstance(values['date_version'], datetime):
             date = values['date_version'].date()
         else:
@@ -376,11 +375,25 @@ class HrEmployee(models.Model):
             return version_to_copy
 
         date_from, date_to = self._get_contract_dates(date)
-        values['contract_date_start'] = values.get('contract_date_start', date_from)
-        values['contract_date_end'] = values.get('contract_date_end', date_to)
+        contract_date_start = values['contract_date_start'] = values.get('contract_date_start', date_from)
+        contract_date_end = values['contract_date_end'] = values.get('contract_date_end', date_to)
+        if isinstance(contract_date_start, str):
+            contract_date_start = fields.Date.to_date(contract_date_start)
+        if isinstance(contract_date_end, str):
+            contract_date_end = fields.Date.to_date(contract_date_end)
 
         if 'employee_id' not in values:
             values['employee_id'] = self.id
+
+        if contract_date_start == date_from and contract_date_end != date_to:
+            versions_to_sync = self.env['hr.version'].with_context(sync_contract_dates=True).search([
+                ('employee_id', '=', values['employee_id']),
+                ('contract_date_start', '=', date_from),
+            ])
+            if versions_to_sync:
+                versions_to_sync.write({
+                    'contract_date_end': contract_date_end,
+                })
         return version_to_copy.copy(values)
 
     def _get_all_contract_dates(self):

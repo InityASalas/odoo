@@ -1,6 +1,16 @@
-import { Component, useEffect, useRef, useState } from "@odoo/owl";
+import {
+    Component,
+    onMounted,
+    onPatched,
+    onWillUnmount,
+    useEffect,
+    useRef,
+    useState,
+} from "@odoo/owl";
+import { hasTouch } from "@web/core/browser/feature_detection";
 import { useAutofocus, useService } from "@web/core/utils/hooks";
 import { hidePDFJSButtons } from "@web/core/utils/pdfjs";
+import { throttleForAnimation } from "@web/core/utils/timing";
 
 /**
  * @typedef {Object} File
@@ -30,9 +40,11 @@ export class FileViewer extends Component {
     };
 
     setup() {
+        this.hasTouch = hasTouch();
         useAutofocus();
         this.imageRef = useRef("image");
         this.zoomerRef = useRef("zoomer");
+        this.zoomerPadding = { vertical: null, horizontal: null };
         this.iframeViewerPdfRef = useRef("iframeViewerPdf");
 
         this.isDragging = false;
@@ -48,6 +60,7 @@ export class FileViewer extends Component {
             x: 0,
             y: 0,
         };
+        this.throttledUpdateImageDrag = throttleForAnimation(this.updateImageDrag.bind(this));
 
         this.state = useState({
             index: this.props.startIndex,
@@ -68,6 +81,51 @@ export class FileViewer extends Component {
             },
             () => [this.iframeViewerPdfRef.el]
         );
+        onPatched(() => {
+            if (this.zoomerPadding.vertical != null) return;
+            if (this.zoomerRef.el) {
+                const style = getComputedStyle(this.zoomerRef.el);
+                this.zoomerPadding.vertical = 2 * parseFloat(style.paddingTop) + 20;
+                this.zoomerPadding.horizontal = 2 * parseFloat(style.paddingLeft) + 20;
+            }
+        });
+        if (this.hasTouch) {
+            this.throttledUpdateImagePinch = throttleForAnimation(this.updateImagePinch.bind(this));
+            this.boundOnTouchstartImage = this.onTouchstartImage.bind(this);
+            this.boundOnTouchendImage = this.onTouchendImage.bind(this);
+            this.boundOnTouchmoveImage = this.onTouchmoveImage.bind(this);
+            this.prevImageRef = null;
+            onMounted(() => {
+                if (!this.imageRef.el) return;
+                this.prevImageRef = this.imageRef.el;
+                this.imageRef.el.addEventListener("touchstart", this.boundOnTouchstartImage);
+                this.imageRef.el.addEventListener("touchmove", this.boundOnTouchmoveImage);
+                this.imageRef.el.addEventListener("touchend", this.boundOnTouchendImage);
+            });
+            onPatched(() => {
+                if (this.imageRef.el == this.prevImageRef) return;
+                if (this.prevImageRef) {
+                    this.prevImageRef.removeEventListener(
+                        "touchstart",
+                        this.boundOnTouchstartImage
+                    );
+                    this.prevImageRef.removeEventListener("touchmove", this.boundOnTouchmoveImage);
+                    this.prevImageRef.removeEventListener("touchend", this.boundOnTouchendImage);
+                }
+                if (this.imageRef.el) {
+                    this.imageRef.el.addEventListener("touchstart", this.boundOnTouchstartImage);
+                    this.imageRef.el.addEventListener("touchmove", this.boundOnTouchmoveImage);
+                    this.imageRef.el.addEventListener("touchend", this.boundOnTouchendImage);
+                }
+                this.prevImageRef = this.imageRef.el;
+            });
+            onWillUnmount(() => {
+                if (!this.imageRef.el) return;
+                this.imageRef.el.removeEventListener("touchstart", this.boundOnTouchstartImage);
+                this.imageRef.el.removeEventListener("touchmove", this.boundOnTouchmoveImage);
+                this.imageRef.el.removeEventListener("touchend", this.boundOnTouchendImage);
+            });
+        }
     }
 
     onImageLoaded() {
@@ -127,7 +185,7 @@ export class FileViewer extends Component {
     }
 
     /**
-     * @param {Event} ev
+     * @param {WheelEvent} ev
      */
     onWheelImage(ev) {
         if (ev.deltaY > 0) {
@@ -138,24 +196,89 @@ export class FileViewer extends Component {
     }
 
     /**
-     * @param {DragEvent} ev
+     * @param {MouseEvent} ev
      */
     onMousedownImage(ev) {
-        if (this.isDragging) {
-            return;
-        }
-        if (ev.button !== 0) {
-            return;
-        }
-        this.isDragging = true;
-        this.dragStartX = ev.clientX;
-        this.dragStartY = ev.clientY;
+        if (ev.button !== 0) return;
+        this.startImageDrag(ev);
     }
 
-    onMouseupImage() {
-        if (!this.isDragging) {
-            return;
+    /**
+     * @param {MouseEvent} ev
+     */
+    onMousemoveImage(ev) {
+        this.throttledUpdateImageDrag(ev);
+    }
+
+    /**
+     * @param {MouseEvent} ev
+     */
+    onMouseupImage(ev) {
+        this.endImageDrag(ev);
+    }
+
+    /**
+     * @param {TouchEvent} ev
+     */
+    onTouchstartImage(ev) {
+        if (ev.touches.length === 2) {
+            this.startImagePinch(ev);
+        } else if (ev.touches.length === 1) {
+            this.startImageDrag(ev);
         }
+    }
+
+    /**
+     * @param {TouchEvent} ev
+     */
+    onTouchmoveImage(ev) {
+        if (ev.touches.length === 2) {
+            this.throttledUpdateImagePinch(ev);
+        } else if (ev.touches.length === 1) {
+            this.throttledUpdateImageDrag(ev);
+        }
+    }
+
+    /**
+     * @param {TouchEvent} ev
+     */
+    onTouchendImage(ev) {
+        if (ev.touches.length < 2) {
+            this.endImagePinch();
+            this.endImageDrag(ev);
+        }
+    }
+
+    /**
+     * @param {TouchEvent | MouseEvent} ev
+     */
+    startImageDrag(ev) {
+        this.isDragging = true;
+        const { clientX, clientY } = ev instanceof MouseEvent ? ev : ev.touches[0];
+        this.dragStartX = clientX;
+        this.dragStartY = clientY;
+    }
+
+    /**
+     * @param {TouchEvent | MouseEvent} ev
+     */
+    updateImageDrag(ev) {
+        if (!this.isDragging) return;
+        if (ev.touches && ev.touches.length > 1) return;
+        const { clientX, clientY } = ev instanceof MouseEvent ? ev : ev.touches[0];
+        this.translate.dx = clientX - this.dragStartX;
+        this.translate.dy = clientY - this.dragStartY;
+        const { didClampX, didClampY } = this.updateZoomerStyle();
+        if (didClampX) this.dragStartX = clientX;
+        if (didClampY) this.dragStartY = clientY;
+    }
+
+    /**
+     * @param {TouchEvent | MouseEvent} ev
+     */
+    endImageDrag(ev) {
+        if (!this.isDragging) return;
+        if (ev.touches && ev.touches.length > 0) return;
         this.isDragging = false;
         this.translate.x += this.translate.dx;
         this.translate.y += this.translate.dy;
@@ -165,15 +288,37 @@ export class FileViewer extends Component {
     }
 
     /**
-     * @param {DragEvent}
+     * @param {TouchEvent} ev
      */
-    onMousemoveView(ev) {
-        if (!this.isDragging) {
-            return;
-        }
-        this.translate.dx = ev.clientX - this.dragStartX;
-        this.translate.dy = ev.clientY - this.dragStartY;
+    startImagePinch(ev) {
+        this.isDragging = false;
+        this.lastPinchDistance = this.getPinchDistance(ev.touches);
+    }
+
+    /**
+     * @param {TouchEvent} ev
+     */
+    updateImagePinch(ev) {
+        if (!this.lastPinchDistance) return;
+        const currentDistance = this.getPinchDistance(ev.touches);
+        const zoomFactor = currentDistance / this.lastPinchDistance;
+        this.state.scale = Math.max(this.minScale, this.state.scale * zoomFactor);
+        this.lastPinchDistance = currentDistance;
         this.updateZoomerStyle();
+    }
+
+    endImagePinch() {
+        this.lastPinchDistance = null;
+    }
+
+    /**
+     * @param {TouchList} touches
+     */
+    getPinchDistance(touches) {
+        const [touch1, touch2] = touches;
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     resetZoom() {
@@ -183,6 +328,7 @@ export class FileViewer extends Component {
 
     rotate() {
         this.state.angle += 90;
+        this.updateZoomerStyle();
     }
 
     /**
@@ -207,28 +353,55 @@ export class FileViewer extends Component {
     }
 
     updateZoomerStyle() {
-        const tx =
-            this.imageRef.el.offsetWidth * this.state.scale > this.zoomerRef.el.offsetWidth
-                ? this.translate.x + this.translate.dx
-                : 0;
-        const ty =
-            this.imageRef.el.offsetHeight * this.state.scale > this.zoomerRef.el.offsetHeight
-                ? this.translate.y + this.translate.dy
-                : 0;
-        if (tx === 0) {
+        const isImageRotated = [90, 360].includes(this.state.angle % 360);
+        const imageEl = this.imageRef.el;
+        const zoomerEl = this.zoomerRef.el;
+        const imageWidth =
+            (isImageRotated ? imageEl.offsetHeight : imageEl.offsetWidth) * this.state.scale;
+        const imageHeight =
+            (isImageRotated ? imageEl.offsetWidth : imageEl.offsetHeight) * this.state.scale;
+        const containerWidth = zoomerEl.offsetWidth - this.zoomerPadding.horizontal;
+        const containerHeight = zoomerEl.offsetHeight - this.zoomerPadding.vertical;
+        let translateX = imageWidth > containerWidth ? this.translate.x + this.translate.dx : 0;
+        const maxTranslateX = (imageWidth - containerWidth) / 2;
+        const minTranslateX = -maxTranslateX;
+        let didClampX = false;
+        if (translateX === 0) {
             this.translate.x = 0;
+        } else if (translateX > maxTranslateX) {
+            translateX = maxTranslateX;
+            this.translate.x = translateX;
+            didClampX = true;
+        } else if (translateX < minTranslateX) {
+            translateX = minTranslateX;
+            this.translate.x = translateX;
+            didClampX = true;
         }
-        if (ty === 0) {
+        let translateY = imageHeight > containerHeight ? this.translate.y + this.translate.dy : 0;
+        const maxTranslateY = (imageHeight - containerHeight) / 2;
+        const minTranslateY = -maxTranslateY;
+        let didClampY = false;
+        if (translateY === 0) {
             this.translate.y = 0;
+        } else if (translateY > maxTranslateY) {
+            translateY = maxTranslateY;
+            this.translate.y = translateY;
+            didClampY = true;
+        } else if (translateY < minTranslateY) {
+            translateY = minTranslateY;
+            this.translate.y = translateY;
+            didClampY = true;
         }
-        this.zoomerRef.el.style = "transform: " + `translate(${tx}px, ${ty}px)`;
+        zoomerEl.style.transform = `translate3d(${translateX}px, ${translateY}px, 0px)`;
+        return { didClampX, didClampY };
+    }
+
+    get rotationStyle() {
+        return `transform: rotate(${this.state.angle}deg);`;
     }
 
     get imageStyle() {
-        let style =
-            "transform: " +
-            `scale3d(${this.state.scale}, ${this.state.scale}, 1) ` +
-            `rotate(${this.state.angle}deg);`;
+        let style = "transform: " + `scale3d(${this.state.scale}, ${this.state.scale}, 1);`;
 
         if (this.state.angle % 180 !== 0) {
             style += `max-height: ${window.innerWidth}px; max-width: ${window.innerHeight}px;`;

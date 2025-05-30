@@ -87,14 +87,14 @@
     <xpath expr="." position="inside">
         <!-- Color and images -->
         <t t-call="website.snippet_options_background_options"
-            t-argf-selector=".s_blockquote"
-            t-argf-exclude="div:is(#{blockquote_parent_handlers}) > .s_blockquote"/>
+           selector.f=".s_blockquote"
+           exclude.f="div:is(#{blockquote_parent_handlers}) > .s_blockquote"/>
 
         <!-- Binding the blockquote options on the blockquote handler parents -->
         <t t-call="website.s_blockquote_options"
-            t-argf-selector="#{blockquote_parent_handlers}"
-            t-arg-target="'> .s_blockquote'"
-            t-arg-disable_blockquote_width="true"/>
+            selector.f="#{blockquote_parent_handlers}"
+            target="'> .s_blockquote'"
+            disable_blockquote_width="true"/>
     </xpath>
 </template>
 

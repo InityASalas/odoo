@@ -226,6 +226,7 @@ class TestWorkEntry(TestWorkEntryBase):
         hk_employee = self.env['hr.employee'].create({
             'name': 'HK Employee',
             'resource_calendar_id': hk_resource_calendar_id.id,
+            'date_version': datetime(2023, 8, 1),
             'contract_date_start': datetime(2023, 8, 1),
             'contract_date_end': False,
             'wage': 1000,

@@ -4,7 +4,7 @@ import json
 
 from odoo.addons.survey.controllers.main import Survey
 from odoo.addons.survey.tests import common
-from odoo.addons.website.tools import MockRequest
+from odoo.addons.website.tests.common import MockRequest
 
 
 class TestSurveyResults(common.TestSurveyResultsCommon):

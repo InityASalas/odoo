@@ -1124,6 +1124,7 @@ class HrEmployee(models.Model):
         if not date_from:
             return res
 
+        date_from = fields.Date.to_date(date_from)
         for employee in self:
             employee_versions = employee.version_ids.filtered(lambda v: v._is_in_contract(date_from))
             if employee_versions:

@@ -1717,11 +1717,12 @@ class SaleOrder(models.Model):
         return super()._track_finalize()
 
     @api.returns('mail.message', lambda value: value.id)
-    def message_post(self, **kwargs):
-        if self.env.context.get('mark_so_as_sent'):
+    def message_post(self, mark_so_as_sent=False, **kwargs):
+        mark_so_as_sent = mark_so_as_sent or self.env.context.get('mark_so_as_sent')
+        if mark_so_as_sent:
             self.filtered(lambda o: o.state == 'draft').with_context(tracking_disable=True).write({'state': 'sent'})
         so_ctx = {'mail_post_autofollow': self.env.context.get('mail_post_autofollow', True)}
-        if self.env.context.get('mark_so_as_sent') and 'mail_notify_author' not in kwargs:
+        if mark_so_as_sent and 'mail_notify_author' not in kwargs:
             kwargs['notify_author'] = self.env.user.partner_id.id in (kwargs.get('partner_ids') or [])
         return super(SaleOrder, self.with_context(**so_ctx)).message_post(**kwargs)
 

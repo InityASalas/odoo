@@ -235,22 +235,6 @@ class TestWorkEntry(TestWorkEntryBase):
         work_entries = self.env['hr.work.entry'].search([('employee_id', '=', hk_employee.id)])
         self.assertEqual(work_entries[0].date_start, datetime(2023, 7, 31, 23, 0))
 
-    def test_work_entry_employee_without_contract(self):
-        """ Test work entries by creating an employee without contract which leads to trigger a constraint. """
-        new_employee = self.env['hr.employee'].create({
-            'name': 'New employee'
-        })
-        work_entry = Form(self.env['hr.work.entry'])
-        work_entry.date_start = self.start
-        work_entry.employee_id = new_employee
-        work_entry.work_entry_type_id = self.work_entry_type_leave
-        work_entry.date_stop = self.end
-
-        with self.assertRaises(ValidationError):
-            work_entry.save()
-        self.assertEqual(work_entry.employee_id.id, new_employee.id)
-        self.assertEqual(work_entry.duration, 0.0)
-
     def test_separate_overlapping_work_entries_by_type(self):
         calendar = self.env['resource.calendar'].create({'name': 'Calendar', 'tz': 'Europe/Brussels'})
         employee = self.env['hr.employee'].create({

@@ -962,7 +962,7 @@ class HrEmployee(models.Model):
 
             for employee in self:
                 employee._track_set_log_message(Markup("<b>Modified on the Version '%s'</b>") % employee.version_id.display_name)
-
+        vals = new_vals
         if 'work_contact_id' in vals:
             account_ids = vals.get('bank_account_id') or self.bank_account_id.ids
             if account_ids:
@@ -974,7 +974,7 @@ class HrEmployee(models.Model):
                         if vals['work_contact_id']:
                             bank_account.partner_id = vals['work_contact_id']
             self.message_unsubscribe(self.work_contact_id.ids)
-        if vals.get('user_id'):
+        if 'user_id' in vals:
             # Update the profile pictures with user, except if provided
             user = self.env['res.users'].browse(vals['user_id'])
             vals.update(self._sync_user(user, (bool(all(emp.image_1920 for emp in self)))))

@@ -217,13 +217,24 @@
                                             <field name="user_id"
                                                 string="Related User"
                                                 help=""
+                                                groups="base.group_erp_manager"
                                                 domain="[('company_ids', 'in', company_id)]"
                                                 context="{'default_create_employee_id': id}"
+                                                placeholder="Not linked to an user"
                                                 widget="many2one_avatar_user"/>
+                                            <field name="user_id"
+                                                string="Related User"
+                                                groups="!base.group_erp_manager"
+                                                domain="[('company_ids', 'in', company_id)]"
+                                                context="{'default_create_employee_id': id}"
+                                                placeholder="Not linked to an user"
+                                                widget="many2one_avatar_user"
+                                                options="{'no_open': True}"/>
                                             <button string="Create User"
                                                 class="btn btn-link"
                                                 type="object"
                                                 name="action_create_user"
+                                                groups="base.group_erp_manager"
                                                 context="{'default_create_employee': True}"
                                                 invisible="user_id"/>
                                         </div>

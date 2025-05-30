@@ -96,7 +96,7 @@ export class ListRenderer extends Component {
     static useMagicColumnWidths = true;
     static LONG_TOUCH_THRESHOLD = 400;
     static components = { DropdownItem, Field, ViewButton, CheckBox, Dropdown, Pager, Widget };
-    static defaultProps = { allowSelectors: false, easySelect: false, cycleOnTab: true };
+    static defaultProps = { allowSelectors: false, cycleOnTab: true };
     static props = [
         "activeActions?",
         "list",
@@ -105,7 +105,6 @@ export class ListRenderer extends Component {
         "onAdd?",
         "cycleOnTab?",
         "allowSelectors?",
-        "easySelect?",
         "editable?",
         "onOpenFormView?",
         "hasOpenFormViewButton?",
@@ -1111,7 +1110,7 @@ export class ListRenderer extends Component {
             }
         } else if (this.editedRecord && this.editedRecord !== record) {
             this.props.list.leaveEditMode();
-        } else if (this.props.list.selection.length && this.props.easySelect) {
+        } else if (this.props.list.selection.length) {
             this.toggleRecordSelection(record);
         } else if (!this.props.archInfo.noOpen) {
             this.props.openRecord(record, { newWindow });

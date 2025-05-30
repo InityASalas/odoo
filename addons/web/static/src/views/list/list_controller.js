@@ -52,7 +52,6 @@ export class ListController extends Component {
     static props = {
         ...standardViewProps,
         allowSelectors: { type: Boolean, optional: true },
-        easySelect: { type: Boolean, optional: true },
         onSelectionChanged: { type: Function, optional: true },
         readonly: { type: Boolean, optional: true },
         showButtons: { type: Boolean, optional: true },

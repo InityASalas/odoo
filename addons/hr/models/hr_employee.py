@@ -336,34 +336,15 @@ class HrEmployee(models.Model):
 
     def _search_version_id(self, operator, value):
         if operator == 'any':
-            self.env.cr.execute("""
-                SELECT DISTINCT ON (employee_id) id
-                FROM hr_version
-                ORDER BY employee_id, date_version DESC
-            """)
-            version_ids = [row[0] for row in self.env.cr.fetchall()]
-
-            if isinstance(value, Query):
-                domain = Domain.AND([[('id', 'in', value.get_result_ids())], [('id', 'in', version_ids)]])
-            else:
-                domain = Domain.AND([value, [('id', 'in', version_ids)]])
-        else:
-            domain = [('id', operator, value)]
-
+            return [('current_version_id', operator, value)]
+        domain = [('id', operator, value)]
         return [('id', 'in', self.env['hr.version']._search(domain).select('employee_id'))]
 
-    def _field_to_sql(self, alias, fname, query=None, flush: bool = True) -> SQL:
+    def _field_to_sql(self, alias: str, field_expr: str, query: (Query | None) = None, flush: bool = True) -> SQL:
         """This is required to search for the related fields of version_id as version_id is not stored"""
-        if fname == 'version_id':
-            return SQL("""(
-                SELECT v.id
-                FROM "hr_version" v
-                WHERE v.employee_id = "hr_employee"."id"
-                ORDER BY v.date_version DESC
-                LIMIT 1
-            )""")
-
-        return super()._field_to_sql(alias, fname, query, flush)
+        if field_expr == 'version_id':
+            field_expr = 'current_version_id'
+        return super()._field_to_sql(alias, field_expr, query, flush)
 
     def _get_version(self, date=fields.Date.today()):
         """

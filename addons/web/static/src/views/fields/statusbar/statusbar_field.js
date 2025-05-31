@@ -162,7 +162,7 @@ export class StatusBarField extends Component {
      * Override this to force a dynamic domain on the records
      */
     getDomain() {
-        return [[1, "=", 1]];
+        return [];
     }
 
     /**

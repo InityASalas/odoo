@@ -262,16 +262,20 @@ class HrVersion(models.Model):
             new_contract_date_start = dates_vals.get('contract_date_start')
             if new_contract_date_start:
                 new_contract_date_start = fields.Date.to_date(new_contract_date_start)
-            version_domain = [
-                ('contract_date_start', '>=', min(*self.mapped('contract_date_start'), new_contract_date_start or date.max)),
-                ('id', 'not in', self.ids),
-            ]
+            min_contract_date_start = new_contract_date_start or date.max
             max_date_end = date.min
             for version in self:
+                if version.contract_date_start and min_contract_date_start > version.contract_date_start:
+                    min_contract_date_start = version.contract_date_start
+                if max_date_end is False:
+                    continue
                 if not version.contract_date_end:
                     max_date_end = False
-                    break
                 max_date_end = max(max_date_end, version.contract_date_end)
+            version_domain = [
+                ('contract_date_start', '>=', min_contract_date_start),
+                ('id', 'not in', self.ids),
+            ]
             date_end_domain = [('contract_date_end', '=', False)]
             if max_date_end:
                 date_end_domain = Domain.OR([date_end_domain, [('contract_date_end', '<=', max_date_end)]])

@@ -281,6 +281,8 @@ class HrVersion(models.Model):
                 date_end_domain = Domain.OR([date_end_domain, [('contract_date_end', '<=', max_date_end)]])
             version_domain = Domain.AND([version_domain, date_end_domain])
             versions_to_sync_per_employee = dict(self.env['hr.version']._read_group(version_domain, ['employee_id'], ['id:recordset']))
+            if not versions_to_sync_per_employee:
+                return super().write(values)
             for version in self:
                 versions_to_sync = versions_to_sync_per_employee.get(version.employee_id)
                 if versions_to_sync:
@@ -295,6 +297,8 @@ class HrVersion(models.Model):
                     if new_contract_date_start and 'contract_date_end' not in dates_vals:
                         dates_vals['contract_date_end'] = version.contract_date_end
                     (sync_versions + version).with_context(sync_contract_dates=True).write(dates_vals)
+                else:
+                    version.with_context(sync_contract_dates=True).write(dates_vals)
         return super().write(new_vals)
 
     @api.depends('date_version')

@@ -5,8 +5,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, modules, _
 from odoo.exceptions import ValidationError
-
-from odoo.osv import expression
+from odoo.fields import Domain
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -159,7 +158,7 @@ class HrContract(models.Model):
                 start_domain = [('date_start', '<=', contract.date_end)]
                 end_domain = ['|', ('date_end', '>', contract.date_start), ('date_end', '=', False)]
 
-            domain = expression.AND([domain, start_domain, end_domain])
+            domain = Domain.AND([domain, start_domain, end_domain])
             if self.search_count(domain):
                 raise ValidationError(
                     _(

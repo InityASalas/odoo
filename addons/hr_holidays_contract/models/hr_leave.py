@@ -3,7 +3,7 @@
 
 from odoo import api, models, _
 from odoo.exceptions import ValidationError
-from odoo.osv.expression import AND
+from odoo.fields import Domain
 from odoo.tools import format_date
 
 
@@ -43,7 +43,7 @@ class HrLeave(models.Model):
                 ('state', '=', 'draft'),
                 ('kanban_state', '=', 'done')
             ]
-        domain = AND([contract_states, [
+        domain = Domain.AND([contract_states, [
             ('employee_id', '=', self.employee_id.id),
             ('date_start', '<=', self.date_to),
             '|',

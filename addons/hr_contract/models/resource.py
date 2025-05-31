@@ -1,9 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from collections import defaultdict
-from datetime import datetime
 
-from odoo import _, api, fields, models
-from odoo.osv.expression import AND
+from odoo import api, fields, models
+from odoo.fields import Domain
 
 
 class ResourceCalendar(models.Model):
@@ -21,11 +20,9 @@ class ResourceCalendar(models.Model):
             after 'from_date' (or today if None).
         """
         from_date = from_date or fields.Datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        domain = [
-            ('calendar_id', 'in', self.ids),
-            ('date_from', '>=', from_date),
-        ]
-        domain = AND([domain, [('resource_id', 'in', resources.ids)]]) if resources else domain
+        domain = Domain('calendar_id', 'in', self.ids) & Domain('date_from', '>=', from_date)
+        if resources:
+            domain &= Domain('resource_id', 'in', resources.ids)
 
         self.env['resource.calendar.leaves'].search(domain).write({
             'calendar_id': other_calendar.id,

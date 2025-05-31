@@ -1,10 +1,9 @@
-# -*- coding:utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import pytz
 
 from odoo import models
-from odoo.osv.expression import OR
+from odoo.fields import Domain
 
 
 class HrContract(models.Model):
@@ -58,8 +57,5 @@ class HrContract(models.Model):
         return self.env.ref('hr_work_entry.work_entry_type_leave')
 
     def _get_sub_leave_domain(self):
-        domain = super()._get_sub_leave_domain()
-        return OR([
-            domain,
-            [('holiday_id.employee_id', 'in', self.employee_id.ids)] # see https://github.com/odoo/enterprise/pull/15091
-        ])
+        # see https://github.com/odoo/enterprise/pull/15091
+        return super()._get_sub_leave_domain() | Domain('holiday_id.employee_id', 'in', self.employee_id.ids)

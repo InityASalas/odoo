@@ -575,6 +575,7 @@ class Transaction:
         self.field_data_patches.clear()
         self.field_dirty.clear()
         self.tocompute.clear()
+        self.cache.clear()
 
     def reset(self) -> None:
         """ Reset the transaction.  This clears the transaction, and reassigns

@@ -260,6 +260,7 @@ class Website(models.Model):
         views_to_disable = []
         views_to_enable = []
         ThemeUtils = self.env['theme.utils'].with_context(website_id=website.id)
+        Assets = self.env['web_editor.assets']
 
         def parse_style_config(style_config_):
             website_settings.update(style_config_['website_fields'])
@@ -288,6 +289,15 @@ class Website(models.Model):
             ThemeUtils.disable_view(xml_id)
         for xml_id in views_to_enable:
             ThemeUtils.enable_view(xml_id)
+
+        Assets.make_scss_customization(
+            '/website/static/src/scss/options/colors/user_color_palette.scss',
+            {'footer': 2},
+        )
+        Assets.make_scss_customization(
+            '/website/static/src/scss/options/user_values.scss',
+            {'footer-template': 'website_sale'},
+        )
 
         return res
 

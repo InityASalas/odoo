@@ -137,11 +137,10 @@ class HrEmployeeBase(models.AbstractModel):
     @api.depends('parent_id')
     def _compute_leave_manager(self):
         for employee in self:
-            previous_manager = employee._origin.parent_id.user_id
             manager = employee.parent_id.user_id
-            if manager and employee.leave_manager_id == previous_manager or not employee.leave_manager_id:
+            if manager:
                 employee.leave_manager_id = manager
-            elif not employee.leave_manager_id:
+            else:
                 employee.leave_manager_id = False
 
     def _compute_show_leaves(self):

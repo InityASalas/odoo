@@ -402,6 +402,9 @@
                 <t t-snippet="website.s_floating_blocks" string="Floating Cards" group="products">
                     <keywords>hero, animation, animated, cards, float, stacked, promo, categories, ecommerce, shop</keywords>
                 </t>
+                <t t-snippet="website.s_banner_product" string="Ecomm Banner Full" group="products" label="Parallax">
+                    <keywords>hero, jumbotron, headline, header, shop, cart, product, ecommerce, picture, photo, illustration, media, visual, intro, home, content, description, call to action, cta, minimalist, marketing</keywords>
+                </t>
                 <t id="sale_products_hook"/>
 
                 <!-- Blogs group -->

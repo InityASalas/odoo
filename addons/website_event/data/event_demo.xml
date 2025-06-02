@@ -194,11 +194,17 @@
 
     <record id="event.event_6" model="event.event">
         <field name="website_published" eval="False"/>
+<<<<<<< d123df0a0aacd88d89cefb51a795e7865374a46d
         <field name="cover_properties">{"background-image": "none", "background-color": "secondary", "opacity": ""}</field>
         <field name="question_ids" eval="[(5, 0, 0),
             (0, 0, {'title': 'Name', 'question_type': 'name', 'is_mandatory_answer': True}),
             (0, 0, {'title': 'Email', 'question_type': 'email', 'is_mandatory_answer': True}),
             (0, 0, {'title': 'Phone', 'question_type': 'phone'})]"/>
+||||||| ac01e79371aad2b0f72f3ef9dd0a93399fc10ba0
+        <field name="cover_properties">{"background-image": "none", "background-color": "secondary", "opacity": ""}</field>
+=======
+        <field name="cover_properties">{"background-image": "none", "background-color": "secondary", "opacity": "0.6"}</field>
+>>>>>>> 5a110c968d6e78f498a460bff699b70e20e848aa
     </record>
 
     <record id="event.event_7" model="event.event">

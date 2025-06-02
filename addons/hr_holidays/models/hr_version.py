@@ -31,7 +31,7 @@ class HrVersion(models.Model):
         created_versions = self.env['hr.version']
         try:
             for vals in vals_list:
-                if not 'resource_calendar_id' in vals:
+                if not 'employee_id' in vals or not 'resource_calendar_id' in vals:
                     created_versions |= super().create(vals)
                     continue
                 leaves = self._get_leaves_from_vals(vals)

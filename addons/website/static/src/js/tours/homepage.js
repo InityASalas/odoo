@@ -50,13 +50,13 @@ const snippets = [
     },
 ];
 
-registerThemeHomepageTour('homepage', () => [
+registerThemeHomepageTour("homepage", () => [
     ...insertSnippet(snippets[0], { position: "top" }),
     ...clickOnText(snippets[0], "h1"),
     goBackToBlocks(),
     ...insertSnippet(snippets[1]),
     ...insertSnippet(snippets[2]),
-    ...clickOnSnippet(snippets[2], { position: "top" }),
+    ...clickOnSnippet(snippets[2], "top"),
     changeBackgroundColor(),
     goBackToBlocks(),
     ...insertSnippet(snippets[3]),

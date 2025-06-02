@@ -61,6 +61,7 @@ import { exprToBoolean } from "@web/core/utils/strings";
 const formatters = registry.category("formatters");
 
 const DEFAULT_GROUP_PAGER_COLSPAN = 1;
+const MOVABLE_RECORD_TYPES = ["char", "boolean", "integer", "selection", "many2one"];
 
 const FIELD_CLASSES = {
     char: "o_list_char",
@@ -393,6 +394,10 @@ export class ListRenderer extends Component {
         if (!this.props.list.canResequence() || this.props.readonly) {
             return false;
         }
+        const groupByField = this.props.list.groupByField;
+        if (groupByField && !this.isMovableField(groupByField)) {
+            return false;
+        }
         const { handleField, orderBy } = this.props.list;
         return !orderBy.length || (orderBy.length && orderBy[0].name === handleField);
     }
@@ -447,6 +452,10 @@ export class ListRenderer extends Component {
             return true;
         }
         return false;
+    }
+
+    isMovableField(field) {
+        return MOVABLE_RECORD_TYPES.includes(field.type);
     }
 
     focusCell(column, forward = true) {

@@ -23,6 +23,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
         cls.richard_emp.create_version({
             'date_version': cls.start.date() - relativedelta(days=5),
             'contract_date_start': cls.start.date() - relativedelta(days=5),
+            'contract_date_end': Date.to_date('2017-12-31'),
             'name': 'dodo',
             'resource_calendar_id': cls.resource_calendar_id.id,
             'wage': 1000,

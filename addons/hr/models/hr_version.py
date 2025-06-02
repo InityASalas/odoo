@@ -199,7 +199,7 @@ class HrVersion(models.Model):
         for employee, date_start, date_end, versions in version_read_group:
             dates_per_employee[employee].append((date_start, date_end, versions))
         for version in self:
-            if not version.contract_date_start:
+            if not version.contract_date_start or not version.employee_id:
                 continue
             if version.contract_date_end and version.contract_date_start > version.contract_date_end:
                 raise ValidationError(_(
@@ -217,7 +217,12 @@ class HrVersion(models.Model):
                     continue
                 if date_start <= contract_date_end and version.contract_date_start <= date_to:
                     # YTI TODO: Raise user friendly error message explaining which contracts and which dates
-                    raise ValidationError(_('You cannot have overlapping contracts.'))
+                    raise ValidationError(_(
+                        'You have some overlapping contracts for %s:\n%s',
+                        version.employee_id.display_name,
+                        '\n'.join(
+                            [f'Version ({version.display_name}): {version.contract_date_start} - {version.contract_date_end}'] +
+                            [f'Version ({version.display_name}): {date_start} - {date_end}' for version in versions])))
             if not contract_period_exists:
                 dates_per_employee[version.employee_id].append((version.contract_date_start, version.contract_date_end, version))
 

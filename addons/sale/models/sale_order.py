@@ -18,8 +18,6 @@ from odoo.tools.misc import str2bool
 
 from odoo.addons.payment import utils as payment_utils
 
-_logger = logging.getLogger(__name__)
-
 INVOICE_STATUS = [
     ('upselling', 'Upselling Opportunity'),
     ('invoiced', 'Fully Invoiced'),

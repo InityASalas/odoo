@@ -186,15 +186,17 @@ class AccountMove(models.Model):
         # fall back on the contents of EmbeddedDocumentBinaryObject.
         return content_1, None
 
-    def _decode_attachment(self, file_data, new=False):
+    def _get_edi_decoder(self, file_data, new=False):
         if (ubl_model := file_data['import_file_type']) in UBL_MODELS:
-            return self.env[ubl_model]._import_invoice_ubl_cii(self, file_data, new)
-        return super()._decode_attachment(file_data, new)
-
-    def _get_import_priority(self, file_data):
-        if file_data['import_file_type'] in UBL_MODELS:
-            return 20
-        return super()._get_import_priority(file_data)
+            return {
+                'priority': 20,
+                'decoder': self.env[ubl_model]._import_invoice_ubl_cii,
+                'reason_cannot_decode': (
+                    self._reason_cannot_decode_is_not_draft()
+                    or self._reason_cannot_decode_has_invoice_lines()
+                ),
+            }
+        return super()._get_edi_decoder(file_data, new)
 
     def _need_ubl_cii_xml(self, ubl_cii_format):
         self.ensure_one()

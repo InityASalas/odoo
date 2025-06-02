@@ -1035,7 +1035,6 @@ class AccountJournal(models.Model):
         invoices = self.env['account.move'] \
             .with_context(
                 default_journal_id=self.id,
-                default_move_type=move_type,
                 skip_is_manually_modified=True,
             ) \
             ._create_records_from_attachments(attachments)

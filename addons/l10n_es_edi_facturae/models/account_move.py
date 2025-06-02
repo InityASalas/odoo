@@ -542,16 +542,28 @@ class AccountMove(models.Model):
             embedded.extend(self._unwrap_attachments(embedded, recurse=True))
         return embedded
 
-    def _decode_attachment(self, file_data, new=False):
+    def _get_edi_decoder(self, file_data, new=False):
         # EXTENDS 'account'
         if file_data['import_file_type'] == 'l10n_es.facturae':
-            return self._import_invoice_facturae(file_data)
-        return super()._decode_attachment(file_data, new)
+            return {
+                'priority': 20,
+                'decoder': self._import_invoice_facturae,
+                'reason_cannot_decode': (
+                    self._reason_cannot_decode_is_not_draft()
+                    or self._reason_cannot_decode_has_invoice_lines()
+                ),
+            }
+        return super()._get_edi_decoder(file_data, new)
 
-    def _get_import_priority(self, file_data):
-        if file_data['import_file_type'] == 'l10n_es.facturae':
-            return 20
-        return super()._get_import_priority(file_data)
+    def _import_invoice_facturae(self, invoice, file_data, new=False):
+        tree = file_data['xml_tree']
+        is_bill = invoice.move_type.startswith('in_')
+        partner = self._import_get_partner(tree, is_bill)
+
+        # Only decode the first invoice of the Factura-e file.
+        tree = tree.xpath('//Invoice')[0]
+
+        return self._import_invoice_facturae_invoice(invoice, partner, tree)
 
     def _import_get_partner(self, tree, is_bill):
         # If we're dealing with a vendor bill, then the partner is the seller party, if an invoice then it's the buyer.
@@ -593,25 +605,19 @@ class AccountMove(models.Model):
             partner.vat, _country_code = self.env['res.partner']._run_vat_checks(country, vat, validation='setnull')
         return partner
 
-    def _import_invoice_facturae(self, file_data):
-        is_bill = self.move_type.startswith('in_')
-        partner = self._import_get_partner(file_data['xml_tree'], is_bill)
-
-        # Only decode the first invoice of the Factura-e file.
-        tree = file_data['xml_tree'].xpath('//Invoice')[0]
-
+    def _import_invoice_facturae_invoice(self, invoice, partner, tree):
         logs = []
 
         # ==== move_type ====
         invoice_total = find_xml_value('.//InvoiceTotal', tree)
         is_refund = float(invoice_total) < 0 if invoice_total else False
         if is_refund:
-            self.move_type = "in_refund" if self.move_type.startswith("in_") else "out_refund"
+            invoice.move_type = "in_refund" if invoice.move_type.startswith("in_") else "out_refund"
         ref_multiplier = -1.0 if is_refund else 1.0
 
         # ==== partner_id ====
         if partner:
-            self.partner_id = partner
+            invoice.partner_id = partner
         else:
             logs.append(_("Customer/Vendor could not be found and could not be created due to missing data in the XML."))
 
@@ -620,32 +626,32 @@ class AccountMove(models.Model):
         if invoice_currency_code:
             currency = self.env['res.currency'].search([('name', '=', invoice_currency_code)], limit=1)
             if currency:
-                self.currency_id = currency
+                invoice.currency_id = currency
             else:
                 logs.append(_("Could not retrieve currency: %s. Did you enable the multicurrency option "
                               "and activate the currency?", invoice_currency_code))
 
         # ==== invoice date ====
         if issue_date := find_xml_value('.//IssueDate', tree):
-            self.invoice_date = issue_date
+            invoice.invoice_date = issue_date
 
         # ==== invoice_date_due ====
         if end_date := find_xml_value('.//InstallmentDueDate', tree):
-            self.invoice_date_due = end_date
+            invoice.invoice_date_due = end_date
 
         # ==== ref ====
         if invoice_number := find_xml_value('.//InvoiceNumber', tree):
-            self.ref = invoice_number
+            invoice.ref = invoice_number
 
         # ==== narration ====
-        self.narration = "\n".join(
+        invoice.narration = "\n".join(
             ref.text
             for ref in tree.xpath('.//LegalReference')
             if ref.text
         )
 
         # === invoice_line_ids ===
-        logs += self._import_invoice_fill_lines(tree, ref_multiplier)
+        logs += self._import_invoice_fill_lines(invoice, tree, ref_multiplier)
 
         body = Markup("<strong>%s</strong>") % _("Invoice imported from Factura-E XML file.")
 
@@ -653,16 +659,16 @@ class AccountMove(models.Model):
             body += Markup("<ul>%s</ul>") \
                     % Markup().join(Markup("<li>%s</li>") % log for log in logs)
 
-        self.message_post(body=body)
+        invoice.message_post(body=body)
 
         return logs
 
-    def _import_invoice_fill_lines(self, tree, ref_multiplier):
+    def _import_invoice_fill_lines(self, invoice, tree, ref_multiplier):
         lines = tree.xpath('.//InvoiceLine')
         logs = []
         vals_list = []
         for line in lines:
-            line_vals = {'move_id': self.id}
+            line_vals = {'move_id': invoice.id}
 
             # ==== name ====
             if item_description := find_xml_value('.//ItemDescription', line):
@@ -697,17 +703,17 @@ class AccountMove(models.Model):
             # ==== tax_ids ====
             taxes_withheld_nodes = line.xpath('.//TaxesWithheld/Tax')
             taxes_outputs_nodes = line.xpath('.//TaxesOutputs/Tax')
-            is_purchase = self.move_type.startswith('in')
+            is_purchase = invoice.move_type.startswith('in')
             tax_ids = []
-            logs += self._import_fill_invoice_line_taxes(line_vals, tax_ids, taxes_outputs_nodes, False, is_purchase)
-            logs += self._import_fill_invoice_line_taxes(line_vals, tax_ids, taxes_withheld_nodes, True, is_purchase)
+            logs += self._import_fill_invoice_line_taxes(invoice, line_vals, tax_ids, taxes_outputs_nodes, False, is_purchase)
+            logs += self._import_fill_invoice_line_taxes(invoice, line_vals, tax_ids, taxes_withheld_nodes, True, is_purchase)
             line_vals['tax_ids'] = [Command.set(tax_ids)]
             vals_list.append(line_vals)
 
-        self.invoice_line_ids = self.env['account.move.line'].create(vals_list)
+        invoice.invoice_line_ids = self.env['account.move.line'].create(vals_list)
         return logs
 
-    def _import_fill_invoice_line_taxes(self, line_vals, tax_ids, tax_nodes, is_withheld, is_purchase):
+    def _import_fill_invoice_line_taxes(self, invoice, line_vals, tax_ids, tax_nodes, is_withheld, is_purchase):
         logs = []
         for tax_node in tax_nodes:
             tax_rate = find_xml_value('.//TaxRate', tax_node)
@@ -719,14 +725,14 @@ class AccountMove(models.Model):
                 tax_amount = find_xml_value('.//TaxAmount/TotalAmount', tax_node)
                 is_fixed = False
 
-                if taxable_base and tax_amount and self.currency_id.compare_amounts(float(taxable_base) * (float(tax_rate) / 100), float(tax_amount)) != 0:
+                if taxable_base and tax_amount and invoice.currency_id.compare_amounts(float(taxable_base) * (float(tax_rate) / 100), float(tax_amount)) != 0:
                     is_fixed = True
 
-                tax_excl = self._search_tax_for_import(self.company_id, float(tax_rate), is_fixed, is_withheld, is_purchase, price_included=False)
+                tax_excl = self._search_tax_for_import(invoice.company_id, float(tax_rate), is_fixed, is_withheld, is_purchase, price_included=False)
 
                 if tax_excl:
                     tax_ids.append(tax_excl.id)
-                elif tax_incl := self._search_tax_for_import(self.company_id, float(tax_rate), is_fixed, is_withheld, is_purchase, price_included=True):
+                elif tax_incl := self._search_tax_for_import(invoice.company_id, float(tax_rate), is_fixed, is_withheld, is_purchase, price_included=True):
                     tax_ids.append(tax_incl)
                     line_vals['price_unit'] *= (1.0 + float(tax_rate) / 100.0)
                 else:

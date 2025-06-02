@@ -16,12 +16,14 @@ class AccountMove(models.Model):
 
         return super()._get_import_file_type(file_data)
 
-    def _decode_attachment(self, file_data, new=False):
+    def _get_edi_decoder(self, file_data, new=False):
         if file_data['import_file_type'] == 'account.edi.xml.oioubl_201':
-            return self.env['account.edi.xml.oioubl_201']._import_invoice_ubl_cii(self, file_data, new)
-        return super()._decode_attachment(file_data, new)
-
-    def _get_import_priority(self, file_data):
-        if file_data['import_file_type'] == 'account.edi.xml.oioubl_201':
-            return 20
-        return super()._get_import_priority(file_data)
+            return {
+                'priority': 20,
+                'decoder': self.env['account.edi.xml.oioubl_201']._import_invoice_ubl_cii,
+                'reason_cannot_decode': (
+                    self._reason_cannot_decode_is_not_draft()
+                    or self._reason_cannot_decode_has_invoice_lines()
+                ),
+            }
+        return super()._get_edi_decoder(file_data, new)

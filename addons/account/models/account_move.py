@@ -4334,21 +4334,15 @@ class AccountMove(models.Model):
         with self._disable_recursion({'records': self}, 'ignore_discount_precision'):
             yield
 
-    def _check_is_draft(self):
-        """ Helper to check whether an invoice is in draft and post a message if it isn't. """
+    def _reason_cannot_decode_is_not_draft(self):
+        """ Helper to get a reason why an invoice cannot be decoded if it isn't in draft state. """
         if self.state != 'draft':
-            message = _("The invoice is not a draft, it was not updated from the attachment.")
-            self.sudo().message_post(body=message, message_type='comment')
-            return False
-        return True
+            return self.env._("The invoice is not in draft state.")
 
-    def _check_has_no_invoice_lines(self):
-        """ Helper to check whether an invoice has no lines and post a message if it does have some. """
+    def _reason_cannot_decode_has_invoice_lines(self):
+        """ Helper to get a reason why an invoice cannot be decoded if it has invoice lines. """
         if self.invoice_line_ids:
-            message = _("The invoice already contains lines, it was not updated from the attachment.")
-            self.sudo().message_post(body=message, message_type='comment')
-            return False
-        return True
+            return self.env._("The invoice already contains lines.")
 
     # -------------------------------------------------------------------------
     # BUSINESS METHODS

@@ -1,9 +1,11 @@
 import base64
+import contextlib
 import textwrap
 import uuid
 
 from unittest.mock import patch
 
+from odoo import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged, RecordCapturer
 
@@ -85,7 +87,7 @@ class TestAccountInvoiceImportMixin:
                         'on_invoice': (bool) whether it should be attached on the invoice,
                         'on_message': (bool) whether it should be attached to a message in the chatter,
                         'is_decoded': (bool) whether it should have been decoded on the invoice,
-                        'is_new': (bool) whether the call to `_decode_attachment` should have `new=True`
+                        'is_new': (bool) whether the call to the decoder should have `new=True`
                     }
                 }
             }
@@ -95,52 +97,11 @@ class TestAccountInvoiceImportMixin:
                     (a) whether it should be attached to the invoice or merely to a message on the invoice.
                     (b) whether it should have been decoded on the invoice
         """
-
         # Because no decoders are defined in `account` itself, if we want to test the decoder flow we need
-        # to define a fictional format that will be decoded, and patch the `_get_import_file_type`,
-        # and `_decode_attachment` methods to accept it.
+        # to define a fictional format that will be decoded, and patch the `_get_import_file_type`
+        # and `_get_edi_decoder` methods to accept it.
 
-        original_get_import_file_type = self.env.registry['account.move']._get_import_file_type
-
-        def patched_get_import_file_type(self, file_data):
-            """ Patch _get_import_file_type in order to recognize the 'test_xml' format
-            which is an XML whose root tag is 'TestFileFormat'.
-            """
-            if file_data['xml_tree'] is not None and file_data['xml_tree'].tag == 'TestFileFormat':
-                return 'test_xml'
-            return original_get_import_file_type(self, file_data)
-
-        decode_attachment_calls = []
-
-        original_decode_attachment = self.env.registry['account.move']._decode_attachment
-
-        def patched_decode_attachment(self, file_data, new):
-            decode_attachment_calls.append((self, file_data, new))
-
-            if file_data['import_file_type'] == 'test_xml':
-                partner_name = file_data['xml_tree'].findtext('.//PartnerName')
-                if partner_name and (partner := self.env['res.partner'].search([('name', '=', partner_name)], limit=1)):
-                    self.partner_id = partner.id
-                else:
-                    raise ValidationError('Could not identify partner!')
-            elif file_data['import_file_type'] == 'pdf':
-                return
-            else:
-                return original_decode_attachment(self, file_data, new)
-
-        def patched_get_import_priority(self, file_data):
-            if file_data['import_file_type'] == 'test_xml':
-                return 20
-            elif file_data['import_file_type'] == 'pdf':
-                return 10
-            else:
-                return 0
-
-        with (
-            patch.object(self.env.registry['account.move'], '_get_import_file_type', patched_get_import_file_type),
-            patch.object(self.env.registry['account.move'], '_decode_attachment', patched_decode_attachment),
-            patch.object(self.env.registry['account.move'], '_get_import_priority', patched_get_import_priority),
-        ):
+        with self._patch_import_methods() as decoder_calls:
             created_attachments, created_messages, created_invoices = self._upload_and_import_attachments(origin, attachments_vals)
 
         # Check that no two attachments were created with the same filename (needed for the rest of the test to work properly)
@@ -157,12 +118,12 @@ class TestAccountInvoiceImportMixin:
             if attachment.res_model == 'account.move':
                 actual_invoices.setdefault(attachment.res_id, {}).setdefault(attachment.name, {})['on_invoice'] = True
 
-        for decode_attachment_call in decode_attachment_calls:
-            invoice = decode_attachment_call[0]
-            filename = decode_attachment_call[1]['name']
+        for decoder_call in decoder_calls:
+            invoice = decoder_call[0]
+            filename = decoder_call[1]['name']
             actual_invoices.setdefault(invoice.id, {}).setdefault(filename, {})['is_decoded'] = True
 
-            if decode_attachment_call[2]:
+            if decoder_call[2]:
                 actual_invoices[invoice.id][filename]['is_new'] = True
 
         # Map the invoice IDs to the invoice indexes of the expected_invoices.
@@ -175,6 +136,72 @@ class TestAccountInvoiceImportMixin:
             for invoice_id, attachment_info in actual_invoices.items()
         }
         self.assertDictEqual(actual_invoices, expected_invoices)
+
+    @contextlib.contextmanager
+    def _patch_import_methods(self):
+        """ Patch the `_get_import_file_type` and `_get_edi_decoder` methods to accept the 'test_xml' format.
+        """
+
+        original_get_import_file_type = self.env.registry['account.move']._get_import_file_type
+
+        def patched_get_import_file_type(self, file_data):
+            """ Patch _get_import_file_type in order to recognize the 'test_xml' format
+            which is an XML whose root tag is 'TestFileFormat'.
+            """
+            if file_data['xml_tree'] is not None and file_data['xml_tree'].tag == 'TestFileFormat':
+                return 'test_xml'
+            return original_get_import_file_type(self, file_data)
+
+        decoder_calls = []
+
+        original_get_edi_decoder = self.env.registry['account.move']._get_edi_decoder
+
+        def patched_get_edi_decoder(self, file_data, new):
+            if file_data['import_file_type'] == 'test_xml':
+                def decoder(invoice, file_data, new):
+                    decoder_calls.append((invoice, file_data, new))
+                    partner_name = file_data['xml_tree'].findtext('.//PartnerName')
+                    if partner_name and (partner := self.env['res.partner'].search([('name', '=', partner_name)], limit=1)):
+                        invoice.partner_id = partner.id
+                    else:
+                        raise ValidationError('Could not identify partner!')
+                return {
+                    'decoder': decoder,
+                    'priority': 20,
+                    'reason_cannot_decode': (
+                        self._reason_cannot_decode_is_not_draft()
+                        or self._reason_cannot_decode_has_invoice_lines()
+                    )
+                }
+            elif file_data['import_file_type'] == 'pdf':
+                def decoder(invoice, file_data, new):
+                    decoder_calls.append((invoice, file_data, new))
+                return {
+                    'decoder': decoder,
+                    'priority': 10,
+                    'reason_cannot_decode': (
+                        self._reason_cannot_decode_is_not_draft()
+                        or self._reason_cannot_decode_has_invoice_lines()
+                    )
+                }
+            else:
+                original_decoder_info = original_get_edi_decoder(self, file_data, new)
+                if original_decoder_info is None:
+                    return None
+
+                def decoder(invoice, file_data, new):
+                    decoder_calls.append((invoice, file_data, new))
+                    return original_decoder_info['decoder'](invoice, file_data, new)
+                return {
+                    **original_decoder_info,
+                    'decoder': decoder,
+                }
+
+        with (
+            patch.object(self.env.registry['account.move'], '_get_import_file_type', patched_get_import_file_type),
+            patch.object(self.env.registry['account.move'], '_get_edi_decoder', patched_get_edi_decoder),
+        ):
+            yield decoder_calls
 
     def _upload_and_import_attachments(self, origin, attachments_vals):
         """ Simulate the upload of one or more attachments and their processing by the import framework.
@@ -420,6 +447,27 @@ class TestAccountIncomingSupplierInvoice(AccountTestInvoicingCommon, TestAccount
             ['oops_another_bill@example.com'],
             subject='New Electronic Invoices Received',
         )
+
+    def test_01_decoder_called(self):
+        move = self.env['account.move'].create({'move_type': 'in_invoice'})
+        attachment = self.env['ir.attachment'].create(self.xml1_vals)
+        with self._patch_import_methods():
+            move.message_post(message_type='comment', attachment_ids=attachment.ids)
+        self.assertEqual(move.partner_id, self.partner_a)
+
+    def test_02_decoder_not_called_if_invoice_has_lines(self):
+        move = self.env['account.move'].create({
+            'move_type': 'in_invoice',
+            'invoice_line_ids': [
+                Command.create({
+                    'balance': 100,
+                })
+            ]
+        })
+        attachment = self.env['ir.attachment'].create(self.xml1_vals)
+        with self._patch_import_methods():
+            move.message_post(message_type='comment', attachment_ids=attachment.ids)
+        self.assertFalse(move.partner_id)
 
     def test_10_chatter_upload_pdfs(self):
         self.assert_attachment_import(

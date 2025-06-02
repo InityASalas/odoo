@@ -14,20 +14,17 @@ class SaleOrder(models.Model):
                     return 'sale.edi.xml.ubl_bis3'
         return super()._get_import_file_type(file_data)
 
-    def _decode_attachment(self, file_data, new=False):
+    def _get_edi_decoder(self, file_data, new=False):
         """ Override of sale to add edi decoder for xml files.
 
         :param dict file_data: File data to decode.
         """
         if file_data['import_file_type'] == 'sale.edi.xml.ubl_bis3':
-            return self.env['sale.edi.xml.ubl_bis3']._import_order_ubl(self, file_data)
-
-        return super()._decode_attachment(file_data, new)
-
-    def _get_import_priority(self, file_data):
-        if file_data['import_file_type'] == 'sale.edi.xml.ubl_bis3':
-            return 20
-        return super()._get_import_priority(file_data)
+            return {
+                'priority': 20,
+                'decoder': self.env['sale.edi.xml.ubl_bis3']._import_order_ubl,
+            }
+        return super()._get_edi_decoder(file_data, new)
 
     def _create_activity_set_details(self):
         """ Create activity on sale order to set details.

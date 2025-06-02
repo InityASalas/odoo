@@ -206,7 +206,11 @@ class AccountDocumentImportMixin(models.AbstractModel):
 
         groups = []
         # First dispatch the files_data that don't have an origin_attachment.
-        sorted_files_data = sorted(files_data_without_origin_attachment, key=self._get_import_priority, reverse=True)
+        sorted_files_data = sorted(
+            files_data_without_origin_attachment,
+            key=lambda file_data: (self._get_edi_decoder(file_data, new=True) or {}).get('priority', 0),
+            reverse=True,
+        )
         for file_data in sorted_files_data:
             self._assign_attachment_to_group_of_different_type(file_data, groups)
 
@@ -290,28 +294,52 @@ class AccountDocumentImportMixin(models.AbstractModel):
             `retrying` will cause the whole request to be retried, which may cause some things
             to be duplicated. That may be more or less undesirable, depending on what you're doing.
         """
+        def _get_attachment_name(file_data):
+            params = {
+                'filename': file_data['name'],
+                'root_filename': file_data['origin_attachment'].name,
+                'type': file_data['import_file_type'],
+            }
+            if not file_data['attachment']:
+                return self.env._("'%(filename)s' (extracted from '%(root_filename)s', type=%(type)s)", **params)
+            else:
+                return self.env._("'%(filename)s' (type=%(type)s)", **params)
+
         self.ensure_one()
 
         # Identify the attachment to decode.
-
-        files_data_in_order = sorted(
-            files_data,
-            key=self._get_import_priority,
+        sorted_file_data_and_decoders = sorted(
+            ((file_data, self._get_edi_decoder(file_data, new)) for file_data in files_data),
+            key=lambda file_data_and_decoder: (
+                file_data_and_decoder[1] is not None,
+                not (file_data_and_decoder[1] or {}).get('reason_cannot_decode'),
+                (file_data_and_decoder[1] or {}).get('priority', 0),
+            ),
             reverse=True,
         )
 
-        file_data = files_data_in_order[0]
+        file_data, decoder_info = sorted_file_data_and_decoders[0]
 
-        if not file_data['import_file_type']:
+        if decoder_info is None or decoder_info.get('priority', 0) == 0:
             _logger.info(
                 "Attachment(s) %s not imported: no suitable decoder found.",
                 [file_data['name'] for file_data in files_data],
             )
             return
+        if decoder_info.get('reason_cannot_decode'):
+            filename = _get_attachment_name(file_data)
+            self.message_post(
+                body=self.env._(
+                    "Attachment %(filename)s not imported: %(reason)s",
+                    filename=filename,
+                    reason=decoder_info['reason_cannot_decode'],
+                )
+            )
+            return
 
         try:
             with rollbackable_transaction(self.env.cr):
-                self._decode_attachment(file_data, new=new)
+                decoder_info['decoder'](self, file_data, new)
         except RedirectWarning:
             raise
         except (
@@ -321,41 +349,26 @@ class AccountDocumentImportMixin(models.AbstractModel):
             psycopg2.errors.IntegrityError,
             psycopg2.errors.SerializationFailure,
         ) as e:
-            if not file_data['attachment']:
-                message = self.env._(
-                    "Error importing attachment '%(filename)s' (extracted from '%(root_filename)s', type=%(type)s) on record %(record)s",
-                    filename=file_data['name'],
-                    root_filename=file_data['origin_attachment'].name,
-                    type=file_data['import_file_type'],
-                    record=self.display_name,
-                )
-            else:
-                message = self.env._(
-                    "Error importing attachment '%(filename)s' (type=%(type)s) on record %(record)s",
-                    filename=file_data['name'],
-                    type=file_data['import_file_type'],
-                    record=self.display_name,
-                )
-            _logger.exception(message)
+            _logger.exception("Error importing attachment %s on record %s", file_data['name'], self)
 
             self.sudo().message_post(body=Markup("%s<br/><br/>%s<br/>%s") % (
-                message,
+                self.env._(
+                    "Error importing attachment %(filename)s:",
+                    filename=_get_attachment_name(file_data),
+                ),
                 self.env._("This specific error occurred during the import:"),
                 str(e),
             ))
             return False
         return True
 
-    def _get_import_priority(self, file_data):
-        return 0
-
-    def _decode_attachment(self, file_data, new=False):
+    def _get_edi_decoder(self, file_data, new=False):
         """ Main method that should be overridden to implement decoders for various file types.
 
         :param file_data: A dict representing an attachment which should be decoded.
         :param new:       (optional) whether the business document was newly created.
         """
-        raise UserError(self.env._("Could not decode attachment: no suitable decoder found."))
+        pass
 
     # --------------------------------------------------------------
     # Helpers to consistently attach/unattach attachments to records

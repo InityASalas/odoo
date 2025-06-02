@@ -216,9 +216,8 @@ class HrVersion(models.Model):
                     contract_period_exists = True
                     continue
                 if date_start <= contract_date_end and version.contract_date_start <= date_to:
-                    # YTI TODO: Raise user friendly error message explaining which contracts and which dates
                     raise ValidationError(_(
-                        'You have some overlapping contracts for %(employee):\n%(overlaps)',
+                        'You have some overlapping contracts for %(employee)s:\n%(overlaps)s',
                         employee=version.employee_id.display_name,
                         overlaps='\n'.join(
                             [f'Version ({version.display_name}): {version.contract_date_start} - {version.contract_date_end}'] +

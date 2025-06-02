@@ -184,7 +184,7 @@ class HrVersion(models.Model):
             if version.employee_id:
                 version.company_id = version.employee_id.company_id
 
-    @api.constrains('contract_date_start', 'contract_date_end')
+    @api.constrains('employee_id', 'contract_date_start', 'contract_date_end')
     def _check_dates(self):
         version_read_group = self.env['hr.version']._read_group(
             [
@@ -243,6 +243,7 @@ class HrVersion(models.Model):
 
     def write(self, values):
         # Employee Versions Validation
+        # ARPI TODO: what if mass edit ?
         if 'employee_id' in values:
             if self.filtered(lambda v: len(v.employee_id.version_ids) == 1 and values['employee_id'] != v.employee_id.id):
                 raise ValidationError(self.env._("Cannot unassign the only active version of an employee."))

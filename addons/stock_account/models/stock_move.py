@@ -371,7 +371,7 @@ class StockMove(models.Model):
         stock_valuation_layers._validate_accounting_entries()
         stock_valuation_layers._validate_analytic_accounting_entries()
 
-        valued_moves['out'].filtered(lambda m: m.product_id.lot_valuated).sudo()._product_price_update_after_done()
+        valued_moves['out'].sudo()._product_price_update_after_done()
 
         stock_valuation_layers._check_company()
 
@@ -458,7 +458,8 @@ class StockMove(models.Model):
         """ Outgoing moves lot valuation should recompute the standard price of the product as the
         layer price unit may differ from the product price unit """
         for product, layers in self.stock_valuation_layer_ids.grouped('product_id').items():
-            if all(not m._is_out() for m in layers.stock_move_id) or not product.lot_valuated:
+            if (all(not m._is_out() for m in layers.stock_move_id) or not product.lot_valuated)\
+                and not self.env.context.get('comes_from_unbuild'):
                 continue
             if layers.with_company(layers.company_id).product_id.cost_method == 'standard':
                 continue

@@ -67,7 +67,7 @@ class HrEmployee(models.Model):
     # resource and user
     # required on the resource, make sure required="True" set in the view
     name = fields.Char(string="Employee Name", related='resource_id.name', store=True, readonly=False, tracking=True)
-    resource_id = fields.Many2one('resource.resource')
+    resource_id = fields.Many2one('resource.resource', required=True)
     # required because the mixin already creates it so it is not related to the version_id
     resource_calendar_id = fields.Many2one(related='version_id.resource_calendar_id', index=False, store=False)
     user_id = fields.Many2one(

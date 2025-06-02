@@ -17,7 +17,12 @@ import { selectElements } from "@html_editor/utils/dom_traversal";
 
 export class BaseContainerPlugin extends Plugin {
     static id = "baseContainer";
-    static shared = ["createBaseContainer", "getDefaultNodeName", "isCandidateForBaseContainer"];
+    static shared = [
+        "createBaseContainer",
+        "getDefaultNodeName",
+        "isCandidateForBaseContainer",
+        "shouldFillWithBaseContainer",
+    ];
     /**
      * Register one of the predicates for `invalid_for_base_container_predicates`
      * as a property for optimization, see variants of `isCandidateForBaseContainer`.
@@ -56,6 +61,8 @@ export class BaseContainerPlugin extends Plugin {
             this.isUnsplittablePredicate,
             this.hasNonPhrasingContentPredicate,
         ],
+        fill_with_base_container_predicates: (node) =>
+            node.matches("div[contenteditable='true']") && !node.parentElement.isContentEditable,
         system_classes: [BASE_CONTAINER_CLASS],
     };
 
@@ -166,5 +173,9 @@ export class BaseContainerPlugin extends Plugin {
                 fillEmpty(div);
             }
         }
+    }
+
+    shouldFillWithBaseContainer(node) {
+        return this.getResource("fill_with_base_container_predicates").some((fn) => fn(node));
     }
 }

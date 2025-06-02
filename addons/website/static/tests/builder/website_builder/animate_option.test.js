@@ -2,6 +2,8 @@ import { describe, expect, test } from "@odoo/hoot";
 import { animationFrame, queryFirst } from "@odoo/hoot-dom";
 import { contains, onRpc } from "@web/../tests/web_test_helpers";
 import { defineWebsiteModels, setupWebsiteBuilder } from "../website_helpers";
+import { patch } from "@web/core/utils/patch";
+import { ImageSizeTag } from "@website/builder/plugins/image/image_size_tag";
 
 defineWebsiteModels();
 
@@ -18,6 +20,11 @@ const styleContent = `
 `;
 
 test("visibility of animation animation=none", async () => {
+    const unpatch = patch(ImageSizeTag.prototype, {
+        updateImageSize() {
+            this.state.size = 128;
+        },
+    });
     await setupWebsiteBuilder(`
         <div class="test-options-target">
             ${testImg}
@@ -31,6 +38,7 @@ test("visibility of animation animation=none", async () => {
     expect(".options-container [data-label='Intensity']").not.toBeVisible();
     expect(".options-container [data-label='Start After']").not.toBeVisible();
     expect(".options-container [data-label='Duration']").not.toBeVisible();
+    unpatch();
 });
 describe("onAppearance", () => {
     test("visibility of animation animation=onAppearance", async () => {

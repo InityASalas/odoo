@@ -240,6 +240,19 @@ export class PosData extends Reactive {
                     }
                 );
 
+                const local_records_to_filter = {};
+                for (const model of this.opts.cleanupModels) {
+                    const local = localData[model] || [];
+                    if (local.length > 0) {
+                        local_records_to_filter[model] = local.map((r) => r.id);
+                    }
+                }
+
+                const data_to_remove = await this.orm.call("pos.session", "filter_local_data", [
+                    odoo.pos_session_id,
+                    local_records_to_filter,
+                ]);
+
                 for (const [model, values] of Object.entries(data)) {
                     let local = localData[model] || [];
 
@@ -250,12 +263,10 @@ export class PosData extends Reactive {
                         );
                         localData[model] = values;
                     } else {
-                        if (local.length > 0 && this.opts.cleanupModels.includes(model)) {
-                            const to_remove = await this.orm.call(model, "cleanup_data", [
-                                local.map((r) => r.id),
-                            ]);
-                            local = local.filter((r) => !to_remove.includes(r.id));
-                            this.indexedDB.delete(model, to_remove);
+                        if (data_to_remove[model] && data_to_remove[model].length > 0) {
+                            const remove_ids = data_to_remove[model];
+                            local = local.filter((r) => !remove_ids.includes(r.id));
+                            this.indexedDB.delete(model, remove_ids);
                         }
                         localData[model] = local.concat(values);
                     }

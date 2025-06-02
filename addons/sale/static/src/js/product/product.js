@@ -20,6 +20,7 @@ export class Product extends Component {
         quantity: Number,
         uom_id: Number,
         uom_data: { type: Object, optional: true },
+        uom_order: { type: Array, optional: true },
         attribute_lines: Object,
         optional: Boolean,
         imageURL: { type: String, optional: true },

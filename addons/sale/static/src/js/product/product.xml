@@ -93,24 +93,24 @@
             <label t-out="UoMTitle" class="fw-bold text-break col-lg-3"/>
             <ul class="list-inline list-unstyled flex-grow-1 mb-0">
                 <li
-                    t-foreach="this.props.uom_data"
-                    t-as="uom"
-                    t-key="`${this.props.product_tmpl_id}-${uom}`"
-                    t-att-class="{'active': uom == props.uom_id}"
+                    t-foreach="this.props.uom_order"
+                    t-as="uom_id"
+                    t-key="`${this.props.product_tmpl_id}-${uom_id}`"
+                    t-att-class="{'active': uom_id == props.uom_id}"
                     class="o_sale_product_configurator_uom_choice list-inline-item"
                 >
                     <label
                         class="btn btn-outline-secondary"
-                        t-attf-for="{{this.props.product_tmpl_id}}-{{uom}}-input"
-                        t-out="uom_value"
+                        t-attf-for="{{this.props.product_tmpl_id}}-{{uom_id}}-input"
+                        t-out="this.props.uom_data[uom_id]"
                     />
                     <input
                         class="btn-check"
                         type="radio"
-                        t-attf-id="{{this.props.product_tmpl_id}}-{{uom}}-input"
-                        t-att-value="uom"
+                        t-attf-id="{{this.props.product_tmpl_id}}-{{uom_id}}-input"
+                        t-att-value="uom_id"
                         t-attf-name="uom-{{this.props.product_tmpl_id}}"
-                        t-att-checked="uom == props.uom_id"
+                        t-att-checked="uom_id == props.uom_id"
                         t-on-change="selectUoM"
                     />
                 </li>

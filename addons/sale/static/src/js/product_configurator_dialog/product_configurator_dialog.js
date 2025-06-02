@@ -208,7 +208,6 @@ export class ProductConfiguratorDialog extends Component {
      *
      * @param {Number} productTmplId - The product template id, as a `product.template` id.
      * @param {Number} quantity - The new quantity of the product.
-     * @param {Number} uomId - The uom id, as an `uom.uom` id.
      *  If not specified, the product default uom will be considered (e.g. combo flows)
      * @return {Boolean} - Whether the quantity was updated.
      */
@@ -232,6 +231,14 @@ export class ProductConfiguratorDialog extends Component {
         return true;
     }
 
+    /**
+     * Set the quantity of the product to a given value.
+     *
+     * @param {Number} productTmplId - The product template id, as a `product.template` id.
+     * @param {Number} uomId - The new uom of the product.
+     *
+     * @return {Boolean} - Whether the uom was updated.
+     */
     async _setUnitOfMeasure(productTmplId, uomId) {
         const product = this._findProduct(productTmplId);
         if (product.uom_id === uomId) {
@@ -242,7 +249,6 @@ export class ProductConfiguratorDialog extends Component {
         product.uom_id = uomId;
 
         return true;
-
     }
 
     /**

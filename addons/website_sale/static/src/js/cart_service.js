@@ -340,7 +340,7 @@ export class CartService {
                         productTemplateId: product.product_template_id,
                         productId: product.product_id,
                         quantity: product.quantity,
-                        uom_id: uomId,
+                        uom_id: product.uom_id,
                         productCustomAttributeValues: product.product_custom_attribute_values,
                         noVariantAttributeValues: product.no_variant_attribute_value_ids,
                         linked_products: optionalProducts.map(this._serializeProduct),
@@ -367,6 +367,7 @@ export class CartService {
             product_template_id: product.product_tmpl_id,
             parent_product_template_id: product.parent_product_tmpl_id,
             quantity: product.quantity,
+            uom_id: product.uom_id,
         }
 
         if (!product.attribute_lines) {

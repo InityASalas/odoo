@@ -1476,18 +1476,23 @@ class ProductTemplate(models.Model):
         return price
 
     @api.model
-    def _service_tracking_blacklist(self):
+    def _service_tracking_blacklist(self) -> list:
         """ Service tracking field is used to distinguish some specific categories of products.
         Those products shouldn't be displayed or used in unrelated applications.
         This method returns a domain targeting all those specific products (events, courses, ...).
         """
         return []
 
-    def _has_multiple_uoms(self):
+    def _has_multiple_uoms(self) -> bool:
         self.ensure_one()
         return self.env['res.groups']._is_feature_enabled('uom.group_uom') and len(
             self.uom_id | self.uom_ids
         ) > 1
+
+    def _get_uom_order(self) -> list:
+        """Return the product uoms, as a sorted list of ids."""
+        assert self._has_multiple_uoms()
+        return (self.uom_id | self.uom_ids).ids
 
     ###################
     # DEMO DATA SETUP #

@@ -348,6 +348,7 @@ class SaleProductConfiguratorController(Controller):
                 uom.id: uom.name
                 for uom in (product.uom_id | product.uom_ids)
             }
+            values['uom_order'] = product_template._get_uom_order()
         # Shouldn't be sent client-side
         values.pop('pricelist_rule_id', None)
         return values

@@ -5230,7 +5230,7 @@ class SnippetsMenu extends Component {
                         const message = escape(_t("Could not install module %s", moduleDisplayName));
                         this.notification.add(message, {
                             type: "danger",
-                            sticky: true,
+                            autocloseDelay: 0,
                         });
                     } else {
                         throw e;

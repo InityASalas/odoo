@@ -1,7 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import date
-from odoo import api, models
+from odoo import api, fields, models
 from odoo.fields import Domain
 from odoo.exceptions import ValidationError
 
@@ -109,11 +109,11 @@ class HrVersion(models.Model):
         domain = [
             ('state', '!=', 'refuse'),
             ('employee_id', 'in', vals['employee_id']),
-            ('date_to', '>=', vals.get('contract_date_start', vals['date_version'])),
+            ('date_to', '>=', fields.Date.from_string(vals.get('contract_date_start', vals['date_version']))),
             ('resource_calendar_id', '!=', vals.get('resource_calendar_id')),
         ]
         if vals.get('contract_date_end'):
-            domain = Domain.AND([domain, [('date_from', '<=', vals['contract_date_end'])]])
+            domain = Domain.AND([domain, [('date_from', '<=', fields.Date.from_string(vals['contract_date_end']))]])
         return self.env['hr.leave'].search(domain)
 
 

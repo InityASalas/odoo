@@ -432,13 +432,15 @@ class WebsiteSale(payment_portal.PaymentPortal):
 
         ProductAttribute = request.env['product.attribute']
         if products:
-            # get all products without limit
-            attributes = lazy(lambda: ProductAttribute.search([
+            attributes_domain = [
                 ('product_tmpl_ids', 'in', search_product.ids),
                 ('visibility', '=', 'visible'),
-            ]))
+            ]
         else:
-            attributes = lazy(lambda: ProductAttribute.browse(attribute_ids))
+            attributes_domain = [('id', 'in', attribute_ids)]
+        # get all attributes without limit ordered by sequence to
+        # bypass website_sale_comparison setting order to category_id
+        attributes = lazy(lambda: ProductAttribute.search(attributes_domain, order='sequence'))
 
         if website.viewref('website_sale.products_list_view').active:
             layout_mode = 'list'

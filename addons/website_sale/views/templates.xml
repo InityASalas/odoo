@@ -338,7 +338,7 @@
                                 </div>
                                 <a
                                     t-else=""
-                                    t-attf-class="{{'' if ppr == 2 and layout_mode != 'list' else 'btn-sm'}} btn bg-body text-body"
+                                    t-attf-class="{{'' if ppr == 2 and layout_mode != 'list' else 'btn-sm'}} btn bg-body w-100 text-body text-truncate"
                                     t-out="ptav.name"
                                 />
                             </span>

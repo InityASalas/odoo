@@ -14,6 +14,7 @@ from . import http
 from . import interface
 from . import main
 from . import websocket_client
+<<<<<<< a7bbfa93410035884cd3eb8e62579f5d8faff345
 from . import led_manager_L
 
 _get = requests.get
@@ -32,3 +33,7 @@ def set_user_agent(func):
 
 requests.get = set_user_agent(_get)
 requests.post = set_user_agent(_post)
+||||||| 01300e05d7e654d9e05f604ad320e586f54f1141
+from . import led_manager_L
+=======
+>>>>>>> 1a83d82abbdc8508f54458cbf770fc73de7c2670

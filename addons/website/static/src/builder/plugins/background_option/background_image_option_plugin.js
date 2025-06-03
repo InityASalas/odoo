@@ -6,6 +6,8 @@ import { registry } from "@web/core/registry";
 import { convertCSSColorToRgba } from "@web/core/utils/colors";
 import { getBackgroundImageColor } from "./background_image_option";
 
+export const defaultFilterOpacity = 0.5;
+
 export class BackgroundImageOptionPlugin extends Plugin {
     static id = "backgroundImageOption";
     static dependencies = ["builderActions", "media", "style"];
@@ -28,7 +30,6 @@ export class BackgroundImageOptionPlugin extends Plugin {
                         }
                         return;
                     }
-
                     // Create the filter if necessary.
                     if (!filterEl) {
                         filterEl = document.createElement("div");

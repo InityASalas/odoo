@@ -1,7 +1,8 @@
 import { Component, useEffect, useRef, useState } from "@odoo/owl";
 import { CustomColorPicker } from "@web/core/color_picker/custom_color_picker/custom_color_picker";
 import { usePopover } from "@web/core/popover/popover_hook";
-import { isCSSColor, isColorGradient } from "@web/core/utils/colors";
+import { convertCSSColorToRgba, convertRgbaToCSSColor, isCSSColor, isColorGradient } from "@web/core/utils/colors";
+import { getCSSVariableValue } from "@web/core/utils/utils_css";
 import { cookie } from "@web/core/browser/cookie";
 import { GradientPicker } from "./gradient_picker/gradient_picker";
 import { POSITION_BUS } from "../position/position_hook";
@@ -58,6 +59,7 @@ export class ColorPicker extends Component {
         noTransparency: { type: Boolean, optional: true },
         close: { type: Function, optional: true },
         className: { type: String, optional: true },
+        opacity: { type: Number, optional: true },
     };
     static defaultProps = {
         close: () => {},
@@ -152,6 +154,29 @@ export class ColorPicker extends Component {
     getTarget(ev) {
         const target = ev.target.closest(`[data-color]`);
         return this.root.el.contains(target) ? target : ev.target;
+    }
+
+    gradientWithOpacity(gradient) {
+        if (this.props.opacity) {
+            return gradient.replace(/rgb\(([^)]+)\)/g, `rgba($1, ${this.props.opacity})`);
+        }
+        return gradient;
+    }
+
+    colorWithOpacity(color) {
+        let cssColor = convertCSSColorToRgba(color); 
+        if (this.props.opacity) {
+            if (cssColor){
+                return convertRgbaToCSSColor(cssColor.red, cssColor.green, cssColor.blue, this.props.opacity * 100);
+            }
+            let colorValue = getCSSVariableValue(color);
+            if (colorValue.length === 7) {
+                const hex_opacity = Math.round(this.props.opacity * 255).toString(16).padStart(2, '0')
+                colorValue += hex_opacity;
+            }
+            return colorValue;
+        }
+        return cssColor ? color : `var(--${color})`;
     }
 
     onColorFocusin(ev) {

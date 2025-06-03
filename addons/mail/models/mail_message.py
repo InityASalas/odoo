@@ -965,7 +965,7 @@ class MailMessage(models.Model):
             "pinned_at",
             # sudo: mail.message - reading reactions on accessible message is allowed
             Store.Many("reaction_ids", rename="reactions", sudo=True),
-            "record_name"  # keep for iOS app
+            "record_name",  # keep for iOS app
             "res_id",  # keep for iOS app
             "subject",
             # sudo: mail.message.subtype - reading subtype on accessible message is allowed

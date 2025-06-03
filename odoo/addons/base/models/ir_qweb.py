@@ -2288,7 +2288,7 @@ class IrQweb(models.AbstractModel):
 
         # args
         for key in list(el.attrib):
-            if key.endswith('.translate.f') or key.endswith('.translate'):
+            if key.endswith('.f') or key.endswith('.translate'):
                 name = key.split('.', 1)[0]
                 value = el.attrib.pop(key)
                 code.append(indent_code(f"t_call_values[{name!r}] = {self._compile_format(value)}", level))

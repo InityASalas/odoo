@@ -61,6 +61,7 @@ registry.category("services").add("website_edit", {
             // interactions are already started. we only restart them if the
             // public root is not just starting.
 
+            debugger;
             publicInteractions.stopInteractions(target);
             if (mode === "edit") {
                 if (!editableInteractions) {
@@ -187,9 +188,11 @@ registry.category("services").add("website_edit", {
                     },
                     shouldStop() {
                         const snapshot = this.getConfigurationSnapshot();
-                        if (snapshot === this.configurationSnapshot) {
-                            return false;
-                        }
+                        // TODO: MSH: The following code is creating issue, due to this code destroy method is not getting called
+                        // Maybe temporary solution can be done by changing snapshot i.e. some style or something on element
+                        // if (snapshot === this.configurationSnapshot) {
+                        //     return false;
+                        // }
                         this.configurationSnapshot = snapshot;
                         return true;
                     },

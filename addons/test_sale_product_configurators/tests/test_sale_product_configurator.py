@@ -293,6 +293,19 @@ class TestProductConfiguratorUi(TestProductConfiguratorCommon):
         )
 
     def test_product_configurator_uom_selection(self):
+        self.env['product.pricelist'].create({
+            'name': 'Custom pricelist (TEST)',
+            'sequence': 4,
+            'item_ids': [(0, 0, {
+                'base': 'list_price',
+                'applied_on': '1_product',
+                'product_tmpl_id': self.product_product_custo_desk.id,
+                'price_discount': 20,
+                'min_quantity': 2,
+                'compute_price': 'formula'
+            })]
+        })
+
         self.env.ref('base.group_user').write({
             'implied_ids': [
                 # Required to set pricelist
@@ -316,4 +329,5 @@ class TestProductConfiguratorUi(TestProductConfiguratorCommon):
         # Remove tax from Conference Chair and Chair floor protection
         self.product_product_conf_chair.taxes_id = None
         self.product_product_conf_chair_floor_protect.taxes_id = None
+        self.assertTrue(self.salesman._has_group('product.group_product_pricelist'))
         self.start_tour("/odoo", 'sale_product_configurator_uom_tour', login='salesman')

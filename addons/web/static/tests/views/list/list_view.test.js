@@ -246,6 +246,13 @@ async function selectMany2xItem(fieldName, value) {
     }
 }
 
+onRpc("/web/view/save_multi", async function (request) {
+    const { params } = await request.json();
+    const { changes, ids, model } = params;
+    this.env[model].write(ids, changes);
+    expect.step("save_multi");
+});
+
 test(`simple readonly list`, async () => {
     await mountView({
         resModel: "foo",
@@ -2829,9 +2836,9 @@ test(`editing a record should change same record in other groups when grouped by
 
 test.tags("desktop");
 test(`selecting the same record on different groups and editing it when grouping by m2m field`, async () => {
-    onRpc("write", ({ args }) => {
-        expect.step("write");
-        expect(args[0]).toEqual([1], {
+    onRpc("/web/view/save_multi", async (request) => {
+        const { params } = await request.json();
+        expect(params.ids).toEqual([1], {
             message: "the write rpc should only contain unique ids in arguments",
         });
     });
@@ -2862,7 +2869,7 @@ test(`selecting the same record on different groups and editing it when grouping
     await contains(`.modal .modal-footer .btn-primary`).click();
     expect(`.modal`).toHaveCount(0);
     expect(queryAllTexts(`.o_list_char`)).toEqual(["xyz", "blip", "blip", "xyz", "blip"]);
-    expect.verifySteps(["write"]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test(`change a record field in readonly should change same record in other groups when grouped by m2m field`, async () => {
@@ -4277,6 +4284,7 @@ test(`selection box is not removed after multi record edition`, async () => {
     expect(`.o_data_row .o_list_record_selector input:checked`).toHaveCount(4, {
         message: "same records should be selected",
     });
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -10428,6 +10436,7 @@ test(`multi edit in view grouped by field not in view`, async () => {
     await contains(`.modal .modal-footer .btn-primary`).click();
     expect(`.modal`).toHaveCount(0);
     expect(queryAllTexts(`.o_data_cell`)).toEqual(["test", "test", "1", "2", "2"]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -10477,7 +10486,7 @@ test(`multi edit reference field batched in grouped list`, async () => {
 
     await contains(`.modal .modal-footer .btn-primary`).click();
     expect(`.modal`).toHaveCount(0);
-    expect.verifySteps(["write", "web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read"]);
     expect(`.o_group_header`).toHaveCount(2);
     expect(queryAllTexts(`.o_data_cell[name=reference]`)).toEqual([
         "Value 1",
@@ -10553,7 +10562,7 @@ test(`multi edit field with daterange widget`, async () => {
     // Valid the confirm dialog
     await contains(`.modal .btn-primary`).click();
     expect(`.modal`).toHaveCount(0);
-    expect.verifySteps(["write"]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -10615,7 +10624,7 @@ test(`multi edit field with daterange widget (edition without using the picker)`
     // Valid the confirm dialog
     await contains(`.modal .btn-primary`).click();
     expect(`.modal`).toHaveCount(0);
-    expect.verifySteps(["write"]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test(`list daterange with start date and empty end date`, async () => {
@@ -10713,7 +10722,7 @@ test(`editable list view: contexts with multiple edit`, async () => {
     // Edits first record then confirms changes.
     await contains(`.o_data_row [name=foo] input`).edit("legion");
     await contains(`.modal-dialog button.btn-primary`).click();
-    expect.verifySteps(["write", "web_read"]);
+    expect.verifySteps(["save_multi", "web_read"]);
 });
 
 test.tags("desktop");
@@ -10875,7 +10884,7 @@ test(`editable list view: multi edition`, async () => {
     expect(`.o_list_record_selector input:checked`).toHaveCount(0, {
         message: "no record should be selected anymore",
     });
-    expect.verifySteps(["write", "web_read", "conditional web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read", "conditional web_read"]);
     expect(queryAllTexts(`.o_data_row:eq(0) .o_data_cell`)).toEqual(["yop", "666"], {
         message: "the first row should be updated",
     });
@@ -10945,10 +10954,12 @@ test(`editable list view: multi edition cannot call onchanges`, async () => {
     };
 
     stepAllNetworkCalls();
-    onRpc("write", ({ args }) => {
-        for (const id of args[0]) {
+    onRpc("/web/view/save_multi", async (request) => {
+        const { params } = await request.json();
+        const { changes, ids } = params;
+        for (const id of ids) {
             const record = Foo._records.find((r) => r.id === id);
-            record.int_field = args[1].foo.length;
+            record.int_field = changes.foo.length;
         }
     });
 
@@ -10977,7 +10988,7 @@ test(`editable list view: multi edition cannot call onchanges`, async () => {
     expect(`.modal`).toHaveCount(0);
     expect(queryAllTexts(`.o_data_row:eq(0) .o_data_cell`)).toEqual(["hi", "2"]);
     expect(queryAllTexts(`.o_data_row:eq(1) .o_data_cell`)).toEqual(["blip", "9"]);
-    expect.verifySteps(["write", "web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read"]);
     // select the second record (the first one is still selected)
     expect(`.o_list_record_selector input:checked`).toHaveCount(1, {
         message: "Record should be still selected",
@@ -10993,7 +11004,7 @@ test(`editable list view: multi edition cannot call onchanges`, async () => {
     expect(queryAllTexts(`.o_data_row:eq(0) .o_data_cell`)).toEqual(["hello", "5"]);
     expect(queryAllTexts(`.o_data_row:eq(1) .o_data_cell`)).toEqual(["hello", "5"]);
     // should not perform the onchange in multi edition
-    expect.verifySteps(["write", "web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read"]);
 });
 
 test.tags("desktop");
@@ -11113,6 +11124,7 @@ test(`multi edition: many2many field in grouped list`, async () => {
     expect(`.o_data_row:eq(2) .o_data_cell:eq(1)`).toHaveText("Value 1\nValue 2\nValue 3", {
         message: "should have same value in many2many field on all other records with same res_id",
     });
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -11147,7 +11159,7 @@ test(`editable list view: multi edition of many2one: set same value`, async () =
 
     await contains(`.modal .modal-footer .btn-primary`).click();
     expect(queryAllTexts(`.o_list_many2one`)).toEqual(["Value 2", "Value 2", "Value 2", "Value 2"]);
-    expect.verifySteps(["write"]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -11416,7 +11428,7 @@ test(`editable list view (multi edition): writable fields in readonly (force sav
     expect(`.modal-header`).toHaveText("Confirmation");
 
     await contains(`.modal .btn-primary`).click();
-    expect.verifySteps(["write", "web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read"]);
 });
 
 test.tags("desktop");
@@ -11455,7 +11467,7 @@ Update to: 666`);
     );
 
     await contains(`.modal .btn-primary`).click();
-    expect.verifySteps(["write"]);
+    expect.verifySteps(["save_multi"]);
     expect(queryAllTexts(`.o_data_row:eq(0) .o_data_cell`)).toEqual(["1", "yop", "666"], {
         message: "the first row should be updated",
     });
@@ -11512,7 +11524,7 @@ test(`editable list view: many2one with readonly modifier`, async () => {
 
 test.tags("desktop");
 test(`editable list view: multi edition server error handling`, async () => {
-    onRpc("write", () => {
+    onRpc("/web/view/save_multi", () => {
         throw makeServerError();
     });
 
@@ -11670,6 +11682,7 @@ test(`editable list view: multi edition: edit and validate last row`, async () =
 
     await contains(`.modal .btn-primary`).click();
     expect(`.o_data_row`).toHaveCount(4);
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -11752,15 +11765,17 @@ test(`editable readonly list view: single edition does not behave like a multi-e
     expect(`.o_data_row:eq(0) .o_data_cell`).toHaveText("bar", {
         message: "the first row should be updated",
     });
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
 test(`non editable list view: multi edition`, async () => {
     stepAllNetworkCalls();
-    onRpc("write", ({ args }) => {
-        expect(args).toEqual([[1, 2], { int_field: 666 }], {
-            message: "should write on multi records",
-        });
+    onRpc("/web/view/save_multi", async (request) => {
+        const { params } = await request.json();
+        const { changes, ids } = params;
+        expect(ids).toEqual([1, 2]);
+        expect(changes).toEqual({ int_field: 666 });
     });
     onRpc("web_read", ({ args, kwargs }) => {
         if (args[0].length !== 1) {
@@ -11811,7 +11826,7 @@ test(`non editable list view: multi edition`, async () => {
     });
 
     await contains(`.modal .btn-primary`).click();
-    expect.verifySteps(["write", "web_read", "conditional web_read"]);
+    expect.verifySteps(["/web/view/save_multi", "save_multi", "web_read", "conditional web_read"]);
     expect(queryAllTexts(`.o_data_row:eq(0) .o_data_cell`)).toEqual(["yop", "666"], {
         message: "the first row should be updated",
     });
@@ -11850,6 +11865,7 @@ test(`editable list view: m2m tags in grouped list`, async () => {
     await contains(`.o_selected_row .o_field_many2many_tags .o_delete`).click();
     await contains(`.modal .btn-primary`).click();
     expect(queryAllTexts(`td.o_many2many_tags_cell`)).toEqual(["Value 2", "Value 2\nValue 3", ""]);
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -11894,6 +11910,7 @@ test(`editable list: edit many2one from external link`, async () => {
     expect(`.o_data_cell:eq(0)`).toHaveText("OOF", {
         message: "Value of the m2o should be updated in the list",
     });
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");
@@ -13832,9 +13849,6 @@ test(`keyboard navigation with Many2One field`, async () => {
 
 test.tags("desktop");
 test(`multi-edit records with ENTER does not crash`, async () => {
-    const deferred = new Deferred();
-    onRpc("write", () => deferred);
-
     await mountView({
         resModel: "foo",
         type: "list",
@@ -13856,10 +13870,9 @@ test(`multi-edit records with ENTER does not crash`, async () => {
     expect(`.o_dialog`).toHaveCount(1); // confirmation dialog
 
     await contains(`.o_dialog .modal-footer .btn-primary`).click();
-    deferred.resolve();
-    await animationFrame();
     expect(queryAllTexts(`.o_data_cell.o_list_number`)).toEqual(["10", "234", "234", "-4"]);
     expect(`.o_dialog`).toHaveCount(0); // no more confirmation dialog, no error dialog
+    expect.verifySteps(["save_multi"]);
 });
 
 test(`editable grouped list: adding a second record pass the first in readonly`, async () => {
@@ -18240,4 +18253,43 @@ test(`cell-level keyboard navigation in multiple grouped list`, async () => {
 
     await animationFrame();
     expect(`tbody tr:nth-child(3) td:nth-child(3)`).toBeFocused();
+});
+
+test.tags("desktop");
+test(`multi_edit: edit field with operator`, async () => {
+    await mountView({
+        resModel: "foo",
+        type: "list",
+        arch: `
+            <list multi_edit="1">
+                <field name="int_field"/>
+                <field name="qux"/>
+                <field name="amount"/>
+                <field name="foo"/>
+            </list>
+        `,
+    });
+    await contains(`th .o-checkbox`).click();
+    async function checkFieldValue(field, value, text) {
+        await contains(`.o_data_cell[name=${field}]`).click();
+        await edit(value, { confirm: "tab" });
+        await waitFor(`.modal table div[name=${field}]`);
+        expect(`.modal table div[name=${field}]`).toHaveText(text);
+        await contains(".modal footer button:contains(cancel)").click();
+    }
+    await checkFieldValue("int_field", "+=100", "[Int field Value] + 100");
+    await checkFieldValue("int_field", "-=100", "[Int field Value] - 100");
+    await checkFieldValue("int_field", "/=100", "[Int field Value] / 100");
+    await checkFieldValue("int_field", "*=100", "[Int field Value] * 100");
+    await checkFieldValue("int_field", "%=100", "[Int field Value] % 100");
+    await checkFieldValue("qux", "/=1,5", "[Qux Value] / 1.5");
+    await checkFieldValue("qux", "*=1.5", "[Qux Value] * 1.5");
+    await checkFieldValue("qux", "+=1,50", "[Qux Value] + 1.5");
+    await checkFieldValue("qux", "-=1.50000", "[Qux Value] - 1.5");
+    await checkFieldValue("qux", "%=1.5", "[Qux Value] % 1.5");
+    await checkFieldValue("amount", "/=1,4", "[Amount Value] / 1.4");
+    await checkFieldValue("amount", "*=1.4", "[Amount Value] * 1.4");
+    await checkFieldValue("amount", "-=1.4", "[Amount Value] - 1.4");
+    await checkFieldValue("amount", "+=1,4", "[Amount Value] + 1.4");
+    await checkFieldValue("amount", "%=1,4", "[Amount Value] % 1.4");
 });

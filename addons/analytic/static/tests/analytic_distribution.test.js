@@ -206,6 +206,12 @@ test("analytic field in multi_edit list view + search more", async () => {
     onRpc("account.analytic.account", "web_search_read", () => ({
         records: AccountAnalyticAccount._records.filter((record) => record.root_plan_id === 5),
     }));
+    onRpc("/web/view/save_multi", async function (request) {
+        const { params } = await request.json();
+        const { changes, ids, model } = params;
+        this.env[model].write(ids, changes);
+        expect.step("save_multi");
+    });
     await mountView({
         type: "list",
         resModel: "aml",
@@ -246,6 +252,7 @@ test("analytic field in multi_edit list view + search more", async () => {
     expect("tr:nth-of-type(2) .badge:nth-of-type(2) .o_tag_badge_text").toHaveText(
         "30.3% Belgium | 69.7% Berlin"
     );
+    expect.verifySteps(["save_multi"]);
 });
 
 test.tags("desktop");

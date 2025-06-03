@@ -67,6 +67,43 @@ class Account_Edi_Proxy_ClientUser(models.Model):
     def _get_can_send_domain(self):
         return ('sender', 'smp_registration', 'receiver')
 
+<<<<<<< a2aec78dd3d8cda98c868395862796cac4319a95
+||||||| 4b933b8dfafcdc2878961188fd2365c1f5766f5f
+    @handle_demo
+    def _check_company_on_peppol(self, company, edi_identification):
+        if (
+            not company.account_peppol_migration_key
+            and (participant_info := company.partner_id._get_participant_info(edi_identification)) is not None
+            and company.partner_id._check_peppol_participant_exists(participant_info, edi_identification, check_company=True)
+        ):
+            error_msg = _(
+                "A participant with these details has already been registered on the network. "
+                "If you have previously registered to an alternative Peppol service, please deregister from that service, "
+                "or request a migration key before trying again. "
+            )
+
+            if isinstance(participant_info, str):
+                error_msg += _("The Peppol service that is used is likely to be %s.", participant_info)
+            raise UserError(error_msg)
+
+=======
+    @handle_demo
+    def _check_company_on_peppol(self, company, edi_identification):
+        if (
+            not company.account_peppol_migration_key
+            and (participant_info := company.partner_id._get_participant_info(edi_identification)) is not None
+            and company.partner_id._check_peppol_participant_exists(participant_info, edi_identification, check_company=True)
+        ):
+            error_msg = _(
+                "A participant with these details has already been registered on the network. "
+                "If you have previously registered to a Peppol service, please deregister."
+            )
+
+            if isinstance(participant_info, str):
+                error_msg += _("The Peppol service that is used is likely to be %s.", participant_info)
+            raise UserError(error_msg)
+
+>>>>>>> 94c96564e6db37ef7dfb068db7696f369522a009
     # -------------------------------------------------------------------------
     # CRONS
     # -------------------------------------------------------------------------

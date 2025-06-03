@@ -1,7 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import _, api, fields, models
-from odoo.tools import format_amount
 
 
 class PaymentLinkWizard(models.TransientModel):
@@ -10,6 +9,7 @@ class PaymentLinkWizard(models.TransientModel):
 
     amount_paid = fields.Monetary(string="Already Paid", readonly=True)
     confirmation_message = fields.Char(compute='_compute_confirmation_message')
+    prepayment_amount = fields.Monetary(currency_field='currency_id')
 
     @api.depends('amount')
     def _compute_confirmation_message(self):
@@ -17,24 +17,35 @@ class PaymentLinkWizard(models.TransientModel):
         for wizard in self.filtered(lambda w: w.res_model == 'sale.order'):
             sale_order = wizard.env['sale.order'].sudo().browse(wizard.res_id)
             if sale_order.state in ('draft', 'sent') and sale_order.require_payment:
-                remaining_amount = sale_order._get_prepayment_required_amount() - sale_order.amount_paid
-                if wizard.currency_id.compare_amounts(wizard.amount, remaining_amount) >= 0:
-                    wizard.confirmation_message = _("This payment will confirm the quotation.")
-                else:
-                    wizard.confirmation_message = _(
-                        "Customer needs to pay at least %(amount)s to confirm the order.",
-                        amount=format_amount(wizard.env, remaining_amount, wizard.currency_id),
-                    )
+                wizard.confirmation_message = _("This payment will confirm the quotation.")
+
+    @api.depends('res_model', 'res_id')
+    def _compute_warning_message(self):
+        sale_wizard = self.env['payment.link.wizard']
+        for wizard in self:
+            if wizard.res_model != 'sale.order':
+                continue
+            if wizard.amount < wizard.prepayment_amount:
+                wizard.warning_message = _(
+                    "You cannot generate a link for payment lower than prepayment amount."
+                )
+                sale_wizard |= wizard
+        super(PaymentLinkWizard, self - sale_wizard)._compute_warning_message()
+
+    def _prepare_url(self, base_url, related_document):
+        """ Override of `payment` to use the portal page URL. """
+        res = super()._prepare_url(base_url, related_document)
+        if self.res_model != 'sale.order':
+            return res
+
+        return f'{base_url}{related_document.get_portal_url()}'
 
     def _prepare_query_params(self, *args):
-        """ Override of `payment` to add `sale_order_id` to the query params. """
+        """ Override of `payment` to add SO related values to the query params. """
         res = super()._prepare_query_params(*args)
         if self.res_model != 'sale.order':
             return res
 
-        # The other order-related values are read directly from the sales order in the controller.
         return {
-            'amount': self.amount,
-            'access_token': self._prepare_access_token(),
-            'sale_order_id': self.res_id,
+            'payment_amount': self.amount,
         }

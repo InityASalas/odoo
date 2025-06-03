@@ -1783,13 +1783,13 @@ class SaleOrder(models.Model):
         # - order is not confirmed yet
         # - can be confirmed online
         # - we have still not paid enough for confirmation.
-        prepayment_amount = self._get_prepayment_required_amount()
+        prepayment_amount = 0
         if (
             self.state in ('draft', 'sent')
             and self.require_payment
-            and self.currency_id.compare_amounts(prepayment_amount, self.amount_paid) > 0
         ):
-            amount = prepayment_amount - self.amount_paid
+            prepayment_amount = self._get_prepayment_required_amount()
+            amount = prepayment_amount
         else:
             amount = amount_max
 
@@ -1799,6 +1799,7 @@ class SaleOrder(models.Model):
             'amount': amount,
             'amount_max': amount_max,
             'amount_paid': self.amount_paid,
+            'prepayment_amount': prepayment_amount,
         }
 
     # EDI #

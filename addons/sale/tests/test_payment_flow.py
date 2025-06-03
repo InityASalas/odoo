@@ -1,20 +1,21 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from unittest.mock import ANY, patch
+from unittest.mock import patch
+
 
 from odoo.exceptions import AccessError
 from odoo.tests import JsonRpcException, tagged
 from odoo.tools import mute_logger
 
 from odoo.addons.account_payment.tests.common import AccountPaymentCommon
-from odoo.addons.payment.tests.http_common import PaymentHttpCommon
 from odoo.addons.portal.controllers.portal import CustomerPortal
 from odoo.addons.sale.controllers.portal import PaymentPortal
-from odoo.addons.sale.tests.common import SaleCommon
+from odoo.addons.sale.tests.common import SaleCommon, SaleHttpCommon
+from odoo.addons.website.tools import MockRequest
 
 
 @tagged('-at_install', 'post_install')
-class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
+class TestSalePayment(AccountPaymentCommon, SaleCommon, SaleHttpCommon):
 
     @classmethod
     def setUpClass(cls):
@@ -27,182 +28,6 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
         cls.provider.journal_id.inbound_payment_method_line_ids.filtered(lambda l:
             l.payment_provider_id == cls.provider
         ).payment_account_id = cls.inbound_payment_method_line.payment_account_id
-
-    def test_11_so_payment_link(self):
-        # test customized /payment/pay route with sale_order_id param
-        self.amount = self.sale_order.amount_total
-        route_values = self._prepare_pay_values()
-        route_values['sale_order_id'] = self.sale_order.id
-
-        with patch(
-            'odoo.addons.payment.controllers.portal.PaymentPortal'
-            '._compute_show_tokenize_input_mapping'
-        ) as patched:
-            tx_context = self._get_portal_pay_context(**route_values)
-            patched.assert_called_once_with(ANY, sale_order_id=ANY)
-
-        self.assertEqual(tx_context['currency_id'], self.sale_order.currency_id.id)
-        self.assertEqual(tx_context['partner_id'], self.sale_order.partner_invoice_id.id)
-        self.assertEqual(tx_context['amount'], self.sale_order.amount_total)
-
-        # /my/orders/<id>/transaction/
-        tx_route_values = {
-            'provider_id': self.provider.id,
-            'payment_method_id': self.payment_method_id,
-            'token_id': None,
-            'amount': tx_context['amount'],
-            'flow': 'direct',
-            'tokenization_requested': False,
-            'landing_route': tx_context['landing_route'],
-            'access_token': tx_context['access_token'],
-        }
-        with mute_logger('odoo.addons.payment.models.payment_transaction'):
-            processing_values = self._get_processing_values(
-                tx_route=tx_context['transaction_route'], **tx_route_values
-            )
-        tx_sudo = self._get_tx(processing_values['reference'])
-
-        self.assertEqual(tx_sudo.sale_order_ids, self.sale_order)
-        self.assertEqual(tx_sudo.amount, self.amount)
-        self.assertEqual(tx_sudo.partner_id, self.sale_order.partner_invoice_id)
-        self.assertEqual(tx_sudo.company_id, self.sale_order.company_id)
-        self.assertEqual(tx_sudo.currency_id, self.sale_order.currency_id)
-        self.assertEqual(tx_sudo.reference, self.sale_order.name)
-
-        # Check validation of transaction correctly confirms the SO
-        self.assertEqual(self.sale_order.state, 'draft')
-        self.assertEqual(tx_sudo.sale_order_ids.transaction_ids, tx_sudo)
-        tx_sudo._set_done()
-        tx_sudo._post_process()
-        self.assertEqual(self.sale_order.state, 'sale')
-        self.assertTrue(tx_sudo.payment_id)
-        self.assertEqual(tx_sudo.payment_id.state, 'in_process')
-
-    def test_so_payment_link_with_different_partner_invoice(self):
-        # test customized /payment/pay route with sale_order_id param
-        # partner_id and partner_invoice_id different on the so
-        self.sale_order.partner_invoice_id = self.portal_partner
-        self.partner = self.sale_order.partner_invoice_id
-        route_values = self._prepare_pay_values()
-        route_values['sale_order_id'] = self.sale_order.id
-
-        tx_context = self._get_portal_pay_context(**route_values)
-        self.assertEqual(tx_context['partner_id'], self.sale_order.partner_invoice_id.id)
-
-    def test_12_so_partial_payment_link(self):
-        # test customized /payment/pay route with sale_order_id param
-        # partial amount specified
-        self.amount = self.sale_order.amount_total / 2.0
-        pay_route_values = self._prepare_pay_values()
-        pay_route_values['sale_order_id'] = self.sale_order.id
-
-        tx_context = self._get_portal_pay_context(**pay_route_values)
-
-        self.assertEqual(tx_context['currency_id'], self.sale_order.currency_id.id)
-        self.assertEqual(tx_context['partner_id'], self.sale_order.partner_invoice_id.id)
-        self.assertEqual(tx_context['amount'], self.amount)
-
-        tx_route_values = {
-            'provider_id': self.provider.id,
-            'payment_method_id': self.payment_method_id,
-            'token_id': None,
-            'amount': tx_context['amount'],
-            'flow': 'direct',
-            'tokenization_requested': False,
-            'landing_route': tx_context['landing_route'],
-            'access_token': tx_context['access_token'],
-        }
-        with mute_logger('odoo.addons.payment.models.payment_transaction'):
-            processing_values = self._get_processing_values(
-                tx_route=tx_context['transaction_route'], **tx_route_values
-            )
-        tx_sudo = self._get_tx(processing_values['reference'])
-
-        self.assertEqual(tx_sudo.sale_order_ids, self.sale_order)
-        self.assertEqual(tx_sudo.amount, self.amount)
-        self.assertEqual(tx_sudo.partner_id, self.sale_order.partner_invoice_id)
-        self.assertEqual(tx_sudo.company_id, self.sale_order.company_id)
-        self.assertEqual(tx_sudo.currency_id, self.sale_order.currency_id)
-        self.assertEqual(tx_sudo.sale_order_ids.transaction_ids, tx_sudo)
-
-        tx_sudo._set_done()
-
-        self.sale_order.require_payment = True
-        self.assertTrue(self.sale_order._has_to_be_paid())
-        with mute_logger('odoo.addons.sale.models.payment_transaction'):
-            tx_sudo._post_process()
-        self.assertEqual(self.sale_order.state, 'draft') # Only a partial amount was paid
-
-        # Pay the remaining amount
-        pay_route_values = self._prepare_pay_values()
-        pay_route_values['sale_order_id'] = self.sale_order.id
-
-        tx_context = self._get_portal_pay_context(**pay_route_values)
-
-        self.assertEqual(tx_context['currency_id'], self.sale_order.currency_id.id)
-        self.assertEqual(tx_context['partner_id'], self.sale_order.partner_invoice_id.id)
-        self.assertEqual(tx_context['amount'], self.amount)
-
-        tx_route_values = {
-            'provider_id': self.provider.id,
-            'payment_method_id': self.payment_method_id,
-            'token_id': None,
-            'amount': tx_context['amount'],
-            'flow': 'direct',
-            'tokenization_requested': False,
-            'landing_route': tx_context['landing_route'],
-            'access_token': tx_context['access_token'],
-        }
-        with mute_logger('odoo.addons.payment.models.payment_transaction'):
-            processing_values = self._get_processing_values(
-                tx_route=tx_context['transaction_route'], **tx_route_values
-            )
-        tx2_sudo = self._get_tx(processing_values['reference'])
-
-        self.assertEqual(tx2_sudo.sale_order_ids, self.sale_order)
-        self.assertEqual(tx2_sudo.amount, self.amount)
-        self.assertEqual(tx2_sudo.partner_id, self.sale_order.partner_invoice_id)
-        self.assertEqual(tx2_sudo.company_id, self.sale_order.company_id)
-        self.assertEqual(tx2_sudo.currency_id, self.sale_order.currency_id)
-
-        self.assertEqual(self.sale_order.state, 'draft')
-        self.assertEqual(self.sale_order.transaction_ids, tx_sudo + tx2_sudo)
-
-    def test_13_sale_automatic_partial_payment_link_delivery(self):
-        """Test that with automatic invoice and invoicing policy based on delivered quantity, a transaction for the partial
-        amount does not validate the SO."""
-        # set automatic invoice
-        self.env['ir.config_parameter'].sudo().set_param('sale.automatic_invoice', 'True')
-        # invoicing policy is based on delivered quantity
-        self.product.invoice_policy = 'delivery'
-
-        self.amount = self.sale_order.amount_total / 2.0
-        pay_route_values = self._prepare_pay_values()
-        pay_route_values['sale_order_id'] = self.sale_order.id
-
-        tx_context = self._get_portal_pay_context(**pay_route_values)
-
-        tx_route_values = {
-            'provider_id': self.provider.id,
-            'payment_method_id': self.payment_method_id,
-            'token_id': None,
-            'amount': tx_context['amount'],
-            'flow': 'direct',
-            'tokenization_requested': False,
-            'landing_route': tx_context['landing_route'],
-            'access_token': tx_context['access_token'],
-        }
-        with mute_logger('odoo.addons.payment.models.payment_transaction'):
-            processing_values = self._get_processing_values(
-                tx_route=tx_context['transaction_route'], **tx_route_values
-            )
-        tx_sudo = self._get_tx(processing_values['reference'])
-
-        tx_sudo._set_done()
-        with mute_logger('odoo.addons.sale.models.payment_transaction'):
-            tx_sudo._post_process()
-
-        self.assertEqual(self.sale_order.state, 'draft', 'a partial transaction with automatic invoice and invoice_policy = delivery should not validate a quote')
 
     def test_confirmed_transactions_comfirms_so_with_multiple_transaction(self):
         """ Test that a confirmed transaction confirms a SO even if one or more non-confirmed
@@ -389,55 +214,6 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
 
         self.assertTrue(self.sale_order.state == 'sale')
 
-    def test_downpayment_confirm_sale_order_insufficient_amount(self):
-        """Confirmation cannot occur if amount is not enough."""
-
-        self.sale_order.require_payment = True
-        self.sale_order.prepayment_percent = 0.2
-        order_amount = self.sale_order.amount_total
-
-        tx = self._create_transaction(
-            flow='direct',
-            amount=order_amount * 0.10,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        with mute_logger('odoo.addons.sale.models.payment_transaction'):
-            tx._post_process()
-
-        self.assertTrue(self.sale_order.state == 'draft')
-
-    def test_downpayment_confirm_sale_order_several_payments(self):
-        """
-        Several payments also trigger the confirmation of the sale order if
-        down payment confirmation is allowed.
-        """
-        self.sale_order.require_payment = True
-        self.sale_order.prepayment_percent = 0.2
-        order_amount = self.sale_order.amount_total
-
-        # Make a first payment, order should not be confirmed.
-        tx = self._create_transaction(
-            flow='direct',
-            reference="Test down payment 1",
-            amount=order_amount * 0.1,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        tx._post_process()
-        self.assertTrue(self.sale_order.state == 'draft')
-
-        # Order should be confirmed after this payment.
-        tx = self._create_transaction(
-            flow='direct',
-            reference="Test down payment 2",
-            amount=order_amount * 0.15,
-            sale_order_ids=[self.sale_order.id],
-            state='done',
-        )
-        tx._post_process()
-        self.assertTrue(self.sale_order.state == 'sale')
-
     def test_downpayment_automatic_invoice(self):
         """
         Down payment invoices should be created when a down payment confirms
@@ -555,3 +331,149 @@ class TestSalePayment(AccountPaymentCommon, SaleCommon, PaymentHttpCommon):
             notification_mail_mock.assert_called_with(
                 self.env.ref('sale.mail_template_sale_confirmation'))
             self.assertEqual(self.sale_order.state, 'sale')
+
+    def test_link_payment(self):
+        """ Payment link should allow payment for quotation."""
+
+        route_kwargs = {
+            'access_token': self.sale_order._portal_ensure_token(),
+            'payment_amount': self.sale_order.amount_total
+        }
+
+        res = self._link_payment(self.sale_order, route_kwargs)
+
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        content = res.content.decode('utf-8')
+
+        self.assertTrue('o_sale_portal_paynow' in content,
+                         "Payment should be possible")
+
+        tx_context = self._get_payment_context(res)
+        self.assertEqual(tx_context['amount'], self.sale_order.amount_total)
+
+    @mute_logger('odoo.http')
+    def test_payment_amount_below_prepayment_amount(self):
+        """
+        Link with payment amount below prepayment amount cannot be accepted.
+        """
+        route_kwargs = {
+            'access_token': self.sale_order._portal_ensure_token(),
+            'payment_amount': 1
+        }
+        res = self._link_payment(self.sale_order, route_kwargs)
+
+        self.assertEqual(res.status_code, 404, "It should refuse to render the page and redirect")
+
+    def test_link_payment_cancelled_sale_order(self):
+        """ Link with payment amount should prevent paying if SO is canceled. """
+        route_kwargs = {
+            'access_token': self.sale_order._portal_ensure_token(),
+            'payment_amount': self.sale_order.amount_total
+        }
+
+        self.sale_order.state = 'cancel'
+
+        res = self._link_payment(self.sale_order, route_kwargs)
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        content = res.content.decode('utf-8')
+
+        self.assertFalse('o_sale_portal_paynow' in content,
+                        "Payment shouldn't be possible for canceled Sale Order")
+
+    def test_payment_link_down_payment_amount(self):
+        """Test link portal payment when quotation has prepayment set."""
+        self.sale_order.require_payment = True
+        self.sale_order.prepayment_percent = 0.5
+        route_kwargs = {
+            'access_token': self.sale_order._portal_ensure_token(),
+            'payment_amount': self.sale_order.amount_total * 0.5
+        }
+        res = self._link_payment(self.sale_order, route_kwargs)
+
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        tx_context = self._get_payment_context(res)
+        self.assertEqual(tx_context['amount'], self.sale_order.amount_total * 0.5)
+
+        # simulate choosing paying full amount
+        route_kwargs['amount_selection'] = 'full_amount'
+        res = self._link_payment(self.sale_order, route_kwargs)
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        tx_context = self._get_payment_context(res)
+
+        self.assertEqual(tx_context['amount'], self.sale_order.amount_total)
+
+        # simulate creating payment link for full amount when down payment is defined
+        route_kwargs['payment_amount'] = self.sale_order.amount_total
+        res = self._link_payment(self.sale_order, route_kwargs)
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        content = res.content.decode('utf-8')
+        self.assertEqual(
+            'o_sale_portal_amount_prepayment_button' in content,
+            "Down payment button shouldn be available even if link was generated for full amount."
+        )
+        tx_context = self._get_payment_context(res)
+        self.assertEqual(
+            tx_context['amount'],
+            self.sale_order.amount_total,
+            "By default, total amount should be used."
+        )
+
+
+        # choose down payment when link was generated for full payment
+        route_kwargs['amount_selection'] = 'down_payment'
+        res = self._link_payment(self.sale_order, route_kwargs)
+        self.assertEqual(res.status_code, 200, "Response should = OK")
+        tx_context = self._get_payment_context(res)
+        self.assertEqual(tx_context['amount'], self.sale_order.amount_total * 0.5)
+
+
+
+    def test_payment_link_sale_order(self):
+        """ Ensure that payment with link is possible for confirmed Sale Order."""
+
+        self.sale_order.state = 'sale'
+
+        route_kwargs = {
+            'access_token': self.sale_order._portal_ensure_token(),
+            'payment_amount': 1
+        }
+        res = self._link_payment(self.sale_order, route_kwargs)
+
+        content = res.content.decode('utf-8')
+        self.assertTrue('o_sale_portal_paynow' in content,
+                        "The payment button should be available.")
+
+    def test_payment_link_generation(self):
+        """
+        Check if links are created correctly and if a warning is present when trying to generate
+        lower than prepayment link.
+        """
+
+        self.sale_order.require_payment = True
+        self.sale_order.prepayment_percent = 0.5
+
+        payment_context = {'active_model': 'sale.order', 'active_id': self.sale_order.id}
+        # payment.link.wizard needs to access request.env when it generates the access_token.
+        with MockRequest(self.sale_order.env):
+            # Try to generate link for amount below prepayment amount
+            wiz = self.env['payment.link.wizard'].with_context(payment_context).create({
+                'amount': 3
+            })
+
+        self.assertEqual(
+            wiz.warning_message,
+            "You cannot generate a link for payment lower than prepayment amount."
+        )
+
+        with MockRequest(self.sale_order.env):
+            wiz = self.env['payment.link.wizard'].with_context(payment_context).create({})
+            pay_url = wiz.link
+
+        res = self._make_http_get_request(pay_url)
+
+        content = res.content.decode('utf-8')
+        self.assertTrue('o_sale_portal_paynow' in content,
+                        "The payment button should be available.")
+
+        tx_context = self._get_payment_context(res)
+        self.assertEqual(tx_context['amount'], 362.5)

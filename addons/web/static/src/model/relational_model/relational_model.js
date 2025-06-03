@@ -198,7 +198,8 @@ export class RelationalModel extends Model {
         const def = new Deferred();
         if (
             this.constructor.withCache &&
-            (!this.isReady || (config.isMonoRecord && this.root.config.resId !== config.resId))
+            (!this.isReady ||
+                (config.isMonoRecord && (!config.resId || this.root.config.resId !== config.resId)))
             //TODO: Maybe we should update the cache when this.isReady (if the key exists in indexedDB)
         ) {
             cached = {

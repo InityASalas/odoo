@@ -51,6 +51,7 @@ export class PersistentCache {
         const prom = fallback()
             .then((result) => {
                 this.indexedDB.write(table, key, result);
+                this.ramCache.write(table, key, Promise.resolve(result));
                 def.resolve(result);
                 if (onUpdate && fromCache && fromCache !== JSON.stringify(result)) {
                     onUpdate(result);
@@ -58,10 +59,10 @@ export class PersistentCache {
                 return result;
             })
             .catch((error) => {
-                this.ramCache.delete(table, key);
                 if (fromCache) {
                     throw error;
                 }
+                this.ramCache.delete(table, key);
                 def.reject(error);
             });
         if (ramValue) {
@@ -70,14 +71,15 @@ export class PersistentCache {
                 def.resolve(value);
             });
         } else {
+            this.ramCache.write(table, key, prom);
             this.indexedDB.read(table, key).then((result) => {
                 if (result) {
                     fromCache = JSON.stringify(result);
+                    this.ramCache.write(table, key, Promise.resolve(result));
                     def.resolve(result);
                 }
             });
         }
-        this.ramCache.write(table, key, prom);
         return def;
     }
 

@@ -417,7 +417,7 @@ class MrpProduction(models.Model):
     @api.depends('bom_id')
     def _compute_product_qty(self):
         for production in self:
-            if production.state != 'draft':
+            if production.state != 'draft' and production.product_qty != 0:
                 continue
             if production.bom_id and production._origin.bom_id != production.bom_id:
                 production.product_qty = production.bom_id.product_qty
@@ -785,7 +785,7 @@ class MrpProduction(models.Model):
         production_with_move_finished_ids_to_unlink = self.browse(production_with_move_finished_ids_to_unlink_ids)
 
         # delete to remove existing moves from database and clear to remove new records
-        production_with_move_finished_ids_to_unlink.move_finished_ids = [Command.delete(m) for m in production_with_move_finished_ids_to_unlink.move_finished_ids.ids]
+        production_with_move_finished_ids_to_unlink.move_finished_ids = [Command.delete(m.id) for m in production_with_move_finished_ids_to_unlink.move_finished_ids if m.state in ('draft', 'cancel')]
         production_with_move_finished_ids_to_unlink.move_finished_ids = [Command.clear()]
 
         for production in production_with_move_finished_ids_to_unlink:
@@ -2044,6 +2044,10 @@ class MrpProduction(models.Model):
         res = self.pre_button_mark_done()
         if res is not True:
             return res
+
+        for workorder in self.workorder_ids:
+            if workorder.product_uom_id.compare(workorder.qty_produced + workorder.qty_reported_from_previous_wo, workorder.production_id.qty_producing) < 0:
+                workorder.qty_produced = workorder.production_id.qty_producing - workorder.qty_reported_from_previous_wo
 
         if self.env.context.get('mo_ids_to_backorder'):
             productions_to_backorder = self.browse(self.env.context['mo_ids_to_backorder'])

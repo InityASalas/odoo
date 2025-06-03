@@ -1995,7 +1995,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 5,
                 'product_uom': uom_hundred.id,
@@ -2067,7 +2066,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 2,
                 'product_uom': uom_hundred.id,
@@ -2122,7 +2120,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 5,
                 'location_id': stock_location.id,
@@ -2154,6 +2151,7 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
         full_reconcile = input_amls[0].full_reconcile_id
         self.assertTrue(full_reconcile)
         self.assertTrue(all(aml.full_reconcile_id == full_reconcile for aml in input_amls))
+
 
     def test_pdiff_and_credit_notes(self):
         """
@@ -2357,7 +2355,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 3,
                 'product_uom': self.product1.uom_id.id,
@@ -2394,7 +2391,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 1,
                 'product_uom': self.product1.uom_id.id,
@@ -3093,7 +3089,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [
                 Command.create({
-                    'name': self.product1.name,
                     'product_id': self.product1.id,
                     'product_uom_qty': 1.0,
                     'location_id': stock_location.id,
@@ -3367,7 +3362,6 @@ class TestStockValuationWithCOA(AccountTestInvoicingCommon):
             'location_dest_id': customer_location.id,
             'picking_type_id': warehouse.out_type_id.id,
             'move_ids': [(0, 0, {
-                'name': self.product1.name,
                 'product_id': self.product1.id,
                 'product_uom_qty': 1.0,
                 'location_id': stock_location.id,

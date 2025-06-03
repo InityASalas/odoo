@@ -253,6 +253,7 @@ export class DynamicGroupList extends DynamicList {
         this.model._updateConfig(this.config, { groups: nextConfigGroups }, { reload: false });
 
         const data = {
+            aggregates: {},
             count: 0,
             length: 0,
             records: [],

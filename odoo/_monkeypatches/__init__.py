@@ -25,6 +25,7 @@ class PatchImportHook:
     def add_hook(self, fullname: str, hook):
         """Register a hook after a module is loaded.
         If already loaded, run hook immediately."""
+        assert fullname not in self.hooks, "only one hook is supported"
         self.hooks[fullname] = hook
         if fullname in sys.modules:
             hook()

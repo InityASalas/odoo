@@ -561,7 +561,6 @@ class HrEmployee(models.Model):
                         leave_type_data[False]['remaining_leaves'] = 0
                         if leave.state == 'validate':
                             leave_type_data[False]['leaves_taken'] += allocated_time
-
         for employee in to_recheck_leaves_per_leave_type:
             for leave_type in to_recheck_leaves_per_leave_type[employee]:
                 content = to_recheck_leaves_per_leave_type[employee][leave_type]

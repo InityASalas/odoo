@@ -51,6 +51,11 @@ class HrEmployee(models.Model):
         store=True,
         groups="hr.group_hr_user",
     )
+    current_date_version = fields.Date(
+        related="current_version_id.date_version",
+        string="Current Date Version",
+        groups="hr.group_hr_user"
+    )
     version_ids = fields.One2many(
         'hr.version',
         'employee_id',

@@ -1245,7 +1245,12 @@ Please change the quantity done or the rounding precision of your unit of measur
                 if any(picking.partner_id.id != m.partner_id.id for m in moves):
                     vals['partner_id'] = False
                 if any(picking.origin != m.origin for m in moves):
-                    vals['origin'] = False
+                    if picking.origin:
+                        origin_list = picking.origin.split(',')
+                        vals['origin'] = picking.origin
+                        for move in moves:
+                            if move.origin not in origin_list:
+                                vals['origin'] += f',{move.origin}'
                 if vals:
                     picking.write(vals)
             else:

@@ -965,6 +965,7 @@ class MailMessage(models.Model):
             "pinned_at",
             # sudo: mail.message - reading reactions on accessible message is allowed
             Store.Many("reaction_ids", rename="reactions", sudo=True),
+            "record_name"  # keep for iOS app
             "res_id",  # keep for iOS app
             "subject",
             # sudo: mail.message.subtype - reading subtype on accessible message is allowed
@@ -1064,18 +1065,17 @@ class MailMessage(models.Model):
         store.add(self, fields)
         for message in self:
             # model, res_id, record_name need to be kept for mobile app as iOS app cannot be updated
-            record_name = message.record_name
             record = record_by_message.get(message)
             if record:
-                default_subject = record_name
                 if hasattr(record, "_message_compute_subject"):
                     # sudo: if mentionned in a non accessible thread, user should be able to see the subject
                     default_subject = record.sudo()._message_compute_subject()
+                else:
+                    default_subject = message.record_name
             else:
                 default_subject = False
             data = {
                 "default_subject": default_subject,
-                "record_name": record_name,  # keep for iOS app
                 "scheduledDatetime": scheduled_dt_by_msg_id.get(message.id, False),
                 "thread": Store.One(record, [], as_thread=True),
             }

@@ -99,6 +99,7 @@ class InteractionService {
             return Promise.resolve();
         }
         const proms = [];
+        document.body.dataset.loadingInteractions = "true";
         for (const I of this.Interactions) {
             if (I.selector === "") {
                 throw new Error(
@@ -134,7 +135,9 @@ class InteractionService {
         if (el === this.el) {
             this.isActive = true;
         }
-        const prom = Promise.all(proms);
+        const prom = Promise.all(proms).then(() => {
+            delete document.body.dataset.loadingInteractions;
+        });
         this.proms.push(prom);
         return prom;
     }

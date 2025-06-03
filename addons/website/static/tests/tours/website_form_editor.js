@@ -1118,6 +1118,10 @@ registerWebsitePreviewTour(
         ...addCustomField("char", "text", `Test1"'`, false),
         ...addCustomField("char", "text", 'Test2`\\', false),
         ...clickOnSave(),
+        {
+            content: "Wait for interactions to load to ensure that our filled data doesn't get replaced by autofill feature of form.",
+            trigger: ":iframe body:not([data-loading-interactions='true'])"
+        },
         ...essentialFieldsForDefaultFormFillInSteps,
         {
             content: "Complete 'Your Question' field",

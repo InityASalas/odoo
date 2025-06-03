@@ -432,7 +432,6 @@ class TestUi(HttpCaseWithWebsiteUser):
         self.start_tour(self.env['website'].get_client_action_url('/'), 'conditional_visibility_4', login='admin')
         self.start_tour(self.env['website'].get_client_action_url('/'), 'conditional_visibility_5', login='admin')
 
-    @unittest.skip
     def test_11_website_snippet_background_edition(self):
         self.env['ir.attachment'].create({
             'public': True,
@@ -524,7 +523,6 @@ class TestUi(HttpCaseWithWebsiteUser):
     def test_19_website_page_options(self):
         self.start_tour("/odoo", "website_page_options", login="admin")
 
-    @unittest.skip
     def test_20_snippet_editor_panel_options(self):
         self.start_tour('/@/', 'snippet_editor_panel_options', login='admin')
 

@@ -23,7 +23,7 @@ export class AnimateText extends Component {
         ...toolbarButtonProps,
         config: { type: Object, shape: { editor: Object, editorBus: Object } },
         animateOptionProps: AnimateOption.props,
-        prepareElement: Function,
+        getOrCreateDefaultElement: Function,
         isActive: Function,
         isDisabled: Function,
     };
@@ -56,11 +56,11 @@ export class AnimateText extends Component {
         if (this.popover.isOpen) {
             return;
         }
-        const prepareResult = this.props.prepareElement();
-        if (!prepareResult) {
+        const result = this.props.getOrCreateDefaultElement();
+        if (!result) {
             return;
         }
-        const { element, onReset } = prepareResult;
+        const { element, onReset } = result;
         this.activeElement = element;
 
         this.updateState();

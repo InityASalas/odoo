@@ -210,7 +210,7 @@ class MailMessage(models.Model):
         free = self.filtered(lambda m: not m.model or not m.res_id or m.model not in self.env)
         free.record_name = False
         # sudo here, as it behaves like a m2o -> can read message, can read name_get
-        for message, record in (self - free).sudo()._record_by_message():
+        for message, record in (self - free).sudo()._record_by_message().items():
             message.record_name = record.display_name
 
     @api.depends('author_id', 'author_guest_id')

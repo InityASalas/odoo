@@ -319,3 +319,28 @@ class TestHrVersion(TransactionCase):
             'contract_date_start': '2050-01-01',
         })
         self.assertEqual(v4.contract_date_end, date(2051, 12, 31))
+
+    def test_in_out_contract(self):
+        """
+        Check that an employee is in or out of the contract at a specific date.
+        """
+        # If no contract dates are defined, the employee is not considered in contract
+        employee = self.env['hr.employee'].create({
+            'name': 'John Doe',
+            'date_version': '2020-01-01',
+        })
+        self.assertFalse(employee.is_in_contract(date(2020, 1, 1)))
+        self.assertFalse(employee.is_in_contract(date(2010, 1, 1)))
+        self.assertFalse(employee.is_in_contract(date(2030, 1, 1)))
+
+        # In a permanent contract, the employee is contract since the contract_date_start
+        employee.contract_date_start = '2020-01-01'
+        self.assertFalse(employee.is_in_contract(date(2020, 1, 1)))
+        self.assertTrue(employee.is_in_contract(date(2010, 1, 1)))
+        self.assertTrue(employee.is_in_contract(date(2030, 1, 1)))
+
+        # In a fixed term contract, the employee is contract in between the contract dates
+        employee.contract_date_end = '2029-12-31'
+        self.assertFalse(employee.is_in_contract(date(2020, 1, 1)))
+        self.assertTrue(employee.is_in_contract(date(2010, 1, 1)))
+        self.assertFalse(employee.is_in_contract(date(2030, 1, 1)))

@@ -4,8 +4,6 @@
 
 import logging
 import operator as py_operator
-from pprint import pprint
-
 import pytz
 
 from collections import defaultdict

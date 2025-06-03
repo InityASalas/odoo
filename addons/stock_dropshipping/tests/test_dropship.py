@@ -298,6 +298,49 @@ class TestDropship(common.TransactionCase):
         self.assertTrue((purchase.date_planned - purchase.date_order).days == 10, "The first supplier has a delay of 10 days")
         self.assertTrue(purchase.amount_untaxed == 8, "The price should be 4 * 2")
 
+    def test_kit_dropshipped_change_qty_SO(self):
+        if self.env['ir.module.module']._get('sale_mrp').state != 'installed':
+            self.skipTest("If the 'sale_mrp' module isn't installed, we can't test bom!")
+
+        # Create BoM
+        product_a, product_b, final_product = self.env['product.product'].create([{
+            'name': p_name,
+            'type': 'product',
+            'seller_ids': [(0, 0, {
+                'partner_id': self.supplier.id,
+            })],
+        } for p_name in ['Comp 1', 'Comp 2', 'Final Product']])
+        product_a.route_ids = self.dropshipping_route
+        product_b.route_ids = self.dropshipping_route
+        self.env['mrp.bom'].create({
+            'product_id': final_product.id,
+            'product_tmpl_id': final_product.product_tmpl_id.id,
+            'product_qty': 1,
+            'consumption': 'flexible',
+            'type': 'phantom',
+            'bom_line_ids': [
+                (0, 0, {'product_id': product_a.id, 'product_qty': 1}),
+                (0, 0, {'product_id': product_b.id, 'product_qty': 1}),
+            ]
+        })
+
+        # Create sale order
+        partner = self.env['res.partner'].create({'name': 'Testing Man'})
+        so = self.env['sale.order'].create({
+            'partner_id': partner.id,
+        })
+        sol = self.env['sale.order.line'].create({
+            'name': "Order line",
+            'product_id': final_product.id,
+            'order_id': so.id,
+            'product_uom_qty': 25,
+        })
+        so.action_confirm()
+
+        user_admin = self.env['res.users'].search([('login', '=', 'admin')])
+        sol.with_user(user_admin).write({'product_uom_qty': 10})
+        self.assertEqual(sol.purchase_line_ids.mapped('product_uom_qty'), [10, 10])
+
 
 @tagged('post_install', '-at_install')
 class TestDropshipPostInstall(common.TransactionCase):

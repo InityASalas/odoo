@@ -71,7 +71,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -109,7 +109,6 @@ class TestChannelRTC(MailCommon):
                                 "new_message_separator": channel_member.new_message_separator + 1,
                                 "partner_id": {
                                     "id": channel_member.partner_id.id,
-                                    "type": "partner"
                                 },
                                 "channel_id": {"id": channel.id, "model": "discuss.channel"}
                             }
@@ -136,7 +135,7 @@ class TestChannelRTC(MailCommon):
                 "discuss.channel.member": [
                     {
                         "id": channel_member.id,
-                        "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                        "partner_id": {"id": channel_member.partner_id.id},
                         "channel_id": {
                             "id": channel_member.channel_id.id,
                             "model": "discuss.channel",
@@ -213,7 +212,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -254,7 +253,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -331,7 +329,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -370,7 +368,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -416,7 +414,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -427,7 +424,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,
@@ -509,7 +505,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -545,7 +540,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -609,7 +603,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,
@@ -647,7 +640,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,
@@ -719,7 +711,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -775,7 +766,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,
@@ -865,7 +855,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -876,7 +865,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,
@@ -985,7 +973,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -1028,7 +1016,7 @@ class TestChannelRTC(MailCommon):
                         "discuss.channel.member": [
                             {
                                 "id": channel_member.id,
-                                "partner_id": {"id": channel_member.partner_id.id, "type": "partner"},
+                                "partner_id": {"id": channel_member.partner_id.id},
                                 "channel_id": {
                                     "id": channel_member.channel_id.id,
                                     "model": "discuss.channel",
@@ -1078,7 +1066,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_user.id,
                                 "partner_id": {
                                     "id": channel_member_test_user.partner_id.id,
-                                    "type": "partner",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_user.channel_id.id,
@@ -1089,7 +1076,6 @@ class TestChannelRTC(MailCommon):
                                 "id": channel_member_test_guest.id,
                                 "guest_id": {
                                     "id": channel_member_test_guest.guest_id.id,
-                                    "type": "guest",
                                 },
                                 "channel_id": {
                                     "id": channel_member_test_guest.channel_id.id,

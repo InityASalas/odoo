@@ -10,8 +10,8 @@ export class MessageReactions extends Record {
     count;
     /** @type {number} */
     sequence;
-    partner_ids = fields.Many("Persona");
-    guest_ids = fields.Many("Persona");
+    partner_ids = fields.Many("res.partner");
+    guest_ids = fields.Many("mail.guest");
     personas = fields.Many("Persona", {
         compute() {
             return [...this.partner_ids, ...this.guest_ids];

@@ -167,7 +167,7 @@ class ChatbotCase(MailCommon, chatbot_common.ChatbotCase):
             "id": member_bot.id,
             "is_bot": True,
             "last_seen_dt": False,
-            "partner_id": {"id": member_bot.partner_id.id, "type": "partner"},
+            "partner_id": {"id": member_bot.partner_id.id},
             "seen_message_id": False,
             "channel_id": {"id": discuss_channel.id, "model": "discuss.channel"},
         }
@@ -317,7 +317,7 @@ class ChatbotCase(MailCommon, chatbot_common.ChatbotCase):
                                     "last_seen_dt": fields.Datetime.to_string(
                                         member_emp.last_seen_dt
                                     ),
-                                    "partner_id": {"id": self.partner_employee.id, "type": "partner"},
+                                    "partner_id": {"id": self.partner_employee.id},
                                     "seen_message_id": False,
                                     "channel_id": {
                                         "id": discuss_channel.id,

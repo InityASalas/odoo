@@ -126,12 +126,12 @@ class MailMessage(models.Model):
                         "content": content,
                         "count": len(reactions),
                         "guest_ids": [
-                            {"id": guest.id, "name": guest.name, "type": "guest"}
+                            {"id": guest.id, "name": guest.name}
                             for guest in reactions.guest_id
                         ],
                         "partner_ids": [
                             # sudo: res.partner - reading partners of reaction on accessible message is allowed
-                            {"id": partner.id, "name": partner.name, "type": "partner"}
+                            {"id": partner.id, "name": partner.name}
                             for partner in reactions.partner_id.sudo()
                         ],
                         "message": message.id,

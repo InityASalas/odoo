@@ -261,19 +261,19 @@ test("Can save a value to an existing global filter", async function () {
     const gf = model.getters.getGlobalFilters()[0];
     let result = await setGlobalFilterValue(model, {
         id: gf.id,
-        value: { period: "february", yearOffset: 0 },
+        value: { period: 2, yearOffset: 0 },
     });
     expect(result).toBe(DispatchResult.Success);
     expect(model.getters.getGlobalFilters().length).toBe(1);
     expect(model.getters.getGlobalFilterDefaultValue(gf.id)).toBe("this_year");
-    expect(model.getters.getGlobalFilterValue(gf.id).period).toBe("february");
+    expect(model.getters.getGlobalFilterValue(gf.id).period).toBe(2);
     expect(model.getters.getGlobalFilterValue(gf.id).yearOffset).toBe(0);
     result = await setGlobalFilterValue(model, {
         id: gf.id,
-        value: { period: "march", yearOffset: 0 },
+        value: { period: 3, yearOffset: 0 },
     });
     expect(result).toBe(DispatchResult.Success);
-    expect(model.getters.getGlobalFilterValue(gf.id).period).toBe("march");
+    expect(model.getters.getGlobalFilterValue(gf.id).period).toBe(3);
     expect(model.getters.getGlobalFilterValue(gf.id).yearOffset).toBe(0);
     const computedDomain = model.getters.getPivotComputedDomain("PIVOT#1");
     expect(computedDomain.length).toBe(3);
@@ -422,7 +422,7 @@ test("Can import/export filters", async function () {
     expect(filter2.defaultValue).toBe("this_month");
     expect(model.getters.getGlobalFilterValue(filter2.id)).toEqual({
         yearOffset: 0,
-        period: "july",
+        period: 7,
     });
 
     let computedDomain = model.getters.getPivotComputedDomain("1");
@@ -445,7 +445,7 @@ test("Can import/export filters", async function () {
     expect(filter2.defaultValue).toBe("this_month");
     expect(model.getters.getGlobalFilterValue(filter2.id)).toEqual({
         yearOffset: 0,
-        period: "july",
+        period: 7,
     });
 
     computedDomain = newModel.getters.getPivotComputedDomain("1");
@@ -987,7 +987,7 @@ test("ODOO.FILTER.VALUE date filter", async function () {
     await setGlobalFilterValue(model, {
         id: filter.id,
         value: {
-            period: "january",
+            period: 1,
             yearOffset: 0,
         },
     });
@@ -1645,7 +1645,7 @@ test("Date filter automatic default value for month filter", async function () {
     });
     expect(model.getters.getGlobalFilterValue("1")).toEqual({
         yearOffset: 0,
-        period: "march",
+        period: 3,
     });
 });
 
@@ -2069,7 +2069,7 @@ test("Can set a value to a date filter from the SET_MANY_GLOBAL_FILTER_VALUE com
         defaultValue: "this_month",
         rangeType: "fixedPeriod",
     });
-    const newValue = { yearOffset: -6, period: "may" };
+    const newValue = { yearOffset: -6, period: 5 };
     model.dispatch("SET_MANY_GLOBAL_FILTER_VALUE", {
         filters: [{ filterId: "42", value: newValue }],
     });
@@ -2132,7 +2132,7 @@ test("getFiltersMatchingPivot return correctly matching filter according to cell
     );
     expect(relationalFiltersWithNoneValue).toEqual([{ filterId: "42", value: undefined }]);
     const dateFilters1 = getFiltersMatchingPivot(model, '=PIVOT.HEADER(1,"date:month","08/2016")');
-    expect(dateFilters1).toEqual([{ filterId: "43", value: { yearOffset: -6, period: "august" } }]);
+    expect(dateFilters1).toEqual([{ filterId: "43", value: { yearOffset: -6, period: 8 } }]);
     const dateFilters2 = getFiltersMatchingPivot(model, '=PIVOT.HEADER(1,"date:year","2016")');
     expect(dateFilters2).toEqual([{ filterId: "43", value: { yearOffset: -6 } }]);
 });
@@ -2542,7 +2542,7 @@ test("Cannot set the value of a fixedPeriod date filter to a disabled value", as
     model.dispatch("ADD_GLOBAL_FILTER", { filter });
     const result = model.dispatch("SET_GLOBAL_FILTER_VALUE", {
         id: "42",
-        value: { yearOffset: 0, period: "january" },
+        value: { yearOffset: 0, period: 1 },
     });
     expect(result.isCancelledBecause(CommandResult.InvalidValueTypeCombination)).toBe(true);
 });
@@ -2557,7 +2557,7 @@ test("Modifying fixedPeriod date filter disabled periods remove invalid filter v
         disabledPeriods: [],
     });
     model.dispatch("ADD_GLOBAL_FILTER", { filter });
-    const filterValue = { yearOffset: 0, period: "march" };
+    const filterValue = { yearOffset: 0, period: 3 };
 
     model.dispatch("SET_GLOBAL_FILTER_VALUE", { id: "42", value: filterValue });
     expect(model.getters.getGlobalFilterValue("42")).toEqual(filterValue);

@@ -2,7 +2,6 @@
 
 import { Component, onWillUpdateProps } from "@odoo/owl";
 import { DateTimeInput } from "@web/core/datetime/datetime_input";
-import { monthsOptions } from "@spreadsheet/assets_backend/constants";
 import { QUARTER_OPTIONS } from "@web/search/utils/dates";
 
 const { DateTime } = luxon;
@@ -13,6 +12,15 @@ const { DateTime } = luxon;
  * @property {string | import("@spreadsheet").LazyTranslatedString} description
  */
 
+function getMonthList() {
+    return Array.from({ length: 12 }, (_, i) => ({
+        id: `month_${i + 1}`,
+        description: DateTime.local()
+            .set({ month: i + 1 })
+            .toFormat("LLLL"),
+    }));
+}
+
 export class DateFilterValue extends Component {
     static template = "spreadsheet.DateFilterValue";
     static components = { DateTimeInput };
@@ -20,7 +28,7 @@ export class DateFilterValue extends Component {
         // See @spreadsheet/bundle/global_filters/filters_plugin.RangeType
         onTimeRangeChanged: Function,
         yearOffset: { type: Number, optional: true },
-        period: { type: String, optional: true },
+        period: { type: [String, Number], optional: true },
         disabledPeriods: { type: Array, optional: true },
     };
     setup() {
@@ -58,7 +66,7 @@ export class DateFilterValue extends Component {
             dateOptions.push(...quarterOptions);
         }
         if (!disabledPeriods.includes("month")) {
-            dateOptions.push(...monthsOptions);
+            dateOptions.push(...getMonthList());
         }
         return dateOptions;
     }
@@ -71,7 +79,12 @@ export class DateFilterValue extends Component {
      * @param {Event & { target: HTMLSelectElement }} ev
      */
     onPeriodChanged(ev) {
-        this.period = ev.target.value;
+        const value = ev.target.value;
+        if (value.startsWith("month_")) {
+            this.period = Number.parseInt(value.replace("month_", ""), 10);
+        } else {
+            this.period = value;
+        }
         this._updateFilter();
     }
 

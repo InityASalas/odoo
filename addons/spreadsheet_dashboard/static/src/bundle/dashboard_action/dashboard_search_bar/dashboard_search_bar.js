@@ -5,7 +5,6 @@ import { RELATIVE_DATE_RANGE_TYPES } from "@spreadsheet/helpers/constants";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
 import { QUARTER_OPTIONS } from "@web/search/utils/dates";
 import { _t } from "@web/core/l10n/translation";
-import { monthsOptions } from "@spreadsheet/assets_backend/constants";
 import { DashboardSearchDialog } from "../dashboard_search_dialog/dashboard_search_dialog";
 
 const { DateTime } = luxon;
@@ -89,9 +88,9 @@ export class DashboardSearchBar extends Component {
                     if (period) {
                         values = [`${period.description} ${year}`];
                     } else {
-                        const month = monthsOptions.find(
-                            (mo) => mo.id === filterValues.period
-                        ).description;
+                        const month = DateTime.now()
+                            .set({ month: filterValues.period })
+                            .toFormat("LLLL");
                         values = [`${month} ${year}`];
                     }
                 } else {

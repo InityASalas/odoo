@@ -28,21 +28,6 @@ import { serializeDateTime, serializeDate } from "@web/core/l10n/dates";
 
 const { DateTime } = luxon;
 
-const MONTHS = {
-    january: { value: 1, granularity: "month" },
-    february: { value: 2, granularity: "month" },
-    march: { value: 3, granularity: "month" },
-    april: { value: 4, granularity: "month" },
-    may: { value: 5, granularity: "month" },
-    june: { value: 6, granularity: "month" },
-    july: { value: 7, granularity: "month" },
-    august: { value: 8, granularity: "month" },
-    september: { value: 9, granularity: "month" },
-    october: { value: 10, granularity: "month" },
-    november: { value: 11, granularity: "month" },
-    december: { value: 12, granularity: "month" },
-};
-
 const { UuidGenerator, createEmptyExcelSheet, createEmptySheet, toXC, toNumber, toBoolean } =
     helpers;
 const uuidGenerator = new UuidGenerator();
@@ -277,7 +262,9 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 // Named months aren't in QUARTER_OPTIONS
                 if (!period) {
                     periodStr =
-                        MONTHS[value.period] && String(MONTHS[value.period].value).padStart(2, "0");
+                        value.period > 0 &&
+                        value.period <= 12 &&
+                        String(value.period).padStart(2, "0");
                 }
                 return [[{ value: periodStr ? periodStr + "/" + year : year }]];
             }
@@ -392,9 +379,8 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             case "this_year":
                 return { yearOffset: 0 };
             case "this_month": {
-                const month = new Date().getMonth() + 1;
-                const period = Object.entries(MONTHS).find((item) => item[1].value === month)[0];
-                return { yearOffset: 0, period };
+                const month = DateTime.local().month;
+                return { yearOffset: 0, period: month };
             }
             case "this_quarter": {
                 const quarter = Math.floor(new Date().getMonth() / 3);
@@ -476,11 +462,11 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             plusParam.years += offset;
         } else {
             // value.period is can be "first_quarter", "second_quarter", etc. or
-            // full month name (e.g. "january", "february", "march", etc.)
-            granularity = value.period.endsWith("_quarter") ? "quarter" : "month";
+            // the month number (1-indexed, so 1 for January, 2 for February, etc.)
+            granularity = typeof value.period === "string" ? "quarter" : "month";
             switch (granularity) {
                 case "month":
-                    setParam.month = MONTHS[value.period].value;
+                    setParam.month = value.period;
                     plusParam.month = offset;
                     break;
                 case "quarter":

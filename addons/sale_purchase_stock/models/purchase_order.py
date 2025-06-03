@@ -28,7 +28,7 @@ class PurchaseOrderLine(models.Model):
             re['sale_line_id'] = self.sale_line_id.id
             if self.sale_line_id.route_ids:
                re['route_ids'] = [Command.link(route_id) for route_id in self.sale_line_id.route_ids.ids]
-            if self.order_id.dest_address_id:
+            if self.order_id.dest_address_id and self.order_id.picking_type_id.code == 'dropship':
                 # In a dropshipping context we do not need the description of the purchase order or it will be displayed
                 # in Delivery slip report and it may be confusing for the customer to see several times the same text (product name + description_picking).
                 product = self.product_id.with_context(lang=self.order_id.dest_address_id.lang or self.env.user.lang)

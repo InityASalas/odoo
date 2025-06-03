@@ -273,6 +273,19 @@ class PurchaseOrderLine(models.Model):
             raise UserError(_('The warehouse of operation type (%(operation_type)s) is inconsistent with location (%(location)s) of reordering rule (%(reordering_rule)s) for product %(product)s. Change the operation type or cancel the request for quotation.',
                               product=self.product_id.display_name, operation_type=self.order_id.picking_type_id.display_name, location=self.orderpoint_id.location_id.display_name, reordering_rule=self.orderpoint_id.display_name))
 
+    def _description_to_propagate(self):
+        """ Helper method to get the useful part of the description to propagate to stock moves.
+        Currently, it propagates seller code and name, variant attributes, no variant attributes, and description_pickingin.
+        It gets rid of the information specific to purchase context (miscallaneous information noted by the purchase operator).
+        """
+        self.ensure_one()
+        supplier_ref = f'[{self.selected_seller_id.product_code}] {self.selected_seller_id.product_name}' if self.selected_seller_id else ''
+        variant_attributes = f'({self.product_id.product_template_attribute_value_ids._get_combination_name()})'
+        no_variant_attributes = '\n'.join(f'{attribute.attribute_id.name}: {attribute.name}' for attribute in self.product_no_variant_attribute_value_ids)
+        final_description = '\n'.join(s for s in [no_variant_attributes, supplier_ref, variant_attributes] if s and s in self.name)
+        final_description = (final_description + (('\n' + self.product_id.description_pickingin) if self.product_id.description_pickingin else '')) if final_description else ''
+        return final_description
+
     def _prepare_stock_move_vals(self, picking, price_unit, product_uom_qty, product_uom):
         self.ensure_one()
         self._check_orderpoint_picking_type()
@@ -302,7 +315,7 @@ class PurchaseOrderLine(models.Model):
             'picking_type_id': self.order_id.picking_type_id.id,
             'group_id': self.order_id.group_id.id,
             'origin': self.order_id.name,
-            'description_picking': product.description_pickingin or self.name,
+            'description_picking': self._description_to_propagate(),
             'propagate_cancel': self.propagate_cancel,
             'warehouse_id': self.order_id.picking_type_id.warehouse_id.id,
             'product_uom_qty': product_uom_qty,
@@ -331,7 +344,7 @@ class PurchaseOrderLine(models.Model):
         # in the line name, we add the line_description only if different from the product name.
         # This way, we shoud not lose any valuable information.
         if line_description and product_id.name != line_description:
-            res['name'] += '\n' + line_description
+            res['name'] = (res['name'] + '\n' + line_description).strip()
         res['date_planned'] = values.get('date_planned')
         res['move_dest_ids'] = [(4, x.id) for x in values.get('move_dest_ids', [])]
         res['location_final_id'] = location_dest_id.id

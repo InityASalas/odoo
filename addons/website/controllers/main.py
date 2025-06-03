@@ -853,6 +853,55 @@ class Website(Home):
                 new_html_content = html.tostring(tree, encoding='unicode', method='html')
                 record.write({img['field']: new_html_content})
 
+    @http.route(['/website/get_title_videos'], type='jsonrpc', auth="user", website=True)
+    def get_title_videos(self, models):
+        result = []
+        for model in models:
+            record = request.env[model['model']].browse(model['id'])
+            model['field'] = 'arch_db' if model['field'] == 'arch' else model['field']
+            tree = html.fromstring(str(record[model['field']]))
+            for index, el in enumerate(tree.xpath('//iframe')):
+                title = el.get('title')
+                src = el.get('src')
+                if src:
+                    result.append({
+                        "src": src,
+                        "title": title or "",
+                        "has_title": bool(title),
+                        "updated": False,
+                        "res_model": model['model'],
+                        "res_id": model['id'],
+                        "id": f"{model['model']}-{model['id']}-{index}",
+                        "field": model.get('field'),
+                    })
+        return json.dumps(result)
+
+    @http.route(['/website/update_title_videos'], type='jsonrpc', auth="user", website=True)
+    def update_title_videos(self, videos):
+        if not request.env.user.has_group('website.group_website_restricted_editor'):
+            raise werkzeug.exceptions.Forbidden()
+
+        for video in videos:
+            record = request.env[video['res_model']].browse(video['res_id'])
+            if not record.has_access('write'):
+                continue
+            video['field'] = 'arch_db' if video['field'] == 'arch' else video['field']
+            tree = html.fromstring(str(record[video['field']]))
+            modified = False
+            for index, element in enumerate(tree.xpath('//iframe | //video')):
+                videoId = f"{video['res_model']}-{video['res_id']}-{index}"
+                if videoId == video['id']:
+                    if (video['updated'] and len(video['title']) > 0) :
+                        element.set('title', markup_escape(video['title']))
+                        element.attrib.pop('aria-hidden', None)
+                    else:
+                        element.set('title', '')
+                        element.set('aria-hidden', 'true')
+                    modified = True
+            if modified:
+                new_html_content = html.tostring(tree, encoding='unicode', method='html')
+                record.write({video['field']: new_html_content})
+
     @http.route(['/website/update_broken_links'], type='jsonrpc', auth="user", website=True)
     def update_broken_links(self, links):
         if not request.env.user.has_group('website.group_website_restricted_editor'):

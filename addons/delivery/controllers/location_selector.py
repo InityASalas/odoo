@@ -22,5 +22,5 @@ class LocationSelectorController(Controller):
                 [('code', '=', request.geoip.country_code)], limit=1,
             )
         else:
-            country = record[record._get_delivery_address_field()].country_id
+            country = record.partner_id.country_id
         return record._get_pickup_locations(zip_code, country)

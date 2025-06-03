@@ -26,7 +26,8 @@ class PickupLocationMixin(models.AbstractModel):
         self.ensure_one()
         if self.carrier_id.is_pickup:
             pickup_location_data = json.loads(pickup_location_data)
-            address = self.env['res.partner']._address_from_json(pickup_location_data, self.partner_id)
+            parent_location = self[self._get_delivery_address_field()].parent_id if self[self._get_delivery_address_field()].is_pickup_location else self.partner_id
+            address = self.env['res.partner']._address_from_json(pickup_location_data, parent_location)
             self[self._get_delivery_address_field()] = address or self.partner_id
 
     def _get_pickup_locations(self, zip_code=None, country=None, **kwargs):

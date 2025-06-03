@@ -100,12 +100,14 @@ class ChooseDeliveryCarrier(models.TransientModel):
             'recompute_delivery_price': False,
             'delivery_message': self.delivery_message,
         }
-        if self.partner_shipping_id:
+        if self.is_pickup_carrier:
             so_vals['partner_shipping_id'] = self.partner_shipping_id.id
+        else:
+            so_vals['partner_shipping_id'] = self.partner_id.id
         self.order_id.write(so_vals)
 
     def set_pickup_location(self, pickup_location_data):
-        super()._set_pickup_location(pickup_location_data)
+        super().set_pickup_location(pickup_location_data)
         # When opening a dialog from another dialog, the first one gets closed
         # We need to return an action to open the first dialog again
         action = self.order_id.action_open_delivery_wizard()

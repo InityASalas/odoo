@@ -9,6 +9,7 @@ class SaleOrder(models.Model):
     _inherit = ['sale.order', 'pickup.location.mixin']
 
     carrier_id = fields.Many2one('delivery.carrier', string="Delivery Method", check_company=True, help="Fill this field if you plan to invoice the shipping based on picking.")
+    is_pickup_carrier = fields.Boolean(related='carrier_id.is_pickup')
     delivery_message = fields.Char(readonly=True, copy=False)
     delivery_set = fields.Boolean(compute='_compute_delivery_state')
     recompute_delivery_price = fields.Boolean('Delivery cost should be recomputed')
@@ -77,7 +78,7 @@ class SaleOrder(models.Model):
             name = _('Add a shipping method')
         context = {
             'default_order_id': self.id,
-            'default_carrier_id': self.carrier_id,
+            'default_carrier_id': self.carrier_id.id,
             'default_total_weight': self._get_estimated_weight()
         }
         if self.carrier_id.is_pickup:

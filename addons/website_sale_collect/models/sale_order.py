@@ -53,7 +53,7 @@ class SaleOrder(models.Model):
         Set account fiscal position depending on selected pickup location to correctly calculate
         taxes.
         """
-        super()._set_pickup_location(pickup_location_data)
+        super().set_pickup_location(pickup_location_data)
         if self.carrier_id.delivery_type != 'in_store':
             return
 

@@ -1,10 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import date
+from psycopg2.errors import CheckViolation
 
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import ValidationError
+from odoo.tools import mute_logger
 
 
 @tagged('post_install', '-at_install')
@@ -43,7 +45,7 @@ class TestHrVersion(TransactionCase):
         self.assertFalse(employee.contract_date_start)
         self.assertFalse(employee.contract_date_end)
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(CheckViolation), mute_logger('odoo.sql_db'):
             employee.write({
                 'contract_date_start': False,
                 'contract_date_end': '2020-12-31'

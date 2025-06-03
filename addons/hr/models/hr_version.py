@@ -256,11 +256,11 @@ class HrVersion(models.Model):
         new_vals = {
             f_name: f_value
             for f_name, f_value in values.items()
-            if (f_name != 'contract_date_start' or f_value) and f_name != 'contract_date_end'
+            if (f_name != 'contract_date_start' or not f_value) and f_name != 'contract_date_end'
         }
         dates_vals = {}
-        if date_start := values.get('contract_date_start'):
-            dates_vals['contract_date_start'] = date_start
+        if 'contract_date_start' in values:
+            dates_vals['contract_date_start'] = values['contract_date_start']
         if 'contract_date_end' in values:
             dates_vals['contract_date_end'] = values['contract_date_end']
         if dates_vals:

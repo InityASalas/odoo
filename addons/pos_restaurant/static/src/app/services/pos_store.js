@@ -27,6 +27,15 @@ patch(PosStore.prototype, {
             ? { page: "LoginScreen", params: {} }
             : this.defaultPage;
     },
+    getOpenOrder() {
+        if (this.config.module_pos_restaurant) {
+            return (
+                this.models["pos.order"].find((o) => o.state === "draft" && o.isDirectSale) ||
+                this.addNewOrder()
+            );
+        }
+        return super.getOpenOrder(...arguments);
+    },
     get defaultPage() {
         const screen = super.defaultPage;
         if (this.config.module_pos_restaurant) {
@@ -34,8 +43,12 @@ patch(PosStore.prototype, {
                 register: "ProductScreen",
                 tables: "FloorScreen",
             };
+            const params = {
+                register: { orderUuid: this.getOpenOrder().uuid },
+                tables: {},
+            };
             screen.page = screens[this.config.default_screen];
-            screen.params = {};
+            screen.params = params[this.config.default_screen];
         }
         return screen;
     },
@@ -480,7 +493,7 @@ patch(PosStore.prototype, {
     async handleUrlParams(event) {
         await super.handleUrlParams(...arguments);
         if (this.config.module_pos_restaurant && this.router.state.current === "ProductScreen") {
-            const orderUuid = this.router.state.params.orderUuid;
+            const orderUuid = this.router.state.params.orderUuid || this.selectedOrderUuid;
             const order = this.models["pos.order"].getBy("uuid", orderUuid);
             if (order && order.table_id) {
                 this.setTable(order.table_id);

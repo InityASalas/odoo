@@ -1,7 +1,6 @@
 import { MessagingMenu } from "@mail/core/public_web/messaging_menu";
-import { onExternalClick } from "@mail/utils/common/hooks";
+import { onExternalClick, useVisible } from "@mail/utils/common/hooks";
 import { useEffect } from "@odoo/owl";
-
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
 import { patch } from "@web/core/utils/patch";
@@ -44,6 +43,11 @@ patch(MessagingMenu.prototype, {
             },
             () => [this.dropdown.isOpen]
         );
+        useVisible("loadMoreSentinel", async (isVisible) => {
+            if (isVisible) {
+                await this.loadMoreMessagingMenuData();
+            }
+        });
     },
     beforeOpen() {
         this.state.searchOpen = false;
@@ -105,6 +109,15 @@ patch(MessagingMenu.prototype, {
                 label: this.env.inDiscussApp ? _t("Mailboxes") : _t("All"),
             },
             ...super.tabs,
+            ...(this.store?.self?.notification_preference === "inbox"
+                ? [
+                      {
+                          icon: "fa fa-inbox",
+                          id: "inbox",
+                          label: _t("Inbox"),
+                      },
+                  ]
+                : []),
         ];
     },
     /** @param {import("models").Failure} failure */
@@ -188,5 +201,77 @@ patch(MessagingMenu.prototype, {
             return _t("Email Failure: %(modelName)s", { modelName: failure.modelName });
         }
         return _t("Failure: %(modelName)s", { modelName: failure.modelName });
+    },
+    get notificationItems() {
+        return Array.from(this.notificationList.el?.children ?? []).filter((el) =>
+            el.classList.contains("o-mail-NotificationItem")
+        );
+    },
+    async loadMoreMessagingMenuData() {
+        const tab = this.store.discuss.activeTab;
+        const isTabLoaded = !!this.store?.MessagingMenuRecordsLoadedState?.[tab];
+        if (!isTabLoaded) {
+            const exclusionParams = this._prepareExclusionParams(tab);
+            await this.store.fetchStoreData("load_messaging_menu_data", {
+                limit: this.store?.FETCH_LIMIT,
+                tab: tab,
+                ...exclusionParams,
+                previous_state: this.store.MessagingMenuRecordsLoadedState || {},
+            });
+        }
+    },
+    _prepareExclusionParams(tab) {
+        const Threads = Object.values(this.store?.Thread?.records);
+        const parseExclusionIds = (idList) =>
+            (idList || [])
+                .filter(
+                    (id) => typeof id === "number" || (typeof id === "string" && /^\d+$/.test(id))
+                )
+                .map((id) => parseInt(id, 10));
+        switch (tab) {
+            case "main":
+                return {
+                    exclude_message_thread_ids: parseExclusionIds(
+                        Threads.filter((thread) => thread?.channel_type === undefined).map(
+                            (thread) => thread.id
+                        )
+                    ),
+                    exclude_channel_thread_ids: parseExclusionIds(
+                        Threads.filter(
+                            (thread) =>
+                                thread?.channel_type &&
+                                ["channel", "chat", "group"].includes(thread.channel_type)
+                        ).map((thread) => thread.id)
+                    ),
+                };
+            case "channel":
+                return {
+                    exclude_channel_thread_ids: parseExclusionIds(
+                        Threads.filter((thread) => thread?.channel_type === "channel").map(
+                            (thread) => thread.id
+                        )
+                    ),
+                };
+            case "chat":
+                return {
+                    exclude_channel_thread_ids: parseExclusionIds(
+                        Threads.filter(
+                            (thread) =>
+                                thread?.channel_type &&
+                                ["chat", "group"].includes(thread.channel_type)
+                        ).map((thread) => thread.id)
+                    ),
+                };
+            case "inbox":
+                return {
+                    exclude_message_thread_ids: parseExclusionIds(
+                        Threads.filter((thread) => thread?.channel_type === undefined).map(
+                            (thread) => thread.id
+                        )
+                    ),
+                };
+            default:
+                return {};
+        }
     },
 });

@@ -988,7 +988,25 @@ function _process_request_for_all(store, name, params, context = {}) {
         );
     }
     if (name === "channels_as_member") {
-        const channels = DiscussChannel._get_channels_as_member();
+        const limit = params?.limit !== undefined ? parseInt(params.limit, 10) : false;
+        let channels = DiscussChannel._get_channels_as_member();
+        if (limit) {
+            const needaction = channels.filter((c) => c?.message_needaction);
+            const history = channels.filter((c) => !c?.message_needaction);
+            const sorted = [
+                ...needaction.sort(
+                    (a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0)
+                ),
+                ...history.sort(
+                    (a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0)
+                ),
+            ];
+            const sortedLimitedIds = sorted
+                .map((c) => c?.id)
+                .filter((id) => id != null)
+                .slice(0, limit);
+            channels = DiscussChannel.browse(sortedLimitedIds);
+        }
         store.add(
             MailMessage.browse(
                 channels
@@ -1065,6 +1083,199 @@ function _process_request_for_internal_user(store, name, params) {
         ];
         store.add(this.env["mail.canned.response"].search(domain));
     }
+    if (name === "load_messaging_menu_data") {
+        const tab = params?.tab || "main";
+        const limit = parseInt(params?.limit || "30", 10);
+        const previous_state = params?.previous_state || {};
+        const exclusions = {
+            message_thread_ids: params?.exclude_message_thread_ids,
+            channel_thread_ids: params?.exclude_channel_thread_ids,
+        };
+        const loaders = {
+            inbox: loadInbox,
+            channel: loadChannel,
+            chat: loadChat,
+            main: loadMain,
+        };
+        const loader = loaders[tab];
+        if (typeof loader === "function") {
+            loader.call(this, store, limit, exclusions, previous_state);
+        } else if (typeof loaders.main === "function") {
+            loaders.main.call(this, store, limit, exclusions, previous_state);
+        }
+    }
+}
+
+function loadInbox(store, limit, exclusions, previous_state) {
+    const MailMessage = this.env?.["mail.message"];
+    const messageThreadExclusions = exclusions?.message_thread_ids || [];
+    const inboxResult = MailMessage._message_fetch(
+        [
+            ["needaction", "=", true],
+            ["model", "!=", "discuss.channel"],
+            ["res_id", "not in", messageThreadExclusions],
+        ],
+        makeKwArgs({ limit })
+    );
+    const inboxMessages = inboxResult?.messages || [];
+    const remaining = Math.max(0, limit - inboxMessages.length);
+    let historyMessages = [];
+    if (remaining > 0) {
+        const historyResult = MailMessage._message_fetch(
+            [
+                ["needaction", "=", false],
+                ["model", "!=", "discuss.channel"],
+                ["res_id", "not in", messageThreadExclusions],
+            ],
+            makeKwArgs({ limit: remaining })
+        );
+        historyMessages = historyResult?.messages || [];
+    }
+    const allMessages = [...inboxMessages, ...historyMessages];
+    if (allMessages.length > 0) {
+        const messageIds = allMessages.filter((m) => m?.id != null).map((m) => m?.id);
+        if (messageIds.length > 0) {
+            store.add(
+                MailMessage.browse(messageIds),
+                makeKwArgs({ for_current_user: true, add_followers: true })
+            );
+        }
+    }
+    store.add({
+        MessagingMenuRecordsLoadedState: {
+            ...(previous_state || {}),
+            inbox: allMessages.length < limit,
+        },
+    });
+}
+
+function loadChannel(store, limit, exclusions, previous_state) {
+    const DiscussChannel = this.env?.["discuss.channel"];
+    const channelExclusions = exclusions?.channel_thread_ids || [];
+    let channels = DiscussChannel._get_channels_as_member() || [];
+    channels = channels.filter(
+        (channel) => channel.channel_type === "channel" && !channelExclusions.includes(channel.id)
+    );
+    let sorted = [];
+    if (limit) {
+        const needaction_channels = channels
+            .filter((c) => c?.message_needaction)
+            .sort((a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0));
+        const history_channels = channels
+            .filter((c) => !c?.message_needaction)
+            .sort((a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0));
+        sorted = [...needaction_channels, ...history_channels];
+        const sortedLimitedIds = sorted
+            .map((c) => c?.id)
+            .filter((id) => id != null)
+            .slice(0, limit);
+        channels = DiscussChannel.browse(sortedLimitedIds);
+    }
+    store.add(channels);
+    store.add({
+        MessagingMenuRecordsLoadedState: {
+            ...(previous_state || {}),
+            channel: sorted.length < limit,
+        },
+    });
+}
+
+function loadChat(store, limit, exclusions, previous_state) {
+    const DiscussChannel = this.env?.["discuss.channel"];
+    const channelExclusions = exclusions?.channel_thread_ids || [];
+    let channels = DiscussChannel._get_channels_as_member() || [];
+    channels = channels.filter(
+        (channel) =>
+            ["chat", "group"].includes(channel.channel_type) &&
+            !channelExclusions.includes(channel.id)
+    );
+    let sorted = [];
+    if (limit) {
+        const needaction_channels = channels
+            .filter((c) => c?.message_needaction)
+            .sort((a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0));
+        const history_channels = channels
+            .filter((c) => !c?.message_needaction)
+            .sort((a, b) => new Date(b.last_interest_dt || 0) - new Date(a.last_interest_dt || 0));
+        sorted = [...needaction_channels, ...history_channels];
+        const sortedLimitedIds = sorted
+            .map((c) => c?.id)
+            .filter((id) => id != null)
+            .slice(0, limit);
+        channels = DiscussChannel.browse(sortedLimitedIds);
+    }
+    store.add(channels);
+    store.add({
+        MessagingMenuRecordsLoadedState: {
+            ...(previous_state || {}),
+            chat: sorted.length < limit,
+        },
+    });
+}
+
+function loadMain(store, limit, exclusions, previous_state) {
+    const MailMessage = this.env?.["mail.message"];
+    const DiscussChannel = this.env?.["discuss.channel"];
+    const messageThreadExclusions = exclusions?.message_thread_ids || [];
+    const channelExclusions = exclusions?.channel_thread_ids || [];
+    const messageResult = MailMessage._message_fetch([
+        ["needaction", "=", true],
+        ["model", "!=", "discuss.channel"],
+        ["res_id", "not in", messageThreadExclusions],
+    ]);
+    const messages = messageResult?.messages || [];
+    let channels = DiscussChannel._get_channels_as_member() || [];
+    channels = channels.filter(
+        (channel) =>
+            ["chat", "group", "channel"].includes(channel.channel_type) &&
+            !channelExclusions.includes(channel.id)
+    );
+    const needactionChannels = channels.filter((c) => c.message_needaction);
+    const readChannels = channels.filter((c) => !c.message_needaction);
+    const combinedUnread = [
+        ...messages.map((m) => ({
+            id: m.id,
+            model: "mail.message",
+            last_interest_dt: m.write_date,
+        })),
+        ...needactionChannels.map((c) => ({
+            id: c.id,
+            model: "discuss.channel",
+            last_interest_dt: c.last_interest_dt,
+        })),
+    ];
+    const combinedRead = readChannels.map((c) => ({
+        id: c.id,
+        model: "discuss.channel",
+        last_interest_dt: c.last_interest_dt,
+    }));
+    combinedUnread.sort((a, b) => new Date(b.last_interest_dt) - new Date(a.last_interest_dt));
+    combinedRead.sort((a, b) => new Date(b.last_interest_dt) - new Date(a.last_interest_dt));
+    const allSortedThreads = [...combinedUnread, ...combinedRead];
+    const limitedThreads = allSortedThreads.slice(0, limit);
+    const finalMessageIds = limitedThreads
+        .filter((t) => t.model === "mail.message")
+        .map((t) => t.id);
+    const finalChannelIds = limitedThreads
+        .filter((t) => t.model === "discuss.channel")
+        .map((t) => t.id);
+    if (finalMessageIds.length > 0) {
+        store.add(
+            MailMessage.browse(finalMessageIds),
+            makeKwArgs({ for_current_user: true, add_followers: true })
+        );
+    }
+    if (finalChannelIds.length > 0) {
+        store.add(DiscussChannel.browse(finalChannelIds));
+    }
+    store.add({
+        MessagingMenuRecordsLoadedState: {
+            ...(previous_state || {}),
+            main: limitedThreads.length < limit,
+            channel: limitedThreads.length < limit,
+            chat: limitedThreads.length < limit,
+        },
+    });
 }
 
 const ids_by_model = {

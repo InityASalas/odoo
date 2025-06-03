@@ -162,6 +162,14 @@ export class Store extends BaseStore {
                     this.tabToThreadType("mailbox").includes(channel_type)
                 );
             }
+            if (tab === "inbox") {
+                threads = Object.values(this.Thread.records).filter(
+                    (thread) =>
+                        thread.model !== "mail.box" &&
+                        thread.channel_type === undefined &&
+                        cleanTerm(thread.displayName).includes(searchTerm)
+                );
+            }
             return threads;
         },
         /**

@@ -19,6 +19,7 @@ import {
     getTaxesAfterFiscalPosition,
     getTaxesValues,
 } from "@point_of_sale/app/models/utils/tax_utils";
+import { changesToOrder } from "@point_of_sale/app/models/utils/order_change";
 
 export class SelfOrder extends Reactive {
     constructor(...args) {
@@ -471,20 +472,21 @@ export class SelfOrder extends Reactive {
                 Object.values(printer.config.product_categories_ids)
             );
             if (orderlines) {
+                const chnages = changesToOrder(order, this.config.preparationCategories, false);
                 const printingChanges = {
-                    new: orderlines,
+                    title: _t("NEW"),
+                    changes: { data: chnages.new },
+                    config_name: order.config.name,
+                    pos_reference: order.getName(),
                     tracker: order.table_stand_number,
-                    trackingNumber: order.tracking_number || "unknown number",
-                    name: order.pos_reference || "unknown order",
-                    time: {
-                        hours,
-                        minutes,
-                    },
+                    tracking_number:
+                        order.tracking_number != order.getName() ? order.tracking_number : "",
+                    time: hours + ":" + minutes,
                     preset_name: order.preset_id?.name || "",
                     preset_time: order.presetDateTime,
                 };
-                const receipt = renderToElement("pos_self_order.OrderChangeReceipt", {
-                    changes: printingChanges,
+                const receipt = renderToElement("point_of_sale.OrderChangeReceipt", {
+                    data: printingChanges,
                 });
                 await printer.printReceipt(receipt);
             }

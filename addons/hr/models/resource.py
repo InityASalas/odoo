@@ -17,6 +17,7 @@ class ResourceResource(models.Model):
 
     job_title = fields.Char(compute='_compute_job_title', compute_sudo=True)
     department_id = fields.Many2one('hr.department', compute='_compute_department_id', compute_sudo=True)
+    work_location_id = fields.Many2one(related='employee_id.work_location_id')
     work_email = fields.Char(related='employee_id.work_email')
     work_phone = fields.Char(related='employee_id.work_phone')
     show_hr_icon_display = fields.Boolean(related='employee_id.show_hr_icon_display')

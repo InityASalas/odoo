@@ -39,7 +39,6 @@ import {
 import { browser } from "@web/core/browser/browser";
 import { router, routerBus } from "@web/core/browser/router";
 import { registry } from "@web/core/registry";
-import { PersistentCache } from "@web/core/utils/persistent_cache";
 import { redirect } from "@web/core/utils/urls";
 import { useSetupAction } from "@web/search/action_hook";
 import { listView } from "@web/views/list/list_view";
@@ -757,18 +756,6 @@ test("there is no flickering when switching between views", async () => {
     let def;
     onRpc(() => def);
 
-    //TODO: Discuss with AAB, if we don't have a better way to do this !
-    //Maybe create a utils ? like onRPC ?
-    patchWithCleanup(PersistentCache.prototype, {
-        async read(table) {
-            if (table === "web_read" || table === "web_search_read") {
-                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
-                await def;
-            }
-            return super.read(...arguments);
-        },
-    });
-
     await mountWithCleanup(WebClient);
     await getService("action").doAction(3);
 
@@ -777,7 +764,7 @@ test("there is no flickering when switching between views", async () => {
     await switchView("kanban");
     expect(".o_list_view").toHaveCount(0, { message: "shouldn't display the list anymore" });
     expect(".o_kanban_view").toHaveCount(1, { message: "should display an empty kanban" });
-    expect(".o_kanban_view .o_kanban_record").toHaveCount(0);
+    expect(".o_kanban_view .o_kanban_record:not(.o_kanban_ghost)").toHaveCount(5); // Same rpc as the list view the values are already cached !
 
     def.resolve();
     await animationFrame();
@@ -789,7 +776,8 @@ test("there is no flickering when switching between views", async () => {
     await switchView("list");
     expect(".o_kanban_view").toHaveCount(0, { message: "shouldn't display the kanban anymore" });
     expect(".o_list_view").toHaveCount(1, { message: "should display an empty list view" });
-    expect(".o_list_view table").toHaveCount(0);
+    expect(".o_list_view table").toHaveCount(1);
+    expect(".o_list_view table .o_data_row").toHaveCount(5); // Cached values
 
     def.resolve();
     await animationFrame();
@@ -820,7 +808,8 @@ test("there is no flickering when switching between views", async () => {
     await contains(".o_control_panel .breadcrumb a").click();
     expect(".o_form_view").toHaveCount(0, { message: "shouldn't display the form anymore" });
     expect(".o_list_view").toHaveCount(1, { message: "should display an empty list" });
-    expect(".o_list_view table").toHaveCount(0);
+    expect(".o_list_view table").toHaveCount(1);
+    expect(".o_list_view table .o_data_row").toHaveCount(5); // Cached values
     expect(queryAllTexts(".breadcrumb-item, .o_breadcrumb .active")).toEqual(["Partners"]);
 
     def.resolve();
@@ -1234,18 +1223,6 @@ test.tags("desktop");
 test("requests for execute_action of type object: disable buttons", async () => {
     let def = undefined;
     onRpc("web_read", () => def); // block the 'read' call
-
-    //TODO: Discuss with AAB, if we don't have a better way to do this !
-    patchWithCleanup(PersistentCache.prototype, {
-        async read(table) {
-            if (table === "web_read") {
-                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
-                await def;
-            }
-            return super.read(...arguments);
-        },
-    });
-
     onRpc("/web/dataset/call_button/*", () => false);
 
     await mountWithCleanup(WebClient);

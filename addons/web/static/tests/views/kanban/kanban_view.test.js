@@ -96,7 +96,6 @@ import { kanbanView } from "@web/views/kanban/kanban_view";
 import { ViewButton } from "@web/views/view_button/view_button";
 import { AnimatedNumber } from "@web/views/view_components/animated_number";
 import { WebClient } from "@web/webclient/webclient";
-import { PersistentCache } from "@web/core/utils/persistent_cache";
 
 const { IrAttachment } = webModels;
 
@@ -3391,17 +3390,6 @@ test("quick create is disabled until record is created and onchange is done", as
     onRpc("web_save", () => webSaveDef);
     onRpc("onchange", () => onchangeDef);
     onRpc("web_read", () => webReadDef);
-
-    //TODO: Discuss with AAB, if we don't have a better way to do this !
-    patchWithCleanup(PersistentCache.prototype, {
-        async read(table) {
-            if (table === "onchange") {
-                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
-                await onchangeDef;
-            }
-            return super.read(...arguments);
-        },
-    });
 
     await mountView({
         type: "kanban",

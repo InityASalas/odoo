@@ -28,7 +28,6 @@ import { SearchBar } from "@web/search/search_bar/search_bar";
 import { useSetupAction } from "@web/search/action_hook";
 import { WebClient } from "@web/webclient/webclient";
 import { browser } from "@web/core/browser/browser";
-import { PersistentCache } from "@web/core/utils/persistent_cache";
 
 const { ResCompany, ResPartner, ResUsers } = webModels;
 const actionRegistry = registry.category("actions");
@@ -653,38 +652,16 @@ test("switching when doing an action -- search_read slow", async () => {
 test.tags("desktop");
 test("click multiple times to open a record", async () => {
     const def = new Deferred();
-    const defs = [null, def];
-
-    //TODO: Discuss with AAB, if we don't have a better way to do this !
-    patchWithCleanup(PersistentCache.prototype, {
-        async read(table) {
-            if (table === "web_read") {
-                // We don't wait for the defered on the RPC, because we alredy have the information in cache !
-                await defs.shift();
-            }
-            return super.read(...arguments);
-        },
-    });
+    onRpc("web_read", () => def);
 
     await mountWithCleanup(WebClient);
     await getService("action").doAction(3);
-    expect(".o_list_view").toHaveCount(1);
-
-    await contains(".o_list_view .o_data_cell").click();
-    expect(".o_form_view").toHaveCount(1);
-
-    await contains(".o_back_button").click();
     expect(".o_list_view").toHaveCount(1);
 
     const row1 = queryAll(".o_list_view .o_data_row")[0];
     const row2 = queryAll(".o_list_view .o_data_row")[1];
     await contains(row1.querySelector(".o_data_cell")).click();
     await contains(row2.querySelector(".o_data_cell")).click();
-    expect(".o_form_view").toHaveCount(1);
-    expect(queryAllTexts(".breadcrumb-item, .o_breadcrumb .active")).toEqual([
-        "Partners",
-        "Second record",
-    ]);
 
     def.resolve();
     await animationFrame();

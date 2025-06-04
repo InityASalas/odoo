@@ -2552,7 +2552,7 @@ export class Model extends Array {
         offset,
         forced_order,
         unfolded_group_limit,
-        current_group_info,
+        opening_info,
         unfold_read_specification,
         unfold_read_default_limit,
         groupby_read_specification
@@ -2566,7 +2566,7 @@ export class Model extends Array {
             "offset",
             "forced_order",
             "unfolded_group_limit",
-            "current_group_info",
+            "opening_info",
             "unfold_read_specification",
             "unfold_read_default_limit",
             "groupby_read_specification"
@@ -2579,7 +2579,7 @@ export class Model extends Array {
             offset,
             forced_order,
             unfolded_group_limit,
-            current_group_info,
+            opening_info,
             unfold_read_specification,
             unfold_read_default_limit,
             groupby_read_specification,
@@ -2607,7 +2607,7 @@ export class Model extends Array {
             groupby,
             aggregates,
             forced_order,
-            current_group_info,
+            opening_info,
             unfolded_group_limit,
             {
                 specification: unfold_read_specification,

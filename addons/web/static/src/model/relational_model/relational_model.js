@@ -753,7 +753,7 @@ export class RelationalModel extends Model {
                 unfolded_group_limit: config.openGroupsByDefault
                     ? this.constructor.MAX_NUMBER_OPENED_GROUPS
                     : undefined,
-                current_group_info: currentGroupInfos,
+                opening_info: currentGroupInfos,
                 unfold_read_specification: unfoldReadSpecification,
                 unfold_read_default_limit: this.initialLimit,
                 groupby_read_specification: groupByReadSpecification,

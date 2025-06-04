@@ -622,7 +622,7 @@ export class SampleServer {
             groups = this._mockFormattedReadGroup({ ...params, aggregates });
         }
         // Don't care another params - and no subgroup:
-        // forced_order / current_group_info / unfold_read_default_limit / groupby_read_specification
+        // forced_order / opening_info / unfold_read_default_limit / groupby_read_specification
         let nbOpenedGroup = 0;
         if (params.unfolded_group_limit && params.unfold_read_specification) {
             for (const group of groups) {

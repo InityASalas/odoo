@@ -3,6 +3,7 @@ import { Plugin } from "@html_editor/plugin";
 import { _t } from "@web/core/l10n/translation";
 import { rpc } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 class ProductsListPageOptionPlugin extends Plugin {
     static id = "productsListPageOptionPlugin";
@@ -17,44 +18,61 @@ class ProductsListPageOptionPlugin extends Plugin {
                 groups: ["website.group_website_designer"],
             },
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setPpg: new SetPpgAction(this),
+            setPpr: new SetPprAction(this),
+            setGap: new SetGapAction(this),
+            setDefaultSort: new SetDefaultSortAction(this),
+        }
     };
+}
 
-    getActions() {
-        return {
-            setPpg: {
-                reload: {},
-                getValue: ({ editingElement }) => parseInt(editingElement.dataset.ppg),
-                apply: ({ value }) => {
-                    const PPG_LIMIT = 10000;
-                    let ppg = parseInt(value);
-                    if (!ppg || ppg < 1) {
-                        return false;
-                    }
-                    ppg = Math.min(ppg, PPG_LIMIT);
-                    return rpc("/shop/config/website", { shop_ppg: ppg });
-                },
-            },
-            setPpr: {
-                reload: {},
-                isApplied: ({ editingElement, value }) =>
-                    parseInt(editingElement.dataset.ppr) === value,
-                apply: ({ value }) => {
-                    const ppr = parseInt(value);
-                    return rpc("/shop/config/website", { shop_ppr: ppr });
-                },
-            },
-            setGap: {
-                reload: {},
-                apply: ({ value }) => rpc("/shop/config/website", { shop_gap: value }),
-            },
-            setDefaultSort: {
-                reload: {},
-                isApplied: ({ editingElement, value }) =>
-                    editingElement.dataset.defaultSort === value,
-                apply: ({ value }) => rpc("/shop/config/website", { shop_default_sort: value }),
-            },
-        };
+class SetPpgAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    getValue({ editingElement }) {
+        return parseInt(editingElement.dataset.ppg);
+    }
+    apply({ value }) {
+        const PPG_LIMIT = 10000;
+        let ppg = parseInt(value);
+        if (!ppg || ppg < 1) {
+            return false;
+        }
+        ppg = Math.min(ppg, PPG_LIMIT);
+        return rpc("/shop/config/website", { shop_ppg: ppg });
+    }
+}
+class SetPprAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    isApplied({ editingElement, value }) {
+        return parseInt(editingElement.dataset.ppr) === value;
+    }
+    apply({ value }) {
+        const ppr = parseInt(value);
+        return rpc("/shop/config/website", { shop_ppr: ppr });
+    }
+}
+class SetGapAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    apply({ value }) {
+        return rpc("/shop/config/website", { shop_gap: value });
+    }
+}
+class SetDefaultSortAction extends BuilderAction {
+    setup() {
+        this.reload = false;
+    }
+    isApplied({ editingElement, value }) {
+        editingElement.dataset.defaultSort === value;
+    }
+    apply({ value }) {
+        return rpc("/shop/config/website", { shop_default_sort: value });
     }
 }
 

@@ -1,3 +1,4 @@
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 import { SNIPPET_SPECIFIC } from "@html_builder/utils/option_sequence";
 import { Plugin } from "@html_editor/plugin";
 import { withSequence } from "@html_editor/utils/resource";
@@ -17,57 +18,28 @@ class DonationOptionPlugin extends Plugin {
             }),
         ],
         builder_actions: {
-            toggleDisplayOptions: this.makeToggleDataAttributeAction(
+            toggleDisplayOptions: new ToggleDataAttributeAction(
+                this, 
                 "displayOptions",
                 this.toggleDisplayOptions.bind(this)
             ),
-            togglePrefilledOptions: this.makeToggleDataAttributeAction(
+            togglePrefilledOptions: new ToggleDataAttributeAction(
+                this,
                 "prefilledOptions",
                 this.togglePrefilledOptions.bind(this)
             ),
-            toggleDescriptions: this.makeToggleDataAttributeAction(
+            toggleDescriptions: new ToggleDataAttributeAction(
+                this,
                 "descriptions",
                 this.toggleDescriptions.bind(this)
             ),
-            setPrefilledOptions: {
-                getValue: this.getPrefilledOptionsList.bind(this),
-                apply: this.applyPrefilledOptionsList.bind(this),
-            },
-            selectAmountInput: {
-                isApplied: this.isAmountInputApplied.bind(this),
-                apply: this.setAmountInput.bind(this),
-            },
-            setMinimumAmount: {
-                getValue: this.getMinimumAmount.bind(this),
-                apply: this.setMinimumAmount.bind(this),
-            },
-            setMaximumAmount: {
-                getValue: this.getMaximumAmount.bind(this),
-                apply: this.setMaximumAmount.bind(this),
-            },
-            setSliderStep: {
-                getValue: this.getSliderStep.bind(this),
-                apply: this.setSliderStep.bind(this),
-            },
+            setPrefilledOptions: new SetPrefilledOptionsAction(this),
+            selectAmountInput: new SelectAmountInputAction(this),
+            setMinimumAmount: new SetMinimumAmountAction(this),
+            setMaximumAmount: new SetMaximumAmountAction(this),
+            setSliderStep: new SetSliderStepAction(this),
         },
     };
-
-    makeToggleDataAttributeAction(dataAttributeName, toggleFunction) {
-        return {
-            isApplied: ({ editingElement }) => !!editingElement.dataset[dataAttributeName],
-            apply: (obj, ...restArgs) => {
-                const { editingElement } = obj;
-                editingElement.dataset[dataAttributeName] = "true";
-                toggleFunction({ ...obj, value: true }, ...restArgs);
-            },
-            clean: (obj, ...restArgs) => {
-                const { editingElement } = obj;
-                delete editingElement.dataset[dataAttributeName];
-                toggleFunction({ ...obj, value: false }, ...restArgs);
-            },
-        };
-    }
-
     toggleDisplayOptions({ editingElement, value }) {
         if (!value && editingElement.dataset.customAmount === "slider") {
             editingElement.dataset.customAmount = "freeAmount";
@@ -257,4 +229,98 @@ class DonationOptionPlugin extends Plugin {
         }
     }
 }
+
+class ToggleDataAttributeAction extends BuilderAction {
+    /**
+     * @param {Object} plugin - The plugin passed to BuilderAction
+     * @param {string} dataAttributeName - The data attribute to toggle (without "data-" prefix)
+     * @param {Function} toggleFunction - Function to call when applying or cleaning
+     */
+    constructor(plugin, dataAttributeName, toggleFunction) {
+        super(plugin);
+        this.dataAttributeName = dataAttributeName;
+        this.toggleFunction = toggleFunction;
+    }
+
+    /**
+     * Determine if the data attribute is applied.
+     *
+     * @param {Object} context
+     * @param {HTMLElement} context.editingElement
+     * @returns {boolean}
+     */
+    isApplied({ editingElement }) {
+        return !!editingElement.dataset[this.dataAttributeName];
+    }
+
+    /**
+     * Apply the data attribute and call the toggle function.
+     *
+     * @param {Object} context
+     * @param {HTMLElement} context.editingElement
+     * @param {...*} restArgs - Extra args for toggleFunction
+     */
+    apply(context, ...restArgs) {
+        const { editingElement } = context;
+        editingElement.dataset[this.dataAttributeName] = "true";
+        this.toggleFunction({ ...context, value: true }, ...restArgs);
+    }
+
+    /**
+     * Remove the data attribute and call the toggle function.
+     *
+     * @param {Object} context
+     * @param {HTMLElement} context.editingElement
+     * @param {...*} restArgs - Extra args for toggleFunction
+     */
+    clean(context, ...restArgs) {
+        const { editingElement } = context;
+        delete editingElement.dataset[this.dataAttributeName];
+        this.toggleFunction({ ...context, value: false }, ...restArgs);
+    }
+}
+
+class SetPrefilledOptionsAction extends BuilderAction {
+    getValue(context) {
+        return this.plugin.getPrefilledOptionsList(context);
+    }
+    apply(context) {
+        return this.plugin.applyPrefilledOptionsList(context);
+    }
+}
+
+class SelectAmountInputAction extends BuilderAction {
+    isApplied(context) {
+        return this.plugin.isAmountInputApplied(context);
+    }
+    apply(context) {
+        return this.plugin.setAmountInput(context);
+    }
+}
+
+class SetMinimumAmountAction extends BuilderAction {
+    getValue(context) {
+        return this.plugin.getMinimumAmount(context);
+    }
+    apply(context) {
+        return this.plugin.setMinimumAmount(context);
+    }
+}
+class SetMaximumAmountAction extends BuilderAction {
+    getValue(context) {
+        return this.plugin.getMaximumAmount(context);
+    }
+    apply(context) {
+        return this.plugin.setMaximumAmount(context);
+    }
+}
+class SetSliderStepAction extends BuilderAction {
+    getValue(context) {
+        return this.plugin.getSliderStep(context);
+    }
+    apply(context) {
+        return this.plugin.setSliderStep(context);
+    }
+}
+
 registry.category("website-plugins").add(DonationOptionPlugin.id, DonationOptionPlugin);

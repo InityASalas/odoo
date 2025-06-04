@@ -6,6 +6,7 @@ import { getElementsWithOption } from "@html_builder/utils/utils";
 import { VisibilityOption } from "./visibility_option";
 import { withSequence } from "@html_editor/utils/resource";
 import { CONDITIONAL_VISIBILITY, DEVICE_VISIBILITY } from "@website/builder/option_sequence";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export const VISIBILITY_OPTION_SELECTOR = "section, .s_hr";
 export const DEVICE_VISIBILITY_OPTION_SELECTOR = "section .row > div";
@@ -30,7 +31,10 @@ class VisibilityOptionPlugin extends Plugin {
                 cleanForSave: this.dependencies.visibility.cleanForSaveVisibility,
             }),
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            forceVisible: new ForceVisibleAction(this),
+            toggleDeviceVisibility: new ToggleDeviceVisibilityAction(this),
+        },
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
         normalize_handlers: this.normalizeCSSSelectors.bind(this),
         visibility_selector_parameters: [
@@ -69,43 +73,6 @@ class VisibilityOptionPlugin extends Plugin {
 
     setup() {
         this.optionsAttributes = this.getResource("visibility_selector_parameters");
-    }
-
-    getActions() {
-        return {
-            forceVisible: {
-                apply: ({ editingElement }) => {
-                    this.dependencies.visibility.onOptionVisibilityUpdate(editingElement, true);
-                },
-                isApplied: () => true,
-            },
-            toggleDeviceVisibility: {
-                apply: ({ editingElement, params: { mainParam: visibility } }) => {
-                    // Clean first as the widget is not part of a group
-                    this.clean(editingElement);
-                    const style = getComputedStyle(editingElement);
-                    if (visibility === "no_desktop") {
-                        editingElement.classList.add("d-lg-none", "o_snippet_desktop_invisible");
-                    } else if (visibility === "no_mobile") {
-                        editingElement.classList.add(
-                            `d-lg-${style["display"]}`,
-                            "d-none",
-                            "o_snippet_mobile_invisible"
-                        );
-                    }
-
-                    // Update invisible elements
-                    const isMobile = this.services.website.context.isMobile;
-                    const show = visibility !== (isMobile ? "no_mobile" : "no_desktop");
-                    this.dependencies.visibility.onOptionVisibilityUpdate(editingElement, show);
-                },
-                clean: ({ editingElement }) => {
-                    this.clean(editingElement);
-                },
-                isApplied: ({ editingElement, params: { mainParam: visibility } }) =>
-                    this.isApplied(editingElement, visibility),
-            },
-        };
     }
 
     clean(editingElement) {
@@ -241,6 +208,42 @@ class VisibilityOptionPlugin extends Plugin {
         } else {
             delete target.dataset.visibilityId;
         }
+    }
+}
+
+class ForceVisibleAction extends BuilderAction {
+    apply({ editingElement }) {
+        this.dependencies.visibility.onOptionVisibilityUpdate(editingElement, true);
+    }
+    isApplied() {
+        return true;
+    }
+}
+class ToggleDeviceVisibilityAction extends BuilderAction {
+    apply({ editingElement, params: { mainParam: visibility } }) {
+        // Clean first as the widget is not part of a group
+        this.plugin.clean(editingElement);
+        const style = getComputedStyle(editingElement);
+        if (visibility === "no_desktop") {
+            editingElement.classList.add("d-lg-none", "o_snippet_desktop_invisible");
+        } else if (visibility === "no_mobile") {
+            editingElement.classList.add(
+                `d-lg-${style["display"]}`,
+                "d-none",
+                "o_snippet_mobile_invisible"
+            );
+        }
+
+        // Update invisible elements
+        const isMobile = this.services.website.context.isMobile;
+        const show = visibility !== (isMobile ? "no_mobile" : "no_desktop");
+        this.dependencies.visibility.onOptionVisibilityUpdate(editingElement, show);
+    }
+    clean({ editingElement }) {
+        this.plugin.clean(editingElement);
+    }
+    isApplied({ editingElement, params: { mainParam: visibility } }) {
+        return this.plugin.isApplied(editingElement, visibility);
     }
 }
 

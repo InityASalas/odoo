@@ -3,6 +3,7 @@ import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { CarouselItemHeaderMiddleButtons } from "./carousel_item_header_buttons";
 import { renderToElement } from "@web/core/utils/render";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export class CarouselOptionPlugin extends Plugin {
     static id = "carouselOption";
@@ -45,7 +46,12 @@ export class CarouselOptionPlugin extends Plugin {
                 ".s_carousel .carousel-item, .s_quotes_carousel .carousel-item, .s_carousel_intro .carousel-item, .s_carousel_cards .carousel-item",
             getTitleExtraInfo: (editingElement) => this.getTitleExtraInfo(editingElement),
         },
-        builder_actions: this.getActions(),
+        builder_actions: {
+            addSlide: new AddSlideAction(this),
+            slideCarousel: new SlideCarouselAction(this),
+            toggleControllers: new ToggleControllersAction(this),
+            toggleCardImg: new ToggleCardImgAction(this),
+        },
         on_cloned_handlers: this.onCloned.bind(this),
         on_will_clone_handlers: this.onWillClone.bind(this),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
@@ -63,46 +69,6 @@ export class CarouselOptionPlugin extends Plugin {
             return Promise.all(proms);
         },
     };
-
-    getActions() {
-        return {
-            addSlide: {
-                preview: false,
-                apply: async ({ editingElement }) => this.addSlide(editingElement),
-            },
-            slideCarousel: {
-                preview: false,
-                withLoadingEffect: false,
-                apply: async ({ editingElement, params: { direction } }) =>
-                    this.slideCarousel(editingElement, direction),
-            },
-            toggleControllers: {
-                apply: ({ editingElement }) => {
-                    const carouselEl = editingElement.closest(".carousel");
-                    const indicatorsWrapEl = carouselEl.querySelector(".carousel-indicators");
-                    const areControllersHidden =
-                        carouselEl.classList.contains("s_carousel_arrows_hidden") &&
-                        indicatorsWrapEl.classList.contains("s_carousel_indicators_hidden");
-                    carouselEl.classList.toggle(
-                        "s_carousel_controllers_hidden",
-                        areControllersHidden
-                    );
-                },
-            },
-            toggleCardImg: {
-                apply: ({ editingElement }) => this.toggleCardImg(editingElement),
-                clean: ({ editingElement: el }) => {
-                    const carouselEl = el.closest(".carousel");
-                    carouselEl.querySelectorAll("figure").forEach((el) => el.remove());
-                },
-                isApplied: ({ editingElement }) => {
-                    const carouselEl = editingElement.closest(".carousel");
-                    const cardImgEl = carouselEl.querySelector(".o_card_img_wrapper");
-                    return !!cardImgEl;
-                },
-            },
-        };
-    }
 
     toggleCardImg(editingElement) {
         const carouselEl = editingElement.closest(".carousel");
@@ -359,6 +325,49 @@ export class CarouselOptionPlugin extends Plugin {
             this.dependencies.history.addStep();
             this.dependencies["builder-options"].updateContainers(activeImageEl, { force: true });
         }
+    }
+}
+
+class AddSlideAction extends BuilderAction {
+    setup() {
+        this.preview = false;
+    }
+    async apply({ editingElement }) {
+        return this.plugin.addSlide(editingElement);
+    }
+}
+class SlideCarouselAction extends BuilderAction {
+    setup() {
+        this.preview = false;
+        this.withLoadingEffect = false;
+    }
+    async apply({ editingElement, params: { direction } }) {
+        return this.plugin.slideCarousel(editingElement, direction);
+    }
+}
+
+class ToggleControllersAction extends BuilderAction {
+    apply({ editingElement }) {
+        const carouselEl = editingElement.closest(".carousel");
+        const indicatorsWrapEl = carouselEl.querySelector(".carousel-indicators");
+        const areControllersHidden =
+            carouselEl.classList.contains("s_carousel_arrows_hidden") &&
+            indicatorsWrapEl.classList.contains("s_carousel_indicators_hidden");
+        carouselEl.classList.toggle("s_carousel_controllers_hidden", areControllersHidden);
+    }
+}
+class ToggleCardImgAction extends BuilderAction {
+    apply({ editingElement }) {
+        return this.plugin.toggleCardImg(editingElement);
+    }
+    clean({ editingElement: el }) {
+        const carouselEl = el.closest(".carousel");
+        carouselEl.querySelectorAll("figure").forEach((el) => el.remove());
+    }
+    isApplied({ editingElement }) {
+        const carouselEl = editingElement.closest(".carousel");
+        const cardImgEl = carouselEl.querySelector(".o_card_img_wrapper");
+        return !!cardImgEl;
     }
 }
 

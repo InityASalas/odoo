@@ -12,6 +12,7 @@ import {
     shouldPreventGifTransformation,
 } from "@html_editor/main/media/image_post_process_plugin";
 import { _t } from "@web/core/l10n/translation";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 // Regex definitions to apply speed modification in SVG files
 // Note : These regex patterns are duplicated on the server side for
@@ -38,99 +39,20 @@ class ImageShapeOptionPlugin extends Plugin {
         "getShapeLabel",
     ];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setImageShape: new SetImageShapeAction(this),
+            setImgShapeColor: new SetImgShapeColorAction(this),
+            flipImageShape: new FlipImageShapeAction(this),
+            rotateImageShape: new RotateImageShapeAction(this),
+            setImageShapeSpeed: new SetImageShapeSpeedAction(this),
+            toggleImageShapeRatio: new ToggleImageShapeRatioAction(this),
+        },
         process_image_warmup_handlers: this.processImageWarmup.bind(this),
         process_image_post_handlers: this.processImagePost.bind(this),
     };
     setup() {
         this.shapeSvgTextCache = {};
         this.imageShapes = this.makeImageShapes();
-    }
-    getActions() {
-        return {
-            setImageShape: {
-                load: async ({ editingElement: img, value: shapeId }) => {
-                    const params = { shape: shapeId };
-                    // todo nby: re-read the old option method `setImgShape` and be sure all the logic is in there
-                    return this.loadShape(img, params);
-                },
-                apply: ({ editingElement: img, loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                    const imgFilename = img.dataset.originalSrc.split("/").pop().split(".")[0];
-                    img.dataset.fileName = `${imgFilename}.svg`;
-                },
-            },
-            setImgShapeColor: {
-                getValue: ({ editingElement: img, params: { index: colorIndex } }) =>
-                    img.dataset.shapeColors?.split(";")[colorIndex] || "",
-                load: async ({
-                    editingElement: img,
-                    params: { index: colorIndex },
-                    value: color,
-                }) => {
-                    color = getValueFromVar(color);
-                    const newColorId = parseInt(colorIndex);
-                    const oldColors = img.dataset.shapeColors.split(";");
-                    const newColors = oldColors.slice(0);
-                    newColors[newColorId] = this.getCSSColorValue(
-                        color === "" ? `o-color-${newColorId + 1}` : color
-                    );
-                    return this.loadShape(img, { shapeColors: newColors.join(";") });
-                },
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            flipImageShape: {
-                load: async ({ editingElement: img, params: { axis } }) => {
-                    const currentAxis = img.dataset.shapeFlip || "";
-                    const newAxis = currentAxis.includes(axis)
-                        ? currentAxis.replace(axis, "")
-                        : currentAxis + axis;
-                    return this.loadShape(img, { shapeFlip: newAxis === "yx" ? "xy" : newAxis });
-                },
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            rotateImageShape: {
-                load: async ({ editingElement: img, params: { side } }) => {
-                    const currentRotateValue = parseInt(img.dataset.shapeRotate) || 0;
-                    const rotation = side === "left" ? -90 : 90;
-                    const newRotateValue = (currentRotateValue + rotation + 360) % 360;
-                    return this.loadShape(img, { shapeRotate: newRotateValue });
-                },
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            setImageShapeSpeed: {
-                getValue: ({ editingElement: img }) => img.dataset.shapeAnimationSpeed || 0,
-                load: async ({ editingElement: img, value: speed }) =>
-                    this.loadShape(img, {
-                        shapeAnimationSpeed: speed,
-                    }),
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            toggleImageShapeRatio: {
-                isApplied: ({ editingElement: img }) => img.dataset.aspectRatio !== "1/1",
-                load: async ({ editingElement: img }) => {
-                    const isStretched = img.dataset.aspectRatio !== "1/1";
-                    return this.loadShape(img, {
-                        aspectRatio: isStretched ? "1/1" : "0/0",
-                        x: undefined,
-                        y: undefined,
-                        width: undefined,
-                        height: undefined,
-                    });
-                },
-                apply: ({ editingElement: img, loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-        };
     }
     async getShapeSvgText(shapeName) {
         let shapeSvgText = this.shapeSvgTextCache[shapeName];
@@ -440,4 +362,91 @@ class ImageShapeOptionPlugin extends Plugin {
         return Object.fromEntries(entries);
     }
 }
+
+class SetImageShapeAction extends BuilderAction {
+    async load({ editingElement: img, value: shapeId }) {
+        const params = { shape: shapeId };
+        // todo nby: re-read the old option method `setImgShape` and be sure all the logic is in there
+        return this.plugin.loadShape(img, params);
+    }
+    apply({ editingElement: img, loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+        const imgFilename = img.dataset.originalSrc.split("/").pop().split(".")[0];
+        img.dataset.fileName = `${imgFilename}.svg`;
+    }
+}
+class SetImgShapeColorAction extends BuilderAction {
+    getValue({ editingElement: img, params: { index: colorIndex } }) {
+        return img.dataset.shapeColors?.split(";")[colorIndex] || "";
+    }
+    async load({ editingElement: img, params: { index: colorIndex }, value: color }) {
+        color = getValueFromVar(color);
+        const newColorId = parseInt(colorIndex);
+        const oldColors = img.dataset.shapeColors.split(";");
+        const newColors = oldColors.slice(0);
+        newColors[newColorId] = this.plugin.getCSSColorValue(
+            color === "" ? `o-color-${newColorId + 1}` : color
+        );
+        return this.plugin.loadShape(img, { shapeColors: newColors.join(";") });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+class FlipImageShapeAction extends BuilderAction {
+    async load({ editingElement: img, params: { axis } }) {
+        const currentAxis = img.dataset.shapeFlip || "";
+        const newAxis = currentAxis.includes(axis)
+            ? currentAxis.replace(axis, "")
+            : currentAxis + axis;
+        return this.plugin.loadShape(img, { shapeFlip: newAxis === "yx" ? "xy" : newAxis });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+
+class RotateImageShapeAction extends BuilderAction {
+    async load({ editingElement: img, params: { side } }) {
+        const currentRotateValue = parseInt(img.dataset.shapeRotate) || 0;
+        const rotation = side === "left" ? -90 : 90;
+        const newRotateValue = (currentRotateValue + rotation + 360) % 360;
+        return this.plugin.loadShape(img, { shapeRotate: newRotateValue });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+class SetImageShapeSpeedAction extends BuilderAction {
+    getValue({ editingElement: img }) {
+        return img.dataset.shapeAnimationSpeed || 0;
+    }
+    async load({ editingElement: img, value: speed }) {
+        return this.plugin.loadShape(img, {
+            shapeAnimationSpeed: speed,
+        });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+class ToggleImageShapeRatioAction extends BuilderAction {
+    isApplied({ editingElement: img }) {
+        return img.dataset.aspectRatio !== "1/1";
+    }
+    async load({ editingElement: img }) {
+        const isStretched = img.dataset.aspectRatio !== "1/1";
+        return this.plugin.loadShape(img, {
+            aspectRatio: isStretched ? "1/1" : "0/0",
+            x: undefined,
+            y: undefined,
+            width: undefined,
+            height: undefined,
+        });
+    }
+    apply({ editingElement: img, loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+
 registry.category("website-plugins").add(ImageShapeOptionPlugin.id, ImageShapeOptionPlugin);

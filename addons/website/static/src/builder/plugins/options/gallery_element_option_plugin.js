@@ -2,6 +2,7 @@ import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 import { withSequence } from "@html_editor/utils/resource";
 import { SNIPPET_SPECIFIC } from "@html_builder/utils/option_sequence";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export class GalleryElementOptionPlugin extends Plugin {
     static id = "galleryElementOption";
@@ -14,26 +15,24 @@ export class GalleryElementOptionPlugin extends Plugin {
                     ".s_image_gallery img, .s_carousel .carousel-item, .s_quotes_carousel .carousel-item, .s_carousel_intro .carousel-item, .s_carousel_cards .carousel-item",
             }),
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setGalleryElementPosition: new SetGalleryElementPositionAction(this),
+        },
     };
+}
 
-    getActions() {
-        return {
-            setGalleryElementPosition: {
-                apply: ({ editingElement, value: position }) => {
-                    const optionName = editingElement.classList.contains("carousel-item")
-                        ? "Carousel"
-                        : "GalleryImageList";
+class SetGalleryElementPositionAction extends BuilderAction {
+    apply({ editingElement, value: position }) {
+        const optionName = editingElement.classList.contains("carousel-item")
+            ? "Carousel"
+            : "GalleryImageList";
 
-                    // Carousel and gallery image list are both managed by the same handler
-                    this.dispatchTo("on_reorder_items_handlers", {
-                        elementToReorder: editingElement,
-                        position: position,
-                        optionName: optionName,
-                    });
-                },
-            },
-        };
+        // Carousel and gallery image list are both managed by the same handler
+        this.plugin.dispatchTo("on_reorder_items_handlers", {
+            elementToReorder: editingElement,
+            position: position,
+            optionName: optionName,
+        });
     }
 }
 

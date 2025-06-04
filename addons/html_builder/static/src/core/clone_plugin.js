@@ -4,6 +4,7 @@ import { _t } from "@web/core/l10n/translation";
 import { isElementInViewport } from "@html_builder/utils/utils";
 import { isRemovable } from "./remove_plugin";
 import { isMovable } from "./move_plugin";
+import { BuilderAction } from "./core_builder_action_plugin";
 
 const clonableSelector = "a.btn:not(.oe_unremovable)";
 
@@ -17,7 +18,10 @@ export class ClonePlugin extends Plugin {
     static shared = ["cloneElement"];
 
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            // Maybe rename cloneItem ?
+            addItem: new cloneItemAction(this),
+        },
         get_overlay_buttons: withSequence(2, {
             getButtons: this.getActiveOverlayButtons.bind(this),
         }),
@@ -38,23 +42,6 @@ export class ClonePlugin extends Plugin {
         this.overlayTarget = null;
         this.ignoredClasses = new Set(this.getResource("system_classes"));
         this.ignoredAttrs = new Set(this.getResource("system_attributes"));
-    }
-
-    getActions() {
-        return {
-            // TODO maybe rename to cloneItem ?
-            addItem: {
-                apply: ({
-                    editingElement,
-                    params: { mainParam: itemSelector },
-                    value: position,
-                }) => {
-                    const itemEl = editingElement.querySelector(itemSelector);
-                    this.cloneElement(itemEl, { position, scrollToClone: true });
-                    this.dependencies.history.addStep();
-                },
-            },
-        };
     }
 
     getActiveOverlayButtons(target) {
@@ -121,5 +108,30 @@ export class ClonePlugin extends Plugin {
                 el.removeAttribute(ignoredAttr)
             );
         });
+    }
+}
+
+class cloneItemAction extends BuilderAction {
+    /**
+     * Clones the first element matching the selector inside the given container
+     * and inserts the clone at the specified position.
+     *
+     * @param {Object} args
+     *   - `editingElement` {HTMLElement}: the container element inside which
+     *     the item resides
+     *   - `params.mainParam` {string}: CSS selector to locate the item to clone
+     *   - `value` {InsertPosition}: where to insert the clone (e.g.
+     *     'beforeend', 'afterbegin')
+     *
+     * Behavior:
+     *   - Finds the first element matching the selector inside
+     *     `editingElement`.
+     *   - Clones it and inserts it at the given position.
+     *   - Scrolls to the clone and adds a history step.
+     */
+    apply({ editingElement, params: { mainParam: itemSelector }, value: position }) {
+        const itemEl = editingElement.querySelector(itemSelector);
+        this.plugin.cloneElement(itemEl, { position, scrollToClone: true });
+        this.dependencies.history.addStep();
     }
 }

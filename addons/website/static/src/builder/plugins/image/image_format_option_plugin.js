@@ -1,3 +1,4 @@
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 import {
     DEFAULT_IMAGE_QUALITY,
     shouldPreventGifTransformation,
@@ -12,50 +13,11 @@ class ImageFormatOptionPlugin extends Plugin {
     static dependencies = ["imagePostProcess"];
     static shared = ["computeAvailableFormats"];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setImageFormat: new SetImageFormatAction(this),
+            setImageQuality: new SetImageQualityAction(this),
+        },
     };
-    getActions() {
-        return {
-            setImageFormat: {
-                isApplied: ({ editingElement, params: { width, mimetype, isOriginal } }) => {
-                    const isOriginalUntouched =
-                        (!editingElement.dataset.resizeWidth ||
-                            !editingElement.dataset.formatMimetype) &&
-                        isOriginal;
-                    return (
-                        isOriginalUntouched ||
-                        (editingElement.dataset.resizeWidth === String(width) &&
-                            editingElement.dataset.formatMimetype === mimetype)
-                    );
-                },
-                load: async ({ editingElement: img, params: { width, mimetype } }) =>
-                    this.dependencies.imagePostProcess.processImage({
-                        img,
-                        newDataset: {
-                            resizeWidth: width,
-                            formatMimetype: mimetype,
-                        },
-                    }),
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            setImageQuality: {
-                getValue: ({ editingElement: img }) =>
-                    ("quality" in img.dataset && img.dataset.quality) || DEFAULT_IMAGE_QUALITY,
-                load: async ({ editingElement: img, value: quality }) =>
-                    this.dependencies.imagePostProcess.processImage({
-                        img,
-                        newDataset: {
-                            quality,
-                        },
-                    }),
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-        };
-    }
     /**
      * Returns a list of valid formats for a given image or an empty list if
      * there is no mimetypeBeforeConversion data attribute on the image.
@@ -97,4 +59,46 @@ class ImageFormatOptionPlugin extends Plugin {
         return width ? Math.round(width) : await getNaturalWidth();
     }
 }
+
+class SetImageFormatAction extends BuilderAction {
+    isApplied({ editingElement, params: { width, mimetype, isOriginal } }) {
+        const isOriginalUntouched =
+            (!editingElement.dataset.resizeWidth || !editingElement.dataset.formatMimetype) &&
+            isOriginal;
+        return (
+            isOriginalUntouched ||
+            (editingElement.dataset.resizeWidth === String(width) &&
+                editingElement.dataset.formatMimetype === mimetype)
+        );
+    }
+    async load({ editingElement: img, params: { width, mimetype } }) {
+        return this.dependencies.imagePostProcess.processImage({
+            img,
+            newDataset: {
+                resizeWidth: width,
+                formatMimetype: mimetype,
+            },
+        });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+class SetImageQualityAction extends BuilderAction {
+    getValue({ editingElement: img }) {
+        return ("quality" in img.dataset && img.dataset.quality) || DEFAULT_IMAGE_QUALITY;
+    }
+    async load({ editingElement: img, value: quality }) {
+        return this.dependencies.imagePostProcess.processImage({
+            img,
+            newDataset: {
+                quality,
+            },
+        });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+
 registry.category("website-plugins").add(ImageFormatOptionPlugin.id, ImageFormatOptionPlugin);

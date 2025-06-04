@@ -8,12 +8,20 @@ import { ShapeSelector } from "../shape/shape_selector";
 import { getDefaultColors } from "./background_shape_option";
 import { withSequence } from "@html_editor/utils/resource";
 import { getBgImageURLFromURL } from "@html_editor/utils/image";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export class BackgroundShapeOptionPlugin extends Plugin {
     static id = "backgroundShapeOption";
     static dependencies = ["customizeTab"];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setBackgroundShape: new SetBackgroundShapeAction(this),
+            toggleBgShape: new ToggleBgShapeAction(this),
+            showOnMobile: new ShowOnMobileAction(this),
+            flipShape: new FlipShapeAction(this),
+            setBgAnimationSpeed: new SetBgAnimationSpeedAction(this),
+            backgroundShapeColor: new BackgroundShapeColorAction(this),
+        },
         background_shape_target_providers: withSequence(5, (editingElement) =>
             editingElement.querySelector(":scope > .o_we_bg_filter")
         ),
@@ -47,127 +55,6 @@ export class BackgroundShapeOptionPlugin extends Plugin {
         for (const flipEl of flipEls) {
             this.applyShape(flipEl, () => ({ flip: this.getShapeData(flipEl).flip }));
         }
-    }
-    getActions() {
-        return {
-            setBackgroundShape: {
-                apply: ({ editingElement, params, value }) => {
-                    params = params || {};
-                    const shapeData = this.getShapeData(editingElement);
-                    const applyShapeParams = {
-                        shape: value,
-                        colors: this.getImplicitColors(editingElement, value, shapeData.colors),
-                        flip: [],
-                        animated: params.animated,
-                        shapeAnimationSpeed: shapeData.shapeAnimationSpeed,
-                    };
-                    this.applyShape(editingElement, () => applyShapeParams);
-                },
-                isApplied: ({ editingElement, value }) => {
-                    const currentShapeApplied = this.getShapeData(editingElement).shape;
-                    return currentShapeApplied === value;
-                },
-            },
-            toggleBgShape: {
-                apply: ({ editingElement }) => {
-                    const previousSibling = editingElement.previousElementSibling;
-                    let shapeToSelect;
-                    const allPossiblesShapesUrl = Object.keys(this.getBackgroundShapes());
-                    if (previousSibling) {
-                        const previousShape = this.getShapeData(previousSibling).shape;
-                        shapeToSelect = allPossiblesShapesUrl.find(
-                            (shape, i) => allPossiblesShapesUrl[i - 1] === previousShape
-                        );
-                    }
-                    // If there is no previous sibling, if the previous sibling
-                    // had the last shape selected or if the previous shape
-                    // could not be found in the possible shapes, default to the
-                    // first shape.
-                    if (!shapeToSelect) {
-                        shapeToSelect = allPossiblesShapesUrl[0];
-                    }
-                    // Only show on mobile by default if toggled from mobile
-                    // view.
-                    const showOnMobile = isMobileView(editingElement);
-                    this.createShapeContainer(editingElement, shapeToSelect);
-                    const applyShapeParams = {
-                        shape: shapeToSelect,
-                        colors: this.getImplicitColors(editingElement, shapeToSelect),
-                        showOnMobile,
-                    };
-                    this.applyShape(editingElement, () => applyShapeParams);
-                    this.showBackgroundShapes([editingElement]);
-                },
-                clean: ({ editingElement }) => {
-                    this.applyShape(editingElement, () => ({ shape: "" }));
-                },
-                isApplied: ({ editingElement }) => !!this.getShapeData(editingElement).shape,
-            },
-            showOnMobile: {
-                apply: ({ editingElement }) => {
-                    this.applyShape(editingElement, () => ({
-                        showOnMobile: false,
-                    }));
-                },
-                clean: ({ editingElement }) => {
-                    this.applyShape(editingElement, () => ({
-                        showOnMobile: true,
-                    }));
-                },
-                isApplied: ({ editingElement }) => !this.getShapeData(editingElement).showOnMobile,
-            },
-            flipShape: {
-                apply: ({ editingElement, params: { mainParam: axis } }) => {
-                    this.applyShape(editingElement, () => {
-                        const flip = new Set(this.getShapeData(editingElement).flip);
-                        flip.add(axis);
-                        return { flip: [...flip] };
-                    });
-                },
-                clean: ({ editingElement, params: { mainParam: axis } }) => {
-                    this.applyShape(editingElement, () => {
-                        const flip = new Set(this.getShapeData(editingElement).flip);
-                        flip.delete(axis);
-                        return { flip: [...flip] };
-                    });
-                },
-                isApplied: ({ editingElement, params: { mainParam: axis } }) => {
-                    // Compat: flip classes are no longer used but may be
-                    // present in client db.
-                    const selector = `.o_we_flip_${axis}`;
-                    const hasFlipClass = !!editingElement.querySelector(
-                        `:scope > .o_we_shape${selector}`
-                    );
-                    return hasFlipClass || this.getShapeData(editingElement).flip.includes(axis);
-                },
-            },
-            setBgAnimationSpeed: {
-                apply: ({ editingElement, value }) => {
-                    this.applyShape(editingElement, () => ({ shapeAnimationSpeed: value }));
-                },
-                getValue: ({ editingElement }) =>
-                    this.getShapeData(editingElement).shapeAnimationSpeed,
-            },
-            backgroundShapeColor: {
-                getValue: ({ editingElement, params: { mainParam: colorName } }) => {
-                    // TODO check if it works when the colorpicker is
-                    // implemented.
-                    const { shape, colors: customColors } = this.getShapeData(editingElement);
-                    const colors = Object.assign(getDefaultColors(editingElement), customColors);
-                    const color = shape && colors[colorName];
-                    return (color && normalizeColor(color)) || "";
-                },
-                apply: ({ editingElement, params: { mainParam: colorName }, value }) => {
-                    this.applyShape(editingElement, () => {
-                        value = getValueFromVar(value);
-                        const { colors: previousColors } = this.getShapeData(editingElement);
-                        const newColor = value || getDefaultColors(editingElement)[colorName];
-                        const newColors = Object.assign(previousColors, { [colorName]: newColor });
-                        return { colors: newColors };
-                    });
-                },
-            },
-        };
     }
     /**
      * Handles everything related to saving state before preview and restoring
@@ -412,6 +299,127 @@ export class BackgroundShapeOptionPlugin extends Plugin {
             )
             .flat();
         return Object.fromEntries(entries);
+    }
+}
+
+class SetBackgroundShapeAction extends BuilderAction {
+    apply({ editingElement, params, value }) {
+        params = params || {};
+        const shapeData = this.plugin.getShapeData(editingElement);
+        const applyShapeParams = {
+            shape: value,
+            colors: this.plugin.getImplicitColors(editingElement, value, shapeData.colors),
+            flip: [],
+            animated: params.animated,
+            shapeAnimationSpeed: shapeData.shapeAnimationSpeed,
+        };
+        this.plugin.applyShape(editingElement, () => applyShapeParams);
+    }
+    isApplied({ editingElement, value }) {
+        const currentShapeApplied = this.plugin.getShapeData(editingElement).shape;
+        return currentShapeApplied === value;
+    }
+}
+class ToggleBgShapeAction extends BuilderAction {
+    apply({ editingElement }) {
+        const previousSibling = editingElement.previousElementSibling;
+        let shapeToSelect;
+        const allPossiblesShapesUrl = Object.keys(this.plugin.getBackgroundShapes());
+        if (previousSibling) {
+            const previousShape = this.plugin.getShapeData(previousSibling).shape;
+            shapeToSelect = allPossiblesShapesUrl.find(
+                (shape, i) => allPossiblesShapesUrl[i - 1] === previousShape
+            );
+        }
+        // If there is no previous sibling, if the previous sibling
+        // had the last shape selected or if the previous shape
+        // could not be found in the possible shapes, default to the
+        // first shape.
+        if (!shapeToSelect) {
+            shapeToSelect = allPossiblesShapesUrl[0];
+        }
+        // Only show on mobile by default if toggled from mobile
+        // view.
+        const showOnMobile = isMobileView(editingElement);
+        this.plugin.createShapeContainer(editingElement, shapeToSelect);
+        const applyShapeParams = {
+            shape: shapeToSelect,
+            colors: this.plugin.getImplicitColors(editingElement, shapeToSelect),
+            showOnMobile,
+        };
+        this.plugin.applyShape(editingElement, () => applyShapeParams);
+        this.plugin.showBackgroundShapes([editingElement]);
+    }
+    clean({ editingElement }) {
+        this.plugin.applyShape(editingElement, () => ({ shape: "" }));
+    }
+    isApplied({ editingElement }) {
+        return !!this.plugin.getShapeData(editingElement).shape;
+    }
+}
+class ShowOnMobileAction extends BuilderAction {
+    apply({ editingElement }) {
+        this.plugin.applyShape(editingElement, () => ({
+            showOnMobile: false,
+        }));
+    }
+    clean({ editingElement }) {
+        this.plugin.applyShape(editingElement, () => ({
+            showOnMobile: true,
+        }));
+    }
+    isApplied({ editingElement }) {
+        return !this.plugin.getShapeData(editingElement).showOnMobile;
+    }
+}
+class FlipShapeAction extends BuilderAction {
+    apply({ editingElement, params: { mainParam: axis } }) {
+        this.plugin.applyShape(editingElement, () => {
+            const flip = new Set(this.plugin.getShapeData(editingElement).flip);
+            flip.add(axis);
+            return { flip: [...flip] };
+        });
+    }
+    clean({ editingElement, params: { mainParam: axis } }) {
+        this.plugin.applyShape(editingElement, () => {
+            const flip = new Set(this.plugin.getShapeData(editingElement).flip);
+            flip.delete(axis);
+            return { flip: [...flip] };
+        });
+    }
+    isApplied({ editingElement, params: { mainParam: axis } }) {
+        // Compat: flip classes are no longer used but may be
+        // present in client db.
+        const selector = `.o_we_flip_${axis}`;
+        const hasFlipClass = !!editingElement.querySelector(`:scope > .o_we_shape${selector}`);
+        return hasFlipClass || this.plugin.getShapeData(editingElement).flip.includes(axis);
+    }
+}
+class SetBgAnimationSpeedAction extends BuilderAction {
+    apply({ editingElement, value }) {
+        this.plugin.applyShape(editingElement, () => ({ shapeAnimationSpeed: value }));
+    }
+    getValue({ editingElement }) {
+        return this.plugin.getShapeData(editingElement).shapeAnimationSpeed;
+    }
+}
+class BackgroundShapeColorAction extends BuilderAction {
+    getValue({ editingElement, params: { mainParam: colorName } }) {
+        // TODO check if it works when the colorpicker is
+        // implemented.
+        const { shape, colors: customColors } = this.plugin.getShapeData(editingElement);
+        const colors = Object.assign(getDefaultColors(editingElement), customColors);
+        const color = shape && colors[colorName];
+        return (color && normalizeColor(color)) || "";
+    }
+    apply({ editingElement, params: { mainParam: colorName }, value }) {
+        this.plugin.applyShape(editingElement, () => {
+            value = getValueFromVar(value);
+            const { colors: previousColors } = this.plugin.getShapeData(editingElement);
+            const newColor = value || getDefaultColors(editingElement)[colorName];
+            const newColors = Object.assign(previousColors, { [colorName]: newColor });
+            return { colors: newColors };
+        });
     }
 }
 

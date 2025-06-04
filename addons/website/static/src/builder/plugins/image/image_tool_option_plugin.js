@@ -15,6 +15,7 @@ import {
 } from "@html_builder/utils/option_sequence";
 import { ReplaceMediaOption, searchSupportedParentLinkEl } from "./replace_media_option";
 import { computeMaxDisplayWidth } from "./image_format_option";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export const REPLACE_MEDIA_SELECTOR = "img, .media_iframe_video, span.fa, i.fa";
 export const REPLACE_MEDIA_EXCLUDE =
@@ -50,7 +51,17 @@ class ImageToolOptionPlugin extends Plugin {
                 exclude: "[data-oe-type='image'] > img, [data-oe-xpath]",
             }),
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            cropImage: new CropImageAction(this),
+            resetCrop: new ResetCropAction(this),
+            transformImage: new TransformImageAction(this),
+            resetTransformImage: new ResetTransformImageAction(this),
+            replaceMedia: new ReplaceMediaAction(this),
+            setLink: new SetLinkAction(this),
+            setUrl: new SetUrlAction(this),
+            setNewWindow: new SetNewWindowAction(this),
+            alt: new AltAction(this),
+        },
         on_media_dialog_saved_handlers: async (elements, { node }) => {
             for (const image of elements) {
                 if (image && image.tagName === "IMG") {
@@ -98,154 +109,7 @@ class ImageToolOptionPlugin extends Plugin {
             }
         },
     };
-    getActions() {
-        return {
-            cropImage: {
-                isApplied: ({ editingElement }) =>
-                    cropperDataFieldsWithAspectRatio.some((field) => editingElement.dataset[field]),
-                load: ({ editingElement: img }) =>
-                    new Promise((resolve) => {
-                        this.dependencies.imageCrop.openCropImage(img, {
-                            onClose: resolve,
-                            onSave: async (newDataset) => {
-                                resolve(
-                                    this.dependencies.imagePostProcess.processImage({
-                                        img,
-                                        newDataset,
-                                    })
-                                );
-                            },
-                        });
-                    }),
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes?.();
-                },
-            },
-            resetCrop: {
-                load: async ({ editingElement: img }) => {
-                    const newDataset = Object.fromEntries(
-                        cropperDataFieldsWithAspectRatio.map((field) => [field, undefined])
-                    );
-                    return this.dependencies.imagePostProcess.processImage({ img, newDataset });
-                },
-                apply: ({ loadResult: updateImageAttributes }) => {
-                    updateImageAttributes();
-                },
-            },
-            transformImage: {
-                isApplied: ({ editingElement }) => editingElement.matches(`[style*="transform"]`),
-                apply: () => {
-                    this.dependencies.userCommand.getCommand("transformImage").run();
-                },
-            },
-            resetTransformImage: {
-                apply: ({ editingElement }) => {
-                    editingElement.setAttribute(
-                        "style",
-                        (editingElement.getAttribute("style") || "").replace(
-                            /[^;]*transform[\w:]*;?/g,
-                            ""
-                        )
-                    );
-                },
-            },
-            replaceMedia: {
-                load: async ({ editingElement }) => {
-                    let image;
-                    await this.dependencies.media.openMediaDialog({
-                        node: editingElement,
-                        save: (newImage) => {
-                            image = newImage;
-                        },
-                    });
-                    return image;
-                },
-                apply: ({ editingElement, loadResult: newImage }) => {
-                    if (!newImage) {
-                        return;
-                    }
-                    editingElement.replaceWith(newImage);
-                    this.dependencies.history.addStep();
-                    this.dependencies["builder-options"].updateContainers(newImage);
-                },
-            },
-            setLink: {
-                preview: false,
-                apply: ({ editingElement }) => {
-                    const parentEl = searchSupportedParentLinkEl(editingElement);
-                    if (parentEl.tagName !== "A") {
-                        const wrapperEl = document.createElement("a");
-                        editingElement.after(wrapperEl);
-                        wrapperEl.appendChild(editingElement);
-                    } else {
-                        const fragment = document.createDocumentFragment();
-                        fragment.append(...parentEl.childNodes);
-                        parentEl.replaceWith(fragment);
-                    }
-                },
-                isApplied: ({ editingElement }) => {
-                    const parentEl = searchSupportedParentLinkEl(editingElement);
-                    return parentEl.tagName === "A";
-                },
-            },
-            setUrl: {
-                preview: false,
-                apply: ({ editingElement, value }) => {
-                    const linkEl = searchSupportedParentLinkEl(editingElement);
-                    let url = value;
-                    if (!url) {
-                        // As long as there is no URL, the image is not considered a link.
-                        linkEl.removeAttribute("href");
-                        return;
-                    }
-                    if (
-                        !url.startsWith("/") &&
-                        !url.startsWith("#") &&
-                        !/^([a-zA-Z]*.):.+$/gm.test(url)
-                    ) {
-                        // We permit every protocol (http:, https:, ftp:, mailto:,...).
-                        // If none is explicitly specified, we assume it is a http.
-                        url = "http://" + url;
-                    }
-                    linkEl.setAttribute("href", url);
-                },
-                getValue: ({ editingElement }) => {
-                    const linkEl = searchSupportedParentLinkEl(editingElement);
-                    return linkEl.getAttribute("href");
-                },
-            },
-            setNewWindow: {
-                preview: false,
-                apply: ({ editingElement, value }) => {
-                    const linkEl = searchSupportedParentLinkEl(editingElement);
-                    linkEl.setAttribute("target", "_blank");
-                },
-                clean: ({ editingElement }) => {
-                    const linkEl = searchSupportedParentLinkEl(editingElement);
-                    linkEl.removeAttribute("target");
-                },
-                isApplied: ({ editingElement }) => {
-                    const linkEl = searchSupportedParentLinkEl(editingElement);
-                    return linkEl.getAttribute("target") === "_blank";
-                },
-            },
 
-            alt: {
-                getValue: ({ editingElement: imgEl }) => imgEl.alt,
-                apply: ({ editingElement: imgEl, value }) => {
-                    const trimmedValue = value.trim();
-                    if (trimmedValue) {
-                        imgEl.alt = trimmedValue;
-                        if (imgEl.getAttribute("role") === "presentation") {
-                            imgEl.removeAttribute("role");
-                        }
-                    } else {
-                        imgEl.removeAttribute("alt");
-                    }
-                },
-            },
-        };
-    }
     async canHaveHoverEffect(img) {
         return (
             img.tagName === "IMG" &&
@@ -271,6 +135,156 @@ class ImageToolOptionPlugin extends Plugin {
         return img.dataset.originalId && isImageSupportedForProcessing(getMimetype(img));
     }
 }
+
+class CropImageAction extends BuilderAction {
+    isApplied({ editingElement }) {
+        return cropperDataFieldsWithAspectRatio.some((field) => editingElement.dataset[field]);
+    }
+    load({ editingElement: img }) {
+        return new Promise((resolve) => {
+            this.dependencies.imageCrop.openCropImage(img, {
+                onClose: resolve,
+                onSave: async (newDataset) => {
+                    resolve(this.dependencies.imagePostProcess.processImage({ img, newDataset }));
+                },
+            });
+        });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes?.();
+    }
+}
+
+class ResetCropAction extends BuilderAction {
+    async load({ editingElement: img }) {
+        const newDataset = Object.fromEntries(
+            cropperDataFieldsWithAspectRatio.map((field) => [field, undefined])
+        );
+        return this.dependencies.imagePostProcess.processImage({ img, newDataset });
+    }
+    apply({ loadResult: updateImageAttributes }) {
+        updateImageAttributes();
+    }
+}
+
+class TransformImageAction extends BuilderAction {
+    isApplied({ editingElement }) {
+        return editingElement.matches(`[style*="transform"]`);
+    }
+    apply() {
+        return this.dependencies.userCommand.getCommand("transformImage").run();
+    }
+}
+class ResetTransformImageAction extends BuilderAction {
+    apply({ editingElement }) {
+        editingElement.setAttribute(
+            "style",
+            (editingElement.getAttribute("style") || "").replace(/[^;]*transform[\w:]*;?/g, "")
+        );
+    }
+}
+class ReplaceMediaAction extends BuilderAction {
+    async load({ editingElement }) {
+        let image;
+        await this.dependencies.media.openMediaDialog({
+            node: editingElement,
+            save: (newImage) => {
+                image = newImage;
+            },
+        });
+        return image;
+    }
+    apply({ editingElement, loadResult: newImage }) {
+        if (!newImage) {
+            return;
+        }
+        editingElement.replaceWith(newImage);
+        this.dependencies.history.addStep();
+        this.dependencies["builder-options"].updateContainers(newImage);
+    }
+}
+class SetLinkAction extends BuilderAction {
+    setup() {
+        this.preview = false;
+    }
+    apply({ editingElement }) {
+        const parentEl = searchSupportedParentLinkEl(editingElement);
+        if (parentEl.tagName !== "A") {
+            const wrapperEl = document.createElement("a");
+            editingElement.after(wrapperEl);
+            wrapperEl.appendChild(editingElement);
+        } else {
+            const fragment = document.createDocumentFragment();
+            fragment.append(...parentEl.childNodes);
+            parentEl.replaceWith(fragment);
+        }
+    }
+    isApplied({ editingElement }) {
+        const parentEl = searchSupportedParentLinkEl(editingElement);
+        return parentEl.tagName === "A";
+    }
+}
+
+class SetUrlAction extends BuilderAction {
+    setup() {
+        this.preview = false;
+    }
+    apply({ editingElement, value }) {
+        const linkEl = searchSupportedParentLinkEl(editingElement);
+        let url = value;
+        if (!url) {
+            // As long as there is no URL, the image is not considered a link.
+            linkEl.removeAttribute("href");
+            return;
+        }
+        if (!url.startsWith("/") && !url.startsWith("#") && !/^([a-zA-Z]*.):.+$/gm.test(url)) {
+            // We permit every protocol (http:, https:, ftp:, mailto:,...).
+            // If none is explicitly specified, we assume it is a http.
+            url = "http://" + url;
+        }
+        linkEl.setAttribute("href", url);
+    }
+    getValue({ editingElement }) {
+        const linkEl = searchSupportedParentLinkEl(editingElement);
+        return linkEl.getAttribute("href");
+    }
+}
+
+class SetNewWindowAction extends BuilderAction {
+    setup() {
+        this.preview = false;
+    }
+    apply({ editingElement, value }) {
+        const linkEl = searchSupportedParentLinkEl(editingElement);
+        linkEl.setAttribute("target", "_blank");
+    }
+    clean({ editingElement }) {
+        const linkEl = searchSupportedParentLinkEl(editingElement);
+        linkEl.removeAttribute("target");
+    }
+    isApplied({ editingElement }) {
+        const linkEl = searchSupportedParentLinkEl(editingElement);
+        return linkEl.getAttribute("target") === "_blank";
+    }
+}
+
+class AltAction extends BuilderAction {
+    getValue({ editingElement: imgEl }) {
+        return imgEl.alt;
+    }
+    apply({ editingElement: imgEl, value }) {
+        const trimmedValue = value.trim();
+        if (trimmedValue) {
+            imgEl.alt = trimmedValue;
+            if (imgEl.getAttribute("role") === "presentation") {
+                imgEl.removeAttribute("role");
+            }
+        } else {
+            imgEl.removeAttribute("alt");
+        }
+    }
+}
+
 registry.category("website-plugins").add(ImageToolOptionPlugin.id, ImageToolOptionPlugin);
 
 /**

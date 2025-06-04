@@ -1,3 +1,4 @@
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 import { before, SNIPPET_SPECIFIC_END } from "@html_builder/utils/option_sequence";
 import { Plugin } from "@html_editor/plugin";
 import { withSequence } from "@html_editor/utils/resource";
@@ -18,24 +19,10 @@ class CountdownOptionPlugin extends Plugin {
         builder_actions: {
             // TODO AGAU: update after merging generalized restart interactions
             //  remove this and xml BuilderContext
-            reloadCountdown: {
-                apply: ({ editingElement }) => {
-                    this.dispatchTo("update_interactions", editingElement);
-                },
-            },
-            setEndAction: {
-                apply: this.setEndAction.bind(this),
-                isApplied: this.isEndActionApplied.bind(this),
-            },
-            previewEndMessage: {
-                apply: ({ editingElement }) => this.toggleEndMessagePreview(editingElement, true),
-                clean: ({ editingElement }) => this.toggleEndMessagePreview(editingElement, false),
-                isApplied: this.isEndMessagePreviewed.bind(this),
-            },
-            setLayout: {
-                apply: this.setLayout.bind(this),
-                isApplied: this.isLayoutApplied.bind(this),
-            },
+            reloadCountdown: new ReloadCountdownAction(this),
+            setEndAction: new SetEndActionAction(this),
+            previewEndMessage: new PreviewEndMessageAction(this),
+            setLayout: new SetLayoutAction(this),
         },
     };
 
@@ -118,6 +105,44 @@ class CountdownOptionPlugin extends Plugin {
 
     toggleEndMessagePreview(editingElement, doShow) {
         editingElement?.classList.toggle("s_countdown_enable_preview", doShow === true);
+    }
+}
+
+// TODO AGAU: update after merging generalized restart interactions
+//  remove this and xml BuilderContext
+class ReloadCountdownAction extends BuilderAction {
+    apply({ editingElement }) {
+        return this.plugin.dispatchTo("update_interactions", editingElement);
+    }
+}
+
+class SetEndActionAction extends BuilderAction {
+    apply(context) {
+        return this.plugin.setEndAction(context);
+    }
+    isApplied(context) {
+        return this.plugin.isEndActionApplied(context);
+    }
+}
+
+class PreviewEndMessageAction extends BuilderAction {
+    apply({ editingElement }) {
+        return this.plugin.toggleEndMessagePreview(editingElement, true);
+    }
+    clean({ editingElement }) {
+        return this.plugin.toggleEndMessagePreview(editingElement, false);
+    }
+    isApplied(context) {
+        return this.plugin.isEndMessagePreviewed(context);
+    }
+}
+
+class SetLayoutAction extends BuilderAction {
+    apply(context) {
+        return this.plugin.setLayout(context);
+    }
+    isApplied(context) {
+        return this.plugin.isLayoutApplied(context);
     }
 }
 registry.category("website-plugins").add(CountdownOptionPlugin.id, CountdownOptionPlugin);

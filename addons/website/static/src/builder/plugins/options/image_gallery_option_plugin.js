@@ -3,6 +3,7 @@ import { Plugin } from "@html_editor/plugin";
 import { loadImageInfo } from "@html_editor/utils/image_processing";
 import { ImageGalleryComponent } from "./image_gallery_option";
 import { renderToElement } from "@web/core/utils/render";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 class ImageGalleryOption extends Plugin {
     static id = "imageGalleryOption";
@@ -22,7 +23,13 @@ class ImageGalleryOption extends Plugin {
                 selector: ".s_image_gallery",
             },
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            addImage: new AddImageAction(this),
+            removeAllImages: new RemoveAllImagesAction(this),
+            setImageGalleryLayout: new SetImageGalleryLayoutAction(this),
+            setImageGalleryColumns: new SetImageGalleryColumnsAction(this),
+            setCarouselSpeed: new SetCarouselSpeedAction(this),
+        },
         system_classes: ["o_empty_gallery_alert"],
         on_reorder_items_handlers: this.reorderGalleryItems.bind(this),
         on_remove_handlers: this.onRemove.bind(this),
@@ -32,57 +39,6 @@ class ImageGalleryOption extends Plugin {
             this.addCarouselListener(carousels);
         },
     };
-
-    getActions() {
-        return {
-            addImage: this.addImageAction,
-            removeAllImages: {
-                apply: ({ editingElement: el }) => {
-                    const containerEl = el.querySelector(
-                        ".container, .container-fluid, .o_container_small"
-                    );
-                    for (const subEl of containerEl.querySelectorAll(
-                        ":scope > *:not(.o_empty_gallery_alert)"
-                    )) {
-                        subEl.remove();
-                    }
-                },
-            },
-            setImageGalleryLayout: {
-                load: ({ editingElement }) => this.processImages(editingElement),
-                apply: ({ editingElement, params: { mainParam: mode }, loadResult }) => {
-                    if (mode !== this.getMode(editingElement)) {
-                        this.setImages(editingElement, mode, loadResult.images);
-                        this.restoreSelection(loadResult.imageToSelect);
-                    }
-                },
-                isApplied: ({ editingElement, params: { mainParam: mode } }) =>
-                    mode === this.getMode(editingElement),
-            },
-            setImageGalleryColumns: {
-                load: ({ editingElement }) => this.processImages(editingElement),
-                apply: ({ editingElement, params: { mainParam: columns }, loadResult }) => {
-                    if (columns !== this.getColumns(editingElement)) {
-                        editingElement.dataset.columns = columns;
-                        this.setImages(
-                            editingElement,
-                            this.getMode(editingElement),
-                            loadResult.images
-                        );
-                        this.restoreSelection(loadResult.imageToSelect);
-                    }
-                },
-                isApplied: ({ editingElement, params: { mainParam: columns } }) =>
-                    columns === this.getColumns(editingElement),
-            },
-            setCarouselSpeed: {
-                apply: ({ editingElement, value }) => {
-                    editingElement.dataset.bsInterval = value * 1000;
-                },
-                getValue: ({ editingElement }) => editingElement.dataset.bsInterval / 1000,
-            },
-        };
-    }
 
     setup() {
         const slideshowCarousels = this.document.querySelectorAll(".s_image_gallery .carousel");
@@ -461,6 +417,85 @@ class ImageGalleryOption extends Plugin {
             this.setImages(this.imageRemovedGalleryElement, mode, images);
             this.imageRemovedGalleryElement = undefined;
         }
+    }
+}
+
+class AddImageAction extends BuilderAction {
+    async load({ editingElement }) {
+        let selectedImages;
+        await new Promise((resolve) => {
+            const onClose = this.dependencies.media.openMediaDialog({
+                onlyImages: true,
+                multiImages: true,
+                save: (images) => {
+                    selectedImages = images;
+                    resolve();
+                },
+            });
+            onClose.then(resolve);
+        });
+        if (!selectedImages) {
+            return [];
+        }
+        return this.plugin.processImages(editingElement, selectedImages);
+    }
+    apply({ editingElement, loadResult: { images } }) {
+        if (images && images.length) {
+            const mode = this.plugin.getMode(editingElement);
+            this.plugin.setImages(editingElement, mode, images);
+        }
+    }
+}
+class RemoveAllImagesAction extends BuilderAction {
+    apply({ editingElement: el }) {
+        const containerEl = el.querySelector(".container, .container-fluid, .o_container_small");
+        for (const subEl of containerEl.querySelectorAll(
+            ":scope > *:not(.o_empty_gallery_alert)"
+        )) {
+            subEl.remove();
+        }
+    }
+}
+class SetImageGalleryLayoutAction extends BuilderAction {
+    load({ editingElement }) {
+        return this.plugin.processImages(editingElement);
+    }
+    apply({ editingElement, params: { mainParam: mode }, loadResult }) {
+        if (mode !== this.plugin.getMode(editingElement)) {
+            this.plugin.setImages(editingElement, mode, loadResult.images);
+            this.plugin.restoreSelection(loadResult.imageToSelect);
+        }
+    }
+    isApplied({ editingElement, params: { mainParam: mode } }) {
+        return mode === this.plugin.getMode(editingElement);
+    }
+}
+class SetImageGalleryColumnsAction extends BuilderAction {
+    load({ editingElement }) {
+        return this.plugin.processImages(editingElement);
+    }
+    apply({ editingElement, params: { mainParam: columns }, loadResult }) {
+        if (columns !== this.plugin.getColumns(editingElement)) {
+            editingElement.dataset.columns = columns;
+            this.plugin.setImages(
+                editingElement,
+                this.plugin.getMode(editingElement),
+                loadResult.images
+            );
+            this.plugin.restoreSelection(loadResult.imageToSelect);
+        }
+    }
+    isApplied({ editingElement, params: { mainParam: columns } }) {
+        return columns === this.plugin.getColumns(editingElement);
+    }
+}
+
+class SetCarouselSpeedAction extends BuilderAction {
+    apply({ editingElement, value }) {
+        editingElement.dataset.bsInterval = value * 1000;
+    }
+    getValue({ editingElement }) {
+        return editingElement.dataset.bsInterval / 1000;
     }
 }
 

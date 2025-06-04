@@ -1,3 +1,4 @@
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 import { resizeGrid, setElementToMaxZindex } from "@html_builder/utils/grid_layout_utils";
 import { Plugin } from "@html_editor/plugin";
 import { _t } from "@web/core/l10n/translation";
@@ -7,85 +8,12 @@ export class AddElementOptionPlugin extends Plugin {
     static id = "AddElementOption";
     static dependencies = ["history", "media"];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            addElText: new AddElTextAction(this),
+            addElImage: new AddElImageAction(this),
+            addElButton: new AddElButtonAction(this),
+        },
     };
-
-    getActions() {
-        return {
-            addElText: {
-                apply: ({ editingElement }) => {
-                    const colSize = 4;
-                    const rowSize = 2;
-
-                    const newElement = document.createElement("p");
-                    newElement.textContent = _t("Write something...");
-
-                    this.addElement(editingElement, newElement, colSize, rowSize, [
-                        "col-lg-4",
-                        "g-col-lg-4",
-                        "g-height-2",
-                    ]);
-                },
-            },
-            addElImage: {
-                load: async ({ editingElement }) => {
-                    let selectedImage;
-                    await new Promise((resolve) => {
-                        const onClose = this.dependencies.media.openMediaDialog({
-                            onlyImages: true,
-                            node: editingElement,
-                            save: (images) => {
-                                selectedImage = images;
-                                resolve();
-                            },
-                        });
-                        onClose.then(resolve);
-                    });
-                    if (!selectedImage) {
-                        return;
-                    }
-
-                    await new Promise((resolve) => {
-                        selectedImage.addEventListener("load", () => resolve(), {
-                            once: true,
-                        });
-                    });
-                    return selectedImage;
-                },
-                apply: ({ editingElement, loadResult: image }) => {
-                    if (!image) {
-                        return;
-                    }
-                    const colSize = 6;
-                    const rowSize = 6;
-
-                    this.addElement(editingElement, image, colSize, rowSize, [
-                        "col-lg-6",
-                        "g-col-lg-6",
-                        "g-height-6",
-                        "o_grid_item_image",
-                    ]);
-                },
-            },
-            addElButton: {
-                apply: ({ editingElement }) => {
-                    const colSize = 2;
-                    const rowSize = 1;
-
-                    const newButton = document.createElement("a");
-                    newButton.href = "#";
-                    newButton.classList.add("mb-2", "btn", "btn-primary");
-                    newButton.textContent = "Button";
-
-                    this.addElement(editingElement, newButton, colSize, rowSize, [
-                        "col-lg-2",
-                        "g-col-lg-2",
-                        "g-height-1",
-                    ]);
-                },
-            },
-        };
-    }
 
     /**
      * Adds an image, some text or a button in the grid.
@@ -138,6 +66,79 @@ export class AddElementOptionPlugin extends Plugin {
             newColumnEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }
         this.dependencies.history.addStep();
+    }
+}
+
+class AddElTextAction extends BuilderAction {
+    apply({ editingElement }) {
+        const colSize = 4;
+        const rowSize = 2;
+
+        const newElement = document.createElement("p");
+        newElement.textContent = _t("Write something...");
+
+        this.plugin.addElement(editingElement, newElement, colSize, rowSize, [
+            "col-lg-4",
+            "g-col-lg-4",
+            "g-height-2",
+        ]);
+    }
+}
+class AddElImageAction extends BuilderAction {
+    async load({ editingElement }) {
+        let selectedImage;
+        await new Promise((resolve) => {
+            const onClose = this.dependencies.media.openMediaDialog({
+                onlyImages: true,
+                node: editingElement,
+                save: (images) => {
+                    selectedImage = images;
+                    resolve();
+                },
+            });
+            onClose.then(resolve);
+        });
+        if (!selectedImage) {
+            return;
+        }
+
+        await new Promise((resolve) => {
+            selectedImage.addEventListener("load", () => resolve(), {
+                once: true,
+            });
+        });
+        return selectedImage;
+    }
+    apply({ editingElement, loadResult: image }) {
+        if (!image) {
+            return;
+        }
+        const colSize = 6;
+        const rowSize = 6;
+
+        this.plugin.addElement(editingElement, image, colSize, rowSize, [
+            "col-lg-6",
+            "g-col-lg-6",
+            "g-height-6",
+            "o_grid_item_image",
+        ]);
+    }
+}
+class AddElButtonAction extends BuilderAction {
+    apply({ editingElement }) {
+        const colSize = 2;
+        const rowSize = 1;
+
+        const newButton = document.createElement("a");
+        newButton.href = "#";
+        newButton.classList.add("mb-2", "btn", "btn-primary");
+        newButton.textContent = "Button";
+
+        this.plugin.addElement(editingElement, newButton, colSize, rowSize, [
+            "col-lg-2",
+            "g-col-lg-2",
+            "g-height-1",
+        ]);
     }
 }
 

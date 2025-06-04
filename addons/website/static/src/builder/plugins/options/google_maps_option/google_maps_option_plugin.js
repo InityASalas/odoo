@@ -5,6 +5,7 @@ import { Plugin } from "@html_editor/plugin";
 import { GoogleMapsApiKeyDialog } from "./google_maps_api_key_dialog";
 import { GoogleMapsOption } from "./google_maps_option";
 import { Deferred } from "@odoo/hoot-dom";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 /**
  * A `google.maps.places.PlaceResult` object.
@@ -49,8 +50,11 @@ export class GoogleMapsOptionPlugin extends Plugin {
             },
         ],
         so_content_addition_selector: [".s_google_map"],
-        builder_actions: this.getActions(),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
+        builder_actions: {
+            resetMapColor: new ResetMapColorAction(this),
+            showDescription: new ShowDescriptionAction(this),
+        },
     };
 
     setup() {
@@ -64,25 +68,6 @@ export class GoogleMapsOptionPlugin extends Plugin {
 
         /** @type {Map<HTMLElement, Deferred} */
         this.recentlyDroppedSnippetDeferredInit = new Map();
-    }
-
-    getActions() {
-        return {
-            resetMapColor: {
-                apply: ({ editingElement }) => {
-                    editingElement.dataset.mapColor = "";
-                },
-            },
-            showDescription: {
-                isApplied: ({ editingElement }) => !!editingElement.querySelector(".description"),
-                apply: ({ editingElement }) => {
-                    editingElement.append(renderToElement("website.GoogleMapsDescription"));
-                },
-                clean: ({ editingElement }) => {
-                    editingElement.querySelector(".description").remove();
-                },
-            },
-        };
     }
 
     async onSnippetDropped({ snippetEl }) {
@@ -297,6 +282,23 @@ export class GoogleMapsOptionPlugin extends Plugin {
     }
     shouldNotRefetchApiKey() {
         this.wasApiKeyInvalidated = false;
+    }
+}
+
+class ResetMapColorAction extends BuilderAction {
+    apply({ editingElement }) {
+        editingElement.dataset.mapColor = "";
+    }
+}
+class ShowDescriptionAction extends BuilderAction {
+    isApplied({ editingElement }) {
+        return !!editingElement.querySelector(".description");
+    }
+    apply({ editingElement }) {
+        editingElement.append(renderToElement("html_builder.GoogleMapsDescription"));
+    }
+    clean({ editingElement }) {
+        editingElement.querySelector(".description").remove();
     }
 }
 

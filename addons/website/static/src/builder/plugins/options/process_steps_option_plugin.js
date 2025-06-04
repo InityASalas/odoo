@@ -1,10 +1,43 @@
-import { classAction } from "@html_builder/core/core_builder_action_plugin";
+import { BuilderAction, ClassAction } from "@html_builder/core/core_builder_action_plugin";
 import { applyFunDependOnSelectorAndExclude } from "@website/builder/plugins/utils";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 import { connectorOptionParams, ProcessStepsOption } from "./process_steps_option";
 import { WebsiteBackgroundOption } from "./background_option";
+class ChangeConnectorAction extends ClassAction {
+    apply({ editingElement, params: { mainParam: className } }) {
+        super.apply({
+            editingElement: editingElement,
+            params: { mainParam: className },
+        });
+        reloadConnectors(editingElement);
+        let markerEnd = "";
+        if (
+            ["s_process_steps_connector_arrow", "s_process_steps_connector_curved_arrow"].includes(
+                className
+            )
+        ) {
+            const arrowHeadEl = editingElement.querySelector(".s_process_steps_arrow_head");
+            // The arrowhead id is set here so that they are different per snippet
+            if (!arrowHeadEl.id) {
+                arrowHeadEl.id = "s_process_steps_arrow_head" + Date.now();
+            }
+            markerEnd = `url(#${arrowHeadEl.id})`;
+        }
+        editingElement
+            .querySelectorAll(".s_process_step_connector path")
+            .forEach((path) => path.setAttribute("marker-end", markerEnd));
+    }
+}
 
+class ChangeArrowColorAction extends BuilderAction {
+    apply({ editingElement, params: { mainParam: colorValue } }) {
+        const arrowHeadEl = editingElement
+            .closest(".s_process_steps")
+            .querySelector(".s_process_steps_arrow_head");
+        arrowHeadEl.querySelector("path").style.fill = colorValue;
+    }
+}
 class ProcessStepsOptionPlugin extends Plugin {
     static id = "processStepsOption";
     selector = ".s_process_steps";
@@ -24,7 +57,10 @@ class ProcessStepsOptionPlugin extends Plugin {
                 },
             },
         ],
-        builder_actions: this.getActions(),
+        builder_actions: {
+            changeConnector: new ChangeConnectorAction(this),
+            changeArrowColor: new ChangeArrowColorAction(this),
+        },
         // The reload of the connectors is done at the
         // 'content_updated_handlers' (each time there is a DOM mutation) and
         // not at the normalize as there are cases where we want to reload the
@@ -39,47 +75,6 @@ class ProcessStepsOptionPlugin extends Plugin {
             dropLockWithin: ".s_process_steps",
         },
     };
-    getActions() {
-        return {
-            changeConnector: {
-                ...classAction,
-                apply: ({ editingElement, params: { mainParam: className } }) => {
-                    classAction.apply({
-                        editingElement: editingElement,
-                        params: { mainParam: className },
-                    });
-                    reloadConnectors(editingElement);
-                    let markerEnd = "";
-                    if (
-                        [
-                            "s_process_steps_connector_arrow",
-                            "s_process_steps_connector_curved_arrow",
-                        ].includes(className)
-                    ) {
-                        const arrowHeadEl = editingElement.querySelector(
-                            ".s_process_steps_arrow_head"
-                        );
-                        // The arrowhead id is set here so that they are different per snippet
-                        if (!arrowHeadEl.id) {
-                            arrowHeadEl.id = "s_process_steps_arrow_head" + Date.now();
-                        }
-                        markerEnd = `url(#${arrowHeadEl.id})`;
-                    }
-                    editingElement
-                        .querySelectorAll(".s_process_step_connector path")
-                        .forEach((path) => path.setAttribute("marker-end", markerEnd));
-                },
-            },
-            changeArrowColor: {
-                apply: ({ editingElement, value: colorValue }) => {
-                    const arrowHeadEl = editingElement
-                        .closest(".s_process_steps")
-                        .querySelector(".s_process_steps_arrow_head");
-                    arrowHeadEl.querySelector("path").style.fill = colorValue;
-                },
-            },
-        };
-    }
 }
 
 registry.category("website-plugins").add(ProcessStepsOptionPlugin.id, ProcessStepsOptionPlugin);

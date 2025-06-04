@@ -6,6 +6,7 @@ import { withSequence } from "@html_editor/utils/resource";
 import { FOOTER_SCROLL_TO } from "./footer_option_plugin";
 import { HEADER_SCROLL_EFFECT } from "./header_option_plugin";
 import { TopMenuVisibilityOption } from "./website_page_config_option";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 export const TOP_MENU_VISIBILITY = after(HEADER_SCROLL_EFFECT);
 export const HIDE_FOOTER = after(FOOTER_SCROLL_TO);
@@ -14,7 +15,11 @@ class WebsitePageConfigOptionPlugin extends Plugin {
     static id = "websitePageConfigOptionPlugin";
     static dependencies = ["history", "visibility"];
     resources = {
-        builder_actions: this.getActions(),
+        builder_actions: {
+            setWebsiteHeaderVisibility: new SetWebsiteHeaderVisibilityAction(this),
+            setWebsiteFooterVisible: new SetWebsiteFooterVisibleAction(this),
+            setPageWebsiteDirty: new SetPageWebsiteDirtyAction(this),
+        },
         builder_options: [
             withSequence(TOP_MENU_VISIBILITY, {
                 OptionComponent: TopMenuVisibilityOption,
@@ -38,39 +43,6 @@ class WebsitePageConfigOptionPlugin extends Plugin {
         target_hide: this.onTargetVisibilityToggle.bind(this, false),
         save_handlers: this.onSave.bind(this),
     };
-
-    getActions() {
-        return {
-            setWebsiteHeaderVisibility: {
-                apply: ({ editingElement, value: headerPositionValue }) => {
-                    const lastValue = this.getVisibilityItem();
-                    this.dependencies.history.applyCustomMutation({
-                        apply: () => this.visibilityHandlers[headerPositionValue](),
-                        revert: () => this.visibilityHandlers[lastValue](),
-                    });
-
-                    this.isDirty = true;
-                },
-                isApplied: ({ editingElement, value }) => this.getVisibilityItem() === value,
-            },
-            setWebsiteFooterVisible: {
-                isApplied: ({ editingElement }) => !this.getFooterVisibility(),
-                apply: ({ editingElement }) => {
-                    this.setFooterVisible(true);
-                    this.isDirty = true;
-                },
-                clean: ({ editingElement }) => {
-                    this.setFooterVisible(false);
-                    this.isDirty = true;
-                },
-            },
-            setPageWebsiteDirty: {
-                apply: ({ editingElement }) => {
-                    this.isDirty = true;
-                },
-            },
-        };
-    }
 
     getVisibilityItem() {
         const isHidden = this.document
@@ -187,6 +159,40 @@ class WebsitePageConfigOptionPlugin extends Plugin {
                 target.classList.toggle("d-none", !show);
             });
         }
+    }
+}
+
+class SetWebsiteHeaderVisibilityAction extends BuilderAction {
+    apply({ editingElement, value: headerPositionValue }) {
+        const lastValue = this.plugin.getVisibilityItem();
+        this.dependencies.history.applyCustomMutation({
+            apply: () => this.plugin.visibilityHandlers[headerPositionValue](),
+            revert: () => this.plugin.visibilityHandlers[lastValue](),
+        });
+
+        this.plugin.isDirty = true;
+    }
+    isApplied({ editingElement, value }) {
+        return this.plugin.getVisibilityItem() === value;
+    }
+}
+class SetWebsiteFooterVisibleAction extends BuilderAction {
+    isApplied({ editingElement }) {
+        return !this.plugin.getFooterVisibility();
+    }
+    apply({ editingElement }) {
+        this.plugin.setFooterVisible(true);
+        this.plugin.isDirty = true;
+    }
+    clean({ editingElement }) {
+        this.plugin.setFooterVisible(false);
+        this.plugin.isDirty = true;
+    }
+}
+
+class SetPageWebsiteDirtyAction extends BuilderAction {
+    apply({ editingElement }) {
+        this.plugin.isDirty = true;
     }
 }
 

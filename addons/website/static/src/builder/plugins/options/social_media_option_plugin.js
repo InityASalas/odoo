@@ -9,6 +9,7 @@ import { SocialMediaLinks } from "./social_media_links";
 import { selectElements } from "@html_editor/utils/dom_traversal";
 import { SNIPPET_SPECIFIC } from "@html_builder/utils/option_sequence";
 import { TITLE_LAYOUT_SIZE } from "@website/builder/option_sequence";
+import { BuilderAction } from "@html_builder/core/core_builder_action_plugin";
 
 /**
  * @typedef { Object } SocialMediaInfo
@@ -126,73 +127,11 @@ class SocialMediaOptionPlugin extends Plugin {
         ],
         so_content_addition_selector: [".s_share", ".s_social_media"],
         builder_actions: {
-            deleteSocialMediaLink: {
-                apply: ({ editingElement }) => {
-                    editingElement.remove();
-                },
-            },
-            toggleRecordedSocialMediaLink: {
-                isApplied: ({ editingElement, params: { domPosition } }) => !!domPosition,
-                apply: ({ editingElement, params: { media, elementAfter } }) => {
-                    const el = this.newLinkElement(
-                        editingElement.querySelector(":scope > a"),
-                        media
-                    );
-                    if (elementAfter) {
-                        elementAfter.before(el);
-                    } else {
-                        editingElement.append(el);
-                    }
-                },
-                clean: ({ editingElement, params: { domPosition } }) => {
-                    editingElement.querySelector(`a:nth-of-type(${domPosition})`).remove();
-                },
-            },
-            editRecordedSocialMediaLink: {
-                getValue: ({ params: { mainParam } }) => this.recordedSocialMedia.get(mainParam),
-                apply: ({ params: { mainParam }, value }) => {
-                    this.recordedSocialMediaAreEdited = true;
-                    const oldValue = this.recordedSocialMedia.get(mainParam);
-                    this.dependencies.history.applyCustomMutation({
-                        apply: () => this.recordedSocialMedia.set(mainParam, value),
-                        revert: () => this.recordedSocialMedia.set(mainParam, oldValue),
-                    });
-                },
-            },
-            editSocialMediaLink: {
-                apply: ({ editingElement, params: { mainParam }, value }) => {
-                    if (!value) {
-                        editingElement.remove();
-                    }
-                    const info = this.getAssociatedSocialMedia(value);
-                    const ariaLabel = info.media?.label || info.name || defaultAriaLabel;
-                    editingElement.setAttribute("aria-label", ariaLabel);
-
-                    this.removeSocialMediaClasses(editingElement);
-                    let iconClass;
-                    if (info.media) {
-                        editingElement.classList.add(`s_social_media_${info.name}`);
-                        iconClass = info.media.iconClass;
-                    } else if (info.name) {
-                        fonts.computeFonts();
-                        iconClass = fonts.fontIcons[0].alias
-                            .filter((el) => el.replace(/^fa-/, "").includes(info.name))
-                            .reduce((a, b) => (a.length && a.length <= b.length ? a : b), "");
-                    }
-
-                    if (iconClass) {
-                        this.removeIconClasses(editingElement);
-                        editingElement.querySelector(ICON_SELECTOR)?.classList.add(iconClass);
-                    }
-                },
-            },
-            addSocialMediaLink: {
-                apply: ({ editingElement }) => {
-                    editingElement.append(
-                        this.newLinkElement(editingElement.querySelector(":scope > a"))
-                    );
-                },
-            },
+            deleteSocialMediaLink: new DeleteSocialMediaLinkAction(this),
+            toggleRecordedSocialMediaLink: new ToggleRecordedSocialMediaLinkAction(this),
+            editRecordedSocialMediaLink: new EditRecordedSocialMediaLinkAction(this),
+            editSocialMediaLink: new EditSocialMediaLinkAction(this),
+            addSocialMediaLink: new AddSocialMediaLinkAction(this),
         },
         normalize_handlers: this.normalize.bind(this),
         save_handlers: this.saveRecordedSocialMedia.bind(this),
@@ -401,4 +340,74 @@ class SocialMediaOptionPlugin extends Plugin {
         }
     }
 }
+
+class DeleteSocialMediaLinkAction extends BuilderAction {
+    apply({ editingElement }) {
+        editingElement.remove();
+    }
+}
+class ToggleRecordedSocialMediaLinkAction extends BuilderAction {
+    isApplied({ editingElement, params: { domPosition } }) {
+        return !!domPosition;
+    }
+    apply({ editingElement, params: { media, elementAfter } }) {
+        const el = this.plugin.newLinkElement(editingElement.querySelector(":scope > a"), media);
+        if (elementAfter) {
+            elementAfter.before(el);
+        } else {
+            editingElement.append(el);
+        }
+    }
+    clean({ editingElement, params: { domPosition } }) {
+        editingElement.querySelector(`a:nth-of-type(${domPosition})`).remove();
+    }
+}
+class EditRecordedSocialMediaLinkAction extends BuilderAction {
+    getValue({ params: { mainParam } }) {
+        return this.plugin.recordedSocialMedia.get(mainParam);
+    }
+    apply({ params: { mainParam }, value }) {
+        this.plugin.recordedSocialMediaAreEdited = true;
+        const oldValue = this.plugin.recordedSocialMedia.get(mainParam);
+        this.dependencies.history.applyCustomMutation({
+            apply: () => this.plugin.recordedSocialMedia.set(mainParam, value),
+            revert: () => this.plugin.recordedSocialMedia.set(mainParam, oldValue),
+        });
+    }
+}
+class EditSocialMediaLinkAction extends BuilderAction {
+    apply({ editingElement, params: { mainParam }, value }) {
+        if (!value) {
+            editingElement.remove();
+        }
+        const info = this.plugin.getAssociatedSocialMedia(value);
+        const ariaLabel = info.media?.label || info.name || defaultAriaLabel;
+        editingElement.setAttribute("aria-label", ariaLabel);
+
+        this.plugin.removeSocialMediaClasses(editingElement);
+        let iconClass;
+        if (info.media) {
+            editingElement.classList.add(`s_social_media_${info.name}`);
+            iconClass = info.media.iconClass;
+        } else if (info.name) {
+            fonts.computeFonts();
+            iconClass = fonts.fontIcons[0].alias
+                .filter((el) => el.replace(/^fa-/, "").includes(info.name))
+                .reduce((a, b) => (a.length && a.length <= b.length ? a : b), "");
+        }
+
+        if (iconClass) {
+            this.plugin.removeIconClasses(editingElement);
+            editingElement.querySelector(ICON_SELECTOR)?.classList.add(iconClass);
+        }
+    }
+}
+class AddSocialMediaLinkAction extends BuilderAction {
+    apply({ editingElement }) {
+        editingElement.append(
+            this.plugin.newLinkElement(editingElement.querySelector(":scope > a"))
+        );
+    }
+}
+
 registry.category("website-plugins").add(SocialMediaOptionPlugin.id, SocialMediaOptionPlugin);

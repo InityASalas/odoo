@@ -29,6 +29,7 @@ from odoo.tools import (
     lazy_classproperty,
     remove_accents,
     sql,
+    profiler
 )
 from odoo.tools.func import locked, reset_cached_properties
 from odoo.tools.lru import LRU
@@ -130,6 +131,7 @@ class Registry(Mapping[str, type["BaseModel"]]):
         upgrade_modules: Collection[str] = (),
         new_db_demo: bool | None = None,
     ) -> Registry:
+      with profiler.Profiler(db=db_name, collectors=[profiler.PeriodicCollector(interval=0.1)]):
         """Create and return a new registry for the given database name.
 
         :param db_name: The name of the database to associate with the Registry instance.
@@ -225,7 +227,9 @@ class Registry(Mapping[str, type["BaseModel"]]):
         # field dependencies
         self.field_depends: Collector[Field, Field] = Collector()
         self.field_depends_context: Collector[Field, str] = Collector()
-        self.field_inverses: Collector[Field, Field] = Collector()
+
+        # field inverses
+        self.many2many_relations: defaultdict[tuple[str, str, str], OrderedSet[tuple[str, str]]] = defaultdict(OrderedSet)
 
         # company dependent
         self.many2one_company_dependents: Collector[str, Field] = Collector()  # {model_name: (field1, field2, ...)}
@@ -349,7 +353,7 @@ class Registry(Mapping[str, type["BaseModel"]]):
         return model_names
 
     @locked
-    def _setup_models__(self, cr: BaseCursor) -> None:
+    def _setup_models__(self, cr: BaseCursor, force=True, updated_models=None) -> None:
         """ Complete the setup of models.
             This must be called after loading modules and before using the ORM.
         """
@@ -372,19 +376,26 @@ class Registry(Mapping[str, type["BaseModel"]]):
         self._is_modifying_relations.clear()
         self.registry_invalidated = True
 
-        self.field_depends.clear()
-        self.field_depends_context.clear()
-        self.field_inverses.clear()
+        if force:
+            self.field_depends.clear()
+            self.field_depends_context.clear()
+            self.many2many_relations.clear()
+
         self.many2one_company_dependents.clear()
 
-        model_classes.setup_model_classes(env)
+        model_classes.setup_model_classes(env, force=force, updated_models=updated_models)
 
         # determine field_depends and field_depends_context
-        for model in env.values():
-            for field in model._fields.values():
-                depends, depends_context = field.get_depends(model)
+        for model_cls in env.registry.values():
+            for field in model_cls._fields.values():
+                if (model_cls._get_depends_done__ and not field.related):
+                    # for related field depend_context can be dependant on other fields.
+                    # this check could be done before iterating on field for an additional performance boost if it wasn't the case
+                    continue
+                depends, depends_context = field.get_depends(model_cls(env, (), ()))
                 self.field_depends[field] = tuple(depends)
                 self.field_depends_context[field] = tuple(depends_context)
+            model_cls._get_depends_done__ = True
 
         # clean the lazy_property again in case they are cached by another ongoing registry readonly request
         reset_cached_properties(self)
@@ -395,6 +406,15 @@ class Registry(Mapping[str, type["BaseModel"]]):
             for model in env.values():
                 model._register_hook()
             env.flush_all()
+
+    @functools.cached_property
+    def field_inverses(self) -> Collector[Field, Field]:
+        result = Collector()
+        for model_cls in self.models.values():
+            for field in model_cls._fields.values():
+                if field.relational:
+                    field.setup_inverses(self, result)
+        return result
 
     @functools.cached_property
     def field_computed(self) -> dict[Field, list[Field]]:

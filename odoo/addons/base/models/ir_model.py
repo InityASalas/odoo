@@ -401,6 +401,7 @@ class IrModel(models.Model):
         if manual_models:
             # setup models; this automatically adds model in registry
             self.env.flush_all()
+            #self.pool._setup_models__(self._cr, updated_models=manual_models)
             self.pool._setup_models__(self._cr)
             # update database schema
             self.pool.init_models(self._cr, manual_models, dict(self._context, update_custom_fields=True))
@@ -846,7 +847,8 @@ class IrModelFields(models.Model):
                     rel_name = field.relation_table or (is_model and model._fields[field.name].relation)
                     tables_to_drop.add(rel_name)
             if field.state == 'manual' and is_model:
-                pop_field(model, field.name)
+                model_cls = self.env.registry[model._name]
+                pop_field(model_cls, field.name)
 
         if tables_to_drop:
             # drop the relation tables that are not used by other fields
@@ -922,7 +924,7 @@ class IrModelFields(models.Model):
             if field:
                 self.env._field_dirty.pop(field)
         # remove fields from registry, and check that views are not broken
-        fields = [pop_field(self.env[record.model], record.name) for record in records]
+        fields = [pop_field(self.env.registry[record.model], record.name) for record in records]
         domain = Domain.OR([('arch_db', 'like', record.name)] for record in records)
         views = self.env['ir.ui.view'].search(domain)
         try:
@@ -1017,7 +1019,7 @@ class IrModelFields(models.Model):
         if any(model in self.pool for model in models):
             # setup models; this re-initializes model in registry
             self.env.flush_all()
-            self.pool._setup_models__(self._cr)
+            self.pool._setup_models__(self._cr, updated_models=models)
             # update database schema of models and their descendants
             models = self.pool.descendants(models, '_inherits')
             self.pool.init_models(self._cr, models, dict(self._context, update_custom_fields=True))
@@ -2407,7 +2409,7 @@ class IrModelData(models.Model):
                         # the field is shared across registries; don't modify it
                         Field = type(field)
                         field_ = Field(_base_fields__=(field, Field(prefetch=False)))
-                        add_field(self.env[ir_field.model], ir_field.name, field_)
+                        add_field(self.env.registry[ir_field.model], ir_field.name, field_)
                         field_.setup(model)
                         has_shared_field = True
         if has_shared_field:

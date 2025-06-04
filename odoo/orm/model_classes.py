@@ -292,48 +292,74 @@ def _init_model_class_attributes(model_cls: type[BaseModel]):
         _init_model_class_attributes(registry[child_name])
 
 
-def setup_model_classes(env: Environment):
+def setup_model_classes(env: Environment, force=True, updated_models=None):
     registry = env.registry
 
     # we must setup ir.model before adding manual fields because _add_manual_models may
     # depend on behavior that is implemented through overrides, such as is_mail_thread which
     # is implemented through an override to env['ir.model']._instanciate_attrs
-    _prepare_setup(env['ir.model'])
+    _prepare_setup(registry['ir.model'], updated_models=updated_models)
 
     # add manual models
     if registry._init_modules:
         _add_manual_models(env)
 
     # prepare the setup on all models
-    models = list(env.values())
-    for model in models:
-        _prepare_setup(model)
+    models_classes = list(registry.values())
+    for model_cls in models_classes:
+        if force:  # check all modules, don't try to detect changes
+            model_cls._setup_done__ = False
+
+        # changing base classes is costly, do it only when necessary
+        # do it before _prepare_setup to ensure that the model_cls._model_classes__ is correct
+        if model_cls.__bases__ != model_cls._base_classes__:
+            model_cls.__bases__ = model_cls._base_classes__
+            model_cls._setup_done__ = False
+
+    for model_cls in models_classes:
+        _prepare_setup(model_cls, updated_models=updated_models)
+
+    for model_cls in models_classes:
+        # check if any model inheriting from and invalidated model_class should be marked as invalidated too.
+        if model_cls._setup_done__ and model_cls._inherits:
+            for inherit_model_name in model_cls._inherits:
+                if not registry[inherit_model_name]._setup_done__:
+                    model_cls._setup_done__ = False
 
     # do the actual setup
-    for model in models:
-        _setup(model)
+    for model_cls in models_classes:
+        _setup(model_cls, env)
 
-    registry._m2m: defaultdict[tuple[str, str, str], list[Field]] = defaultdict(list)
-    for model in models:
-        _setup_fields(model)
-    del registry._m2m
+    for model_cls in models_classes:
+        _setup_fields(model_cls, env)
 
-    for model in models:
-        model._post_model_setup__()
+    for model_cls in models_classes:
+        model_cls(env, (), ())._post_model_setup__()
 
 
-def _prepare_setup(model: BaseModel):
+def _prepare_setup(model_cls: type[BaseModel], updated_models=None):
     """ Prepare the setup of the model. """
-    model_cls = model.env.registry[model._name]
-    model_cls._setup_done__ = False
 
-    # changing base classes is costly, do it only when necessary
-    if model_cls.__bases__ != model_cls._base_classes__:
-        model_cls.__bases__ = model_cls._base_classes__
+    model_classes = getattr(model_cls, '_model_classes__', None)
+    # the classes that define this model, i.e., the ones that are not
+    # registry classes; the purpose of this attribute is to behave as a
+    # cache of [c for c in model_cls.mro() if not is_model_class(c))], which
+    # is heavily used in function fields.resolve_mro()
+    model_cls._model_classes__ = tuple(c for c in model_cls.mro() if getattr(c, 'pool', None) is None)
+    if model_classes != model_cls._model_classes__:
+        model_cls._setup_done__ = False
+
+    if model_cls._setup_done__ and updated_models is not None:
+        # this is maybe not the most efficient but a reliable way to know if the model name impacts model_cls
+        for model in model_cls._model_classes__:
+            if hasattr(model, '_name') and model._name in updated_models:
+                model_cls._setup_done__ = False
+                break
 
     # reset those attributes on the model's class for _setup_fields() below
-    for attr in ('_rec_name', '_active_name'):
-        discardattr(model_cls, attr)
+    if not model_cls._setup_done__:
+        for attr in ('_rec_name', '_active_name'):
+            discardattr(model_cls, attr)
 
     # reset properties memoized on model_cls
     model_cls._constraint_methods = models.BaseModel._constraint_methods
@@ -341,18 +367,11 @@ def _prepare_setup(model: BaseModel):
     model_cls._onchange_methods = models.BaseModel._onchange_methods
 
 
-def _setup(model: BaseModel):
+def _setup(model_cls: type[BaseModel], env: Environment):
     """ Determine all the fields of the model. """
-    model_cls = model.env.registry[model._name]
     if model_cls._setup_done__:
         return
-
-    # the classes that define this model, i.e., the ones that are not
-    # registry classes; the purpose of this attribute is to behave as a
-    # cache of [c for c in model_cls.mro() if not is_model_class(c))], which
-    # is heavily used in function fields.resolve_mro()
-    model_cls._model_classes__ = tuple(c for c in model_cls.mro() if getattr(c, 'pool', None) is None)
-
+    model_cls._get_depends_done__ = False
     # 1. determine the proper fields of the model: the fields defined on the
     # class and magic fields, not the inherited or custom ones
 
@@ -386,18 +405,18 @@ def _setup(model: BaseModel):
             model_cls._fields._data__[name] = fields_[0]
         else:
             Field = type(fields_[-1])
-            add_field(model, name, Field(_base_fields__=tuple(fields_)))
+            add_field(model_cls, name, Field(_base_fields__=tuple(fields_)))
 
     # 2. add manual fields
-    if model.pool._init_modules:
-        _add_manual_fields(model)
+    if model_cls.pool._init_modules:
+        _add_manual_fields(model_cls, env)
 
     # 3. make sure that parent models determine their own fields, then add
     # inherited fields to model_cls
-    _check_inherits(model)
-    for parent_name in model._inherits:
-        _setup(model.env[parent_name])
-    _add_inherited_fields(model)
+    _check_inherits(model_cls)
+    for parent_name in model_cls._inherits:
+        _setup(model_cls.pool[parent_name], env)
+    _add_inherited_fields(model_cls)
 
     # 4. initialize more field metadata
     model_cls._setup_done__ = True
@@ -429,49 +448,49 @@ def _setup(model: BaseModel):
     # 7. determine table objects
     assert not model_cls._table_object_definitions, "model_cls is a registry model"
     model_cls._table_objects = frozendict({
-        cons.full_name(model): cons
+        cons.full_name(model_cls): cons
         for cls in reversed(model_cls._model_classes__)
         if isinstance(cls, models.MetaModel)
         for cons in cls._table_object_definitions
     })
 
 
-def _check_inherits(model: BaseModel):
-    for comodel_name, field_name in model._inherits.items():
-        field = model._fields.get(field_name)
+def _check_inherits(model_cls: type[BaseModel]):
+    for comodel_name, field_name in model_cls._inherits.items():
+        field = model_cls._fields.get(field_name)
         if not field or field.type != 'many2one':
             raise TypeError(
-                f"Missing many2one field definition for _inherits reference {field_name!r} in model {model._name!r}. "
+                f"Missing many2one field definition for _inherits reference {field_name!r} in model {model_cls._name!r}. "
                 f"Add a field like: {field_name} = fields.Many2one({comodel_name!r}, required=True, ondelete='cascade')"
             )
         if not (field.delegate and field.required and (field.ondelete or "").lower() in ("cascade", "restrict")):
             raise TypeError(
-                f"Field definition for _inherits reference {field_name!r} in {model._name!r} "
+                f"Field definition for _inherits reference {field_name!r} in {model_cls._name!r} "
                 "must be marked as 'delegate', 'required' with ondelete='cascade' or 'restrict'"
             )
 
 
-def _add_inherited_fields(model: BaseModel):
+def _add_inherited_fields(model_cls: type[BaseModel]):
     """ Determine inherited fields. """
-    if model._abstract or not model._inherits:
+    if model_cls._abstract or not model_cls._inherits:
         return
 
     # determine which fields can be inherited
     to_inherit = {
         name: (parent_fname, field)
-        for parent_model_name, parent_fname in model._inherits.items()
-        for name, field in model.env[parent_model_name]._fields.items()
+        for parent_model_name, parent_fname in model_cls._inherits.items()
+        for name, field in model_cls.pool[parent_model_name]._fields.items()
     }
 
     # add inherited fields that are not redefined locally
     for name, (parent_fname, field) in to_inherit.items():
-        if name not in model._fields:
+        if name not in model_cls._fields:
             # inherited fields are implemented as related fields, with the
             # following specific properties:
             #  - reading inherited fields should not bypass access rights
             #  - copy inherited fields iff their original field is copied
             field_cls = type(field)
-            add_field(model, name, field_cls(
+            add_field(model_cls, name, field_cls(
                 inherited=True,
                 inherited_field=field,
                 related=f"{parent_fname}.{name}",
@@ -482,11 +501,12 @@ def _add_inherited_fields(model: BaseModel):
             ))
 
 
-def _setup_fields(model: BaseModel):
+def _setup_fields(model_cls: type[BaseModel], env: Environment):
     """ Setup the fields, except for recomputation triggers. """
     bad_fields = []
-    many2one_company_dependents = model.env.registry.many2one_company_dependents
-    for name, field in model._fields.items():
+    many2one_company_dependents = model_cls.pool.many2one_company_dependents
+    model = model_cls(env, (), ())
+    for name, field in model_cls._fields.items():
         try:
             field.setup(model)
         except Exception:
@@ -502,7 +522,7 @@ def _setup_fields(model: BaseModel):
             many2one_company_dependents.add(field.comodel_name, field)
 
     for name in bad_fields:
-        pop_field(model, name)
+        pop_field(model_cls, name)
 
 
 def _add_manual_models(env: Environment):
@@ -544,33 +564,31 @@ def _add_manual_models(env: Environment):
         add_to_registry(env.registry, model_def)
 
 
-def _add_manual_fields(model: BaseModel):
+def _add_manual_fields(model_cls: type[BaseModel], env: Environment):
     """ Add extra fields on model. """
-    IrModelFields = model.env['ir.model.fields']
+    IrModelFields = env['ir.model.fields']
 
-    fields_data = IrModelFields._get_manual_field_data(model._name)
+    fields_data = IrModelFields._get_manual_field_data(model_cls._name)
     for name, field_data in fields_data.items():
-        if name not in model._fields and field_data['state'] == 'manual':
+        if name not in model_cls._fields and field_data['state'] == 'manual':
             try:
                 attrs = IrModelFields._instanciate_attrs(field_data)
                 if attrs:
                     field = fields.Field._by_type__[field_data['ttype']](**attrs)
-                    add_field(model, name, field)
+                    add_field(model_cls, name, field)
             except Exception:
-                _logger.exception("Failed to load field %s.%s: skipped", model._name, field_data['name'])
+                _logger.exception("Failed to load field %s.%s: skipped", model_cls._name, field_data['name'])
 
 
-def add_field(model: BaseModel, name: str, field: Field):
+def add_field(model_cls: type[BaseModel], name: str, field: Field):
     """ Add the given ``field`` under the given ``name`` on the model class of the given ``model``. """
-    model_cls = model.env.registry[model._name]
-
     # Assert the name is an existing field in the model, or any model in the _inherits
     # or a custom field (starting by `x_`)
     is_class_field = any(
         isinstance(getattr(model, name, None), fields.Field)
-        for model in [model_cls] + [model.env.registry[inherit] for inherit in model_cls._inherits]
+        for model in [model_cls] + [model_cls.pool[inherit] for inherit in model_cls._inherits]
     )
-    if not (is_class_field or model.env['ir.model.fields']._is_manual_name(name)):
+    if not (is_class_field or name.startswith('x_')):  # TODO check that not using is_manual_name is not a problem.
         raise ValidationError(  # pylint: disable=missing-gettext
             f"The field `{name}` is not defined in the `{model_cls._name}` Python class and does not start with 'x_'"
         )
@@ -588,9 +606,8 @@ def add_field(model: BaseModel, name: str, field: Field):
     model_cls._fields._data__[name] = field
 
 
-def pop_field(model: BaseModel, name: str) -> Field | None:
+def pop_field(model_cls: type[BaseModel], name: str) -> Field | None:
     """ Remove the field with the given ``name`` from the model class of ``model``. """
-    model_cls = model.env.registry[model._name]
     field = model_cls._fields._data__.pop(name, None)
     discardattr(model_cls, name)
     if model_cls._rec_name == name:

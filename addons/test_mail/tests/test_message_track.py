@@ -113,18 +113,14 @@ class TestTracking(MailCommon):
         self.assertDictEqual(
             formatted['trackingValues'][0],
             {
-                'changedField': field_dname,
-                'fieldName': field_name,
-                'fieldType': field_type,
                 'id': message_1.sudo().tracking_value_ids.id,
-                'newValue': {
+                'fieldInfo': {
+                    'changedField': field_dname,
                     'currencyId': False,
-                    'value': new_user.display_name,
+                    'fieldType': field_type,
                 },
-                'oldValue': {
-                    'currencyId': False,
-                    'value': original_user.display_name,
-                },
+                'newValue': new_user.display_name,
+                'oldValue': original_user.display_name,
             })
         mail_render = records[1]._notify_by_email_prepare_rendering_context(message_1, {})
         self.assertEqual(mail_render['tracking_values'], [(field_dname, original_user.display_name, new_user.display_name)])
@@ -683,18 +679,14 @@ class TestTrackingInternals(MailCommon):
 
         tracking_values = self.env['mail.tracking.value'].search([('mail_message_id', '=', self.record.message_ids[0].id)])
         formatted_tracking_values = [{
-            'changedField': 'Email From',
             'id': tracking_values[0]['id'],
-            'fieldName': 'email_from',
-            'fieldType': 'char',
-            'newValue': {
+            'fieldInfo': {
+                'changedField': 'Email From',
                 'currencyId': False,
-                'value': 'X',
+                'fieldType': 'char',
             },
-            'oldValue': {
-                'currencyId': False,
-                'value': False,
-            },
+            'newValue': 'X',
+            'oldValue': False,
         }]
         self.assertEqual(
             msg_emp["mail.message"][0].get("trackingValues"),
@@ -815,28 +807,36 @@ class TestTrackingInternals(MailCommon):
             formatted,
             [
                 {
-                    'changedField': 'Secret',
                     'id': trackings[0].id,
-                    'fieldName': 'secret',
-                    'fieldType': 'char',
-                    'newValue': {'currencyId': False, 'value': 'secret'},
-                    'oldValue': {'currencyId': False, 'value': False}
-                }, {
-                    'changedField': 'Old integer',
+                    'fieldInfo': {
+                        'changedField': 'Secret',
+                        'currencyId': False,
+                        'fieldType': 'char',
+                    },
+                    'newValue': 'secret',
+                    'oldValue': False,
+                },
+                {
                     'id': trackings[2].id,
-                    'fieldName': 'Removed',
-                    'fieldType': 'integer',
-                    'newValue': {'currencyId': False, 'value': 35},
-                    'oldValue': {'currencyId': False, 'value': 30}
-                }, {
-                    'changedField': 'Unknown',
+                    'fieldInfo': {
+                        'changedField': 'Old integer',
+                        'currencyId': False,
+                        'fieldType': 'integer',
+                    },
+                    'newValue': 35,
+                    'oldValue': 30,
+                },
+                {
                     'id': trackings[1].id,
-                    'fieldName': 'unknown',
-                    'fieldType': 'char',
-                    'newValue': {'currencyId': False, 'value': False},
-                    'oldValue': {'currencyId': False, 'value': False}
-                }
-            ]
+                    'fieldInfo': {
+                        'changedField': 'Unknown',
+                        'currencyId': False,
+                        'fieldType': 'char',
+                    },
+                    'newValue': False,
+                    'oldValue': False,
+                },
+            ],
         )
 
 
@@ -897,7 +897,7 @@ class TestTrackingInternals(MailCommon):
         )
         tracking_formatted = tracking_values._tracking_value_format()
         self.assertEqual(
-            [t['fieldName'] for t in tracking_formatted],
+            [tracking_values.browse(t['id']).field_id.name for t in tracking_formatted],
             ordered_fnames,
             'Track: formatted order is correctly based on field sequence definition'
         )
@@ -990,18 +990,14 @@ class TestTrackingInternals(MailCommon):
             formatted,
             [
                 {
-                    'changedField': field_info[2],
                     'id': tracking.id,
-                    'fieldName': field_info[0],
-                    'fieldType': field_info[1],
-                    'newValue': {
+                    'fieldInfo': {
+                        'changedField': field_info[2],
+                        'fieldType': field_info[1],
                         'currencyId': False,
-                        'value': values[1],
                     },
-                    'oldValue': {
-                        'currencyId': False,
-                        'value': values[0],
-                    },
+                    'newValue': values[1],
+                    'oldValue': values[0],
                 }
                 for tracking, field_info, values in zip(trackings_all_sorted, fields_info, values_info)
             ]
@@ -1021,18 +1017,14 @@ class TestTrackingInternals(MailCommon):
             formatted,
             [
                 {
-                    'changedField': field_info[2],
                     'id': tracking.id,
-                    'fieldName': field_info[0],
-                    'fieldType': field_info[1],
-                    'newValue': {
+                    'fieldInfo': {
+                        'changedField': field_info[2],
+                        'fieldType': field_info[1],
                         'currencyId': False,
-                        'value': values[1],
                     },
-                    'oldValue': {
-                        'currencyId': False,
-                        'value': values[0],
-                    },
+                    'newValue': values[1],
+                    'oldValue': values[0],
                 }
                 for tracking, field_info, values in zip(trackings_all_sorted, fields_info, values_info)
             ]

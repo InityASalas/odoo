@@ -1,10 +1,13 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import pytz
+from datetime import datetime
+
+
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError
 from odoo.osv import expression
-import pytz
-from datetime import datetime
+from odoo.tools.date_utils import convert_timezone
 
 
 class ResourceCalendarLeaves(models.Model):
@@ -87,22 +90,6 @@ class ResourceCalendarLeaves(models.Model):
             if message:
                 leave._notify_change(message)
 
-    def _convert_timezone(self, utc_naive_datetime, tz_from, tz_to):
-        """
-            Convert a naive date to another timezone that initial timezone
-            used to generate the date.
-            :param utc_naive_datetime: utc date without tzinfo
-            :type utc_naive_datetime: datetime
-            :param tz_from: timezone used to obtained `utc_naive_datetime`
-            :param tz_to: timezone in which we want the date
-            :return: datetime converted into tz_to without tzinfo
-            :rtype: datetime
-        """
-        naive_datetime_from = utc_naive_datetime.astimezone(tz_from).replace(tzinfo=None)
-        aware_datetime_to = tz_to.localize(naive_datetime_from)
-        utc_naive_datetime_to = aware_datetime_to.astimezone(pytz.utc).replace(tzinfo=None)
-        return utc_naive_datetime_to
-
     def _ensure_datetime(self, datetime_representation, date_format=None):
         """
             Be sure to get a datetime object if we have the necessary information.
@@ -126,12 +113,12 @@ class ResourceCalendarLeaves(models.Model):
                 continue
             user_tz = pytz.timezone(self.env.user.tz) if self.env.user.tz else pytz.utc
             calendar_tz = pytz.timezone(self.env['resource.calendar'].browse(vals['calendar_id']).tz)
-            if user_tz != calendar_tz:
+            if user_tz != calendar_tz and self.env.context.get('convert_datetime', True):
                 datetime_from = self._ensure_datetime(vals['date_from'], '%Y-%m-%d %H:%M:%S')
                 datetime_to = self._ensure_datetime(vals['date_to'], '%Y-%m-%d %H:%M:%S')
                 if datetime_from and datetime_to:
-                    vals['date_from'] = self._convert_timezone(datetime_from, user_tz, calendar_tz)
-                    vals['date_to'] = self._convert_timezone(datetime_to, user_tz, calendar_tz)
+                    vals['date_from'] = convert_timezone(datetime_from, user_tz, calendar_tz)
+                    vals['date_to'] = convert_timezone(datetime_to, user_tz, calendar_tz)
         return vals_list
 
     @api.model_create_multi
@@ -156,6 +143,9 @@ class ResourceCalendarLeaves(models.Model):
         self._reevaluate_leaves(time_domain_dict)
 
         return res
+
+    def load_public_holidays(self):
+        self.env.companies.load_public_holidays(convert_datetime=False)
 
 
 class ResourceCalendar(models.Model):

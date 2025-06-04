@@ -1013,6 +1013,7 @@ class ResPartner(models.Model):
                     else:
                         name = f"{name} - {partner.vat}"
 
+            name = re.sub(r'\s+\n', '\n', name)
             partner.display_name = name.strip()
 
     @api.model

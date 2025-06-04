@@ -310,6 +310,32 @@ class StockPickingBatch(models.Model):
                 'default_move_quantity': 'move'},
         }
 
+    def action_merge(self):
+        if len(self.picking_type_id) > 1:
+            raise UserError(_('Batch/Wave transfers of different operation types cannot be merged.'))
+        if len(set(self.mapped('is_wave'))) > 1:
+            raise UserError(_('Batch transfers cannot be merged with wave transfers and vice versa.'))
+
+        target_batch = self[:1]
+        other_batches = self[1:]
+        target_batch.move_line_ids |= other_batches.move_line_ids
+        target_batch.picking_ids |= other_batches.picking_ids
+        other_batches.unlink()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Batch/Wave transfers have been merged into the following transfer'),
+                'message': '%s',
+                'links': [{
+                    'label': target_batch.name,
+                    'url': f"/odoo/action-stock_picking_batch.{'action_picking_tree_wave' if target_batch.is_wave else 'stock_picking_batch_action'}/{target_batch.id}",
+                }],
+                'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'},
+            }
+        }
+
     # -------------------------------------------------------------------------
     # Miscellaneous
     # -------------------------------------------------------------------------

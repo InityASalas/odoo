@@ -1680,10 +1680,7 @@ test("Date filter automatic undefined values for from_to filter", async function
         label,
         rangeType: "from_to",
     });
-    expect(model.getters.getGlobalFilterValue("1")).toEqual({
-        from: undefined,
-        to: undefined,
-    });
+    expect(model.getters.getGlobalFilterValue("1")).toBe(undefined);
 });
 
 test("Date filter automatic default value at model loading", async function () {
@@ -1849,10 +1846,7 @@ test("from_to date filter at model loading", async function () {
             },
         ],
     });
-    expect(model.getters.getGlobalFilterValue("1")).toEqual({
-        from: undefined,
-        to: undefined,
-    });
+    expect(model.getters.getGlobalFilterValue("1")).toBe(undefined);
 });
 
 test("from_to date filter domain value on a date field", async function () {

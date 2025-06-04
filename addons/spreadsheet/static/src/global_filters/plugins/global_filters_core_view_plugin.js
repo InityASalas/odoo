@@ -171,7 +171,7 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
         if (filter.type === "date") {
             switch (filter.rangeType) {
                 case "from_to":
-                    return value || { from: undefined, to: undefined };
+                    return value;
                 case "fixedPeriod":
                 case "relative":
                     if (isEmpty(value) && filter.defaultValue) {
@@ -375,11 +375,11 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             case "from_to": {
                 const locale = this.getters.getLocale();
                 const from = {
-                    value: value.from ? toNumber(value.from, locale) : "",
+                    value: value?.from ? toNumber(value.from, locale) : "",
                     format: locale.dateFormat,
                 };
                 const to = {
-                    value: value.to ? toNumber(value.to, locale) : "",
+                    value: value?.to ? toNumber(value.to, locale) : "",
                     format: locale.dateFormat,
                 };
                 return [[from], [to]];

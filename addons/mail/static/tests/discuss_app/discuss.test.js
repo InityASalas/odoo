@@ -228,7 +228,7 @@ test("Click on avatar opens its partner chat window", async () => {
     await contains(".o-mail-Message-sidebar .o-mail-Message-avatarContainer img");
     await click(".o-mail-Message-sidebar .o-mail-Message-avatarContainer img");
     await contains(".o_avatar_card");
-    await contains(".o_card_user_infos > span", { text: "testPartner" });
+    await contains(".o_card_user_name", { text: "testPartner" });
     await contains(".o_card_user_infos > a", { text: "test@partner.com" });
     await contains(".o_card_user_infos > a", { text: "+45687468" });
 });
@@ -1978,7 +1978,9 @@ test("composer state: attachments save and restore", async () => {
         ".o-mail-Composer:has(textarea[placeholder='Message #Special…']) input[type=file]",
         files
     );
-    await contains(".o-mail-Composer .o-mail-AttachmentContainer:not(.o-isUploading)", { count: 3 });
+    await contains(".o-mail-Composer .o-mail-AttachmentContainer:not(.o-isUploading)", {
+        count: 3,
+    });
     // Switch back to #general
     await click("button", { text: "General" });
     await contains(".o-mail-Composer .o-mail-AttachmentCard");

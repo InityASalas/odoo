@@ -44,6 +44,10 @@ export class Attachment extends FileModelMixin(Record) {
         return this.id < 0;
     }
 
+    get gifPaused() {
+        return !this.thread?.isFocused;
+    }
+
     /** Remove the given attachment globally. */
     delete() {
         if (this.tmpUrl) {

@@ -24,10 +24,34 @@ class CustomerPortal(sale_portal.CustomerPortal):
             'products': [],
         }
         for line in sale_order.order_line:
-            if line.display_type:
+            if not line._show_in_cart():
                 continue
-            if line._is_delivery():
-                continue
+
+            selected_combo_items = []
+            if line.product_id.type == 'combo':
+                for linked_line in line.linked_line_ids.filtered('combo_item_id'):
+                    combo_item_combination = (
+                        linked_line.product_id.product_template_attribute_value_ids
+                        | linked_line.product_no_variant_attribute_value_ids
+                    )
+                    selected_combo_items.append({
+                        'product_template_id': linked_line.product_id.product_tmpl_id.id,
+                        'product_id': linked_line.product_id.id,
+                        'combo_item_id': linked_line.combo_item_id.id,
+                        'combination': combo_item_combination.ids,
+                        'no_variant_attribute_value_ids': linked_line.product_no_variant_attribute_value_ids.ids,
+                        'product_custom_attribute_values': [
+                            {
+                                'custom_product_template_attribute_value_id': pcav.custom_product_template_attribute_value_id.id,
+                                'custom_value': pcav.custom_value,
+                            } for pcav in linked_line.product_custom_attribute_value_ids
+                        ],
+                        'qty': line.product_uom_qty,
+                        'combinationInfo': linked_line.product_id.product_tmpl_id.with_context(
+                            **self._sale_reorder_get_line_context()
+                        )._get_combination_info(combo_item_combination, linked_line.product_id.id, line.product_uom_qty),
+                    })
+
             combination = line.product_id.product_template_attribute_value_ids | line.product_no_variant_attribute_value_ids
             res = {
                 'product_template_id': line.product_id.product_tmpl_id.id,
@@ -46,6 +70,7 @@ class CustomerPortal(sale_portal.CustomerPortal):
                 'qty': line.product_uom_qty,
                 'add_to_cart_allowed': line.with_user(request.env.user).sudo()._is_reorder_allowed(),
                 'has_image': bool(line.product_id.image_128),
+                'selected_combo_items': selected_combo_items,
             }
             if res['add_to_cart_allowed']:
                 res['combinationInfo'] = line.product_id.product_tmpl_id.with_context(

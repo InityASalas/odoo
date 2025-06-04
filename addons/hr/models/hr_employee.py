@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import re
@@ -11,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from markupsafe import Markup
 
 from odoo import api, fields, models, _, tools
-from odoo.fields import Domain
+from odoo.fields import Domain, Command
 from odoo.exceptions import ValidationError, AccessError, RedirectWarning
 from odoo.osv import expression
 from odoo.tools import convert, format_date
@@ -302,25 +301,27 @@ class HrEmployee(models.Model):
             action['res_id'] = related_partners.id
         return action
 
+    def _get_default_user_groups(self):
+        """
+            Returns a comma-separated string of default user groups to assign
+        """
+        group_ids = [Command.link(self.env.ref("base.group_user").id)]
+        return group_ids
+
     def action_create_user(self):
         self.ensure_one()
         if self.user_id:
             raise ValidationError(_("This employee already has an user."))
         return {
-            'name': _('Create User'),
+            'name': self.env._('Create User'),
             'type': 'ir.actions.act_window',
             'res_model': 'res.users',
             'view_mode': 'form',
             'view_id': self.env.ref('hr.view_users_simple_form').id,
             'target': 'new',
-            'context': dict(self._context, **{
-                'default_create_employee_id': self.id,
-                'default_name': self.name,
-                'default_phone': self.work_phone,
-                'default_mobile': self.mobile_phone,
-                'default_login': self.work_email,
-                'default_partner_id': self.work_contact_id.id,
-            })
+            'context': dict(self._context, default_create_employee_id=self.id, default_name=self.name,
+                            default_phone=self.work_phone, default_mobile=self.mobile_phone, default_login=self.work_email,
+                            default_partner_id=self.work_contact_id.id, default_group_ids=self._get_default_user_groups())
         }
 
     def action_create_users_confirmation(self):
@@ -363,6 +364,7 @@ class HrEmployee(models.Model):
                 'phone': employee.work_phone,
                 'login': tools.email_normalize(employee.work_email),
                 'partner_id': employee.work_contact_id.id,
+                'group_ids': employee._get_default_user_groups(),
             })
 
         next_action = {'type': 'ir.actions.act_window_close'}

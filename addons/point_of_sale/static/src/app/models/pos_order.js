@@ -191,6 +191,7 @@ export class PosOrder extends Base {
             taxTotals.order_has_zero_remaining = false;
         }
 
+        console.warn({ ...taxTotals });
         return taxTotals;
     }
 

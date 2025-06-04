@@ -817,14 +817,17 @@ class SurveySurvey(models.Model):
             (not first_section_has_description and page_or_question == self.question_ids[0])
         return is_first_page_or_question
 
-    def _is_last_page_or_question(self, user_input, page_or_question):
+    def _is_last_page_or_question(self, user_input, page_or_question, with_own_conditionals=True):
         """ Check if the given question or page is the last one, accounting for conditional questions.
+
+        :param with_own_conditionals: whether or not to account for the conditional questions
+                                      triggered by the current page/question.
 
         A question/page will be determined as the last one if any of the following is true:
           - The survey layout is "one_page",
           - There are no more questions/page after `page_or_question` in `user_input`,
           - All the following questions are conditional AND were not triggered by previous answers,
-            AND cannot be triggered by any answer given on the current page/question.
+            AND (if with_own_conditionals is True) cannot be triggered by any answer given on the current page/question.
         """
         if self.questions_layout == "one_page":
             return True
@@ -838,12 +841,16 @@ class SurveySurvey(models.Model):
         if self.questions_layout == 'page_per_question':
             return not (
                 any(next_question not in inactive_questions for next_question in next_page_or_question_candidates)
-                or any(answer in triggered_questions_by_answer for answer in page_or_question.suggested_answer_ids)
+                or (
+                    with_own_conditionals and
+                    any(answer in triggered_questions_by_answer for answer in page_or_question.suggested_answer_ids)
+                )
             )
-        elif self.questions_layout == 'page_per_section':
-            for question in page_or_question.question_ids:
-                if any(answer in triggered_questions_by_answer for answer in question.suggested_answer_ids):
-                    return False
+        if self.questions_layout == 'page_per_section':
+            if with_own_conditionals:
+                for question in page_or_question.question_ids:
+                    if any(answer in triggered_questions_by_answer for answer in question.suggested_answer_ids):
+                        return False
             for section in next_page_or_question_candidates:
                 if any(next_question not in inactive_questions for next_question in section.question_ids):
                     return False

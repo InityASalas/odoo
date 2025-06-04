@@ -44,7 +44,7 @@ class TestWorkeEntryHolidaysWorkEntry(TestWorkEntryHolidaysBase):
         })
         leave.action_approve()
 
-        work_entries = self.richard_emp.version_id.generate_work_entries(self.start.date(), self.end.date())
+        work_entries = self.richard_emp.generate_work_entries(self.start.date(), self.end.date())
         work_entries.action_validate()
         leave_work_entry = work_entries.filtered(lambda we: we.work_entry_type_id in self.work_entry_type_leave)
         sum_hours = sum(leave_work_entry.mapped('duration'))

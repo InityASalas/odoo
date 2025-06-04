@@ -1,0 +1,12 @@
+<odoo>
+    <record id="demo_stun_server" model="mail.ice.server">
+        <field name="server_type">stun</field>
+        <field name="uri">stun.l.google.com:19302</field>
+    </record>
+    <record id="demo_turn_server" model="mail.ice.server">
+        <field name="server_type">turn</field>
+        <field name="uri">turn.example.com:3478</field>
+        <field name="username">demo_user</field>
+        <field name="credential">demo_password</field>
+    </record>
+</odoo>

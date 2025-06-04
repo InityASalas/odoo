@@ -2272,7 +2272,7 @@ class IrQweb(models.AbstractModel):
         # values (t-out="0" from content and variables from t-set)
         def_name = compile_context['make_name']('t_call')
 
-        is_deprecated_version = not any(not key.startswith('t-') for key in el.attrib) and any(n.tag == 't' and n.attrib.get('t-set') for n in el)
+        is_deprecated_version = not any(not key.startswith('t-') for key in el.attrib) and any(n.tag.rsplit('}', 1)[-1] == 't' and n.attrib.get('t-set') for n in el)
 
         # values from content (t-out="0")
         has_content = bool(list(el))

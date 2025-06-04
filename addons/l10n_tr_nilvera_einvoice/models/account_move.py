@@ -2,7 +2,7 @@ import uuid
 from markupsafe import Markup
 from urllib.parse import quote, urlencode, urlparse
 
-from odoo import api, fields, models, _
+from odoo import fields, models, _
 from odoo.exceptions import UserError
 from odoo.addons.l10n_tr_nilvera.lib.nilvera_client import _get_nilvera_client
 
@@ -33,12 +33,29 @@ class AccountMove(models.Model):
         default='not_sent',
     )
 
-    @api.model
-    def _get_ubl_cii_builder_from_xml_tree(self, tree):
-        customization_id = tree.find('{*}CustomizationID')
-        if customization_id is not None and 'TR1.2' in customization_id.text:
-            return self.env['account.edi.xml.ubl.tr']
-        return super()._get_ubl_cii_builder_from_xml_tree(tree)
+    def _get_import_file_type(self, file_data):
+        """ Identify Nilvera UBL files. """
+        # EXTENDS 'account'
+        if (
+            file_data['xml_tree'] is not None
+            and (customization_id := file_data['xml_tree'].findtext('{*}CustomizationID'))
+            and 'TR1.2' in customization_id
+        ):
+            return 'l10n_tr.nilvera'
+
+        return super()._get_import_file_type(file_data)
+
+    def _get_edi_decoder(self, file_data, new=False):
+        if file_data['import_file_type'] == 'l10n_tr.nilvera':
+            return {
+                'priority': 20,
+                'decoder': self.env['account_edi.xml.ubl.tr']._import_invoice_ubl_cii,
+                'reason_cannot_decode': (
+                    self._reason_cannot_decode_is_not_draft()
+                    or self._reason_cannot_decode_has_invoice_lines()
+                ),
+            }
+        return super()._get_edi_decoder(file_data, new)
 
     def button_draft(self):
         # EXTENDS account
@@ -244,7 +261,7 @@ class AccountMove(models.Model):
                 and invoice.message_main_attachment_id.name.endswith('.xml')
                 and 'pdf' not in invoice.message_main_attachment_id.mimetype):
             invoice.message_main_attachment_id = attachment
-        invoice.with_context(no_new_invoice=True).message_post(attachment_ids=attachment.ids)
+        invoice.message_post(attachment_ids=attachment.ids)
 
     def _l10n_tr_nilvera_einvoice_get_error_messages_from_response(self, response):
         msg = ""

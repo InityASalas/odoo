@@ -320,8 +320,9 @@ class AccountEdiFormat(models.Model):
         # to the taxpayer for clarifications
         chain_head = invoice.journal_id._l10n_sa_get_last_posted_invoice()
         if chain_head and chain_head != invoice and not chain_head._l10n_sa_is_in_chain():
+            invoice.l10n_sa_edi_chain_head_id = chain_head
             return {invoice: {
-                'error': f"ZATCA: Cannot post invoice while chain head ({chain_head.name}) has not been posted",
+                'error': _(f"Error: This invoice is blocked due to {chain_head.name}. Please check it."),
                 'blocking_level': 'error',
                 'response': None,
             }}
@@ -365,6 +366,7 @@ class AccountEdiFormat(models.Model):
 
         # Save the submitted/returned invoice XML content once the submission has been completed successfully
         invoice._l10n_sa_log_results(cleared_xml.encode(), response_data)
+        invoice.journal_id._l10n_sa_reset_chain_head_error(trigger_webservice=False)
         return {
             invoice: {
                 'success': True,

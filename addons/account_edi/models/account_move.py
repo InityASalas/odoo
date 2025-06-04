@@ -370,10 +370,11 @@ class AccountMove(models.Model):
         '''
         return
 
-    def action_retry_edi_documents_error(self):
+    def action_retry_edi_documents_error(self, trigger_webservice=True):
         self._retry_edi_documents_error_hook()
         self.edi_document_ids.write({'error': False, 'blocking_level': False})
-        self.action_process_edi_web_services()
+        if trigger_webservice:
+            self.action_process_edi_web_services()
 
     ####################################################
     # Mailing

@@ -314,6 +314,8 @@
                                     </group>
                                 </group>
                             </page>
+                            <page name="hr_settings" string="Settings">
+                            </page>
                         </notebook>
                     </sheet>
                     <chatter reload_on_follower="True"/>

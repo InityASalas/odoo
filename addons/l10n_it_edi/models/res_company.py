@@ -114,7 +114,8 @@ class ResCompany(models.Model):
     @api.depends("account_edi_proxy_client_ids")
     def _compute_l10n_it_edi_proxy_user_id(self):
         for company in self:
-            company.l10n_it_edi_proxy_user_id = company.root_id.account_edi_proxy_client_ids.filtered(lambda x: x.proxy_type == 'l10n_it_edi')
+            main_company = company.root_id if company.has_same_vat_and_cf_as_root() else company
+            company.l10n_it_edi_proxy_user_id = main_company.account_edi_proxy_client_ids.filtered(lambda x: x.proxy_type == 'l10n_it_edi')
 
     def _l10n_it_edi_export_check(self):
         checks = {
@@ -158,3 +159,9 @@ class ResCompany(models.Model):
         for company in self:
             if not company.l10n_it_has_tax_representative:
                 company.l10n_it_tax_representative_partner_id = False
+
+    def has_same_vat_and_cf_as_root(self):
+        if self.root_id.id == self.id:
+            return False
+
+        return self.l10n_it_codice_fiscale == self.root_id.l10n_it_codice_fiscale and self.vat == self.root_id.vat

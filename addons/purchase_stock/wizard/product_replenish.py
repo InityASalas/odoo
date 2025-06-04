@@ -8,6 +8,8 @@ from odoo.osv.expression import AND
 class ProductReplenish(models.TransientModel):
     _inherit = 'product.replenish'
 
+    partner_id = fields.Many2one('res.partner', string='Supplier')
+
     @api.model
     def default_get(self, fields):
         res = super().default_get(fields)
@@ -20,11 +22,10 @@ class ProductReplenish(models.TransientModel):
                     *self.env['stock.warehouse']._check_company_domain(company),
                 ], limit=1).id
             orderpoint = self.env['stock.warehouse.orderpoint'].search([('product_id', 'in', [product_tmpl_id.product_variant_id.id, product_id.id]), ("warehouse_id", "=", res['warehouse_id'])], limit=1)
-            res['supplier_id'] = False
             if orderpoint:
-                res['supplier_id'] = orderpoint.supplier_id.id
+                res['partner_id'] = orderpoint.supplier_id.partner_id.id
             elif product_tmpl_id.seller_ids:
-                res['supplier_id'] = product_tmpl_id.seller_ids[0].id
+                res['partner_id'] = product_tmpl_id.seller_ids[0].partner_id.id
         return res
 
     @api.depends('route_id', 'supplier_id')
@@ -36,9 +37,16 @@ class ProductReplenish(models.TransientModel):
 
     def _prepare_run_values(self):
         res = super()._prepare_run_values()
-        if self.supplier_id:
-            res['supplierinfo_id'] = self.supplier_id
-            res['group_id'].partner_id = self.supplier_id.partner_id
+
+        if self.partner_id:
+            res['group_id'].partner_id = self.partner_id
+
+            seller_ids = self.product_tmpl_id.seller_ids.filtered(lambda s: s.partner_id == self.partner_id)
+            if seller_ids:
+                res['supplierinfo_id'] = seller_ids[0]  # Pricelist selection logic handled in _select_seller
+            else:
+                res['supplier_is_partner'] = True  # Flag for _run_buy
+
         return res
 
     def action_stock_replenishment_info(self):

@@ -243,6 +243,10 @@ class Website(models.Model):
         ]
 
     @api.model
+    def get_requested_homepage(self):
+        return 'homepage_website_sale'
+
+    @api.model
     def configurator_apply(
         self, *, shop_page_style_option=None, product_page_style_option=None, **kwargs
     ):

@@ -1732,7 +1732,7 @@ def load_language(cr, lang):
     installer.lang_install()
 
 
-def get_base_langs(lang: str) -> str:
+def get_base_langs(lang: str) -> list[str]:
     # properly get the base lang, including for exceptions like cr@latin and es_419
     base_langs = [lang.split('_')[0]]
     # Exception for Spanish locales: they have two bases, es and es_419:
@@ -1756,10 +1756,11 @@ def get_po_paths(module_name: str, lang: str, env: Environment | None = None):
 
 
 def get_datafile_translation_path(module_name: str, env: Environment | None = None):
-    from odoo.modules import get_manifest  # noqa: PLC0415
-    manifest = get_manifest(module_name)
+    from odoo.modules import Manifest  # noqa: PLC0415
+    # if we are importing a module, we have an env, hide warnings
+    module = Manifest.get_module(module_name, downloaded=True, display_warning=env is None) or {}
     for data_type in ('data', 'demo'):
-        for path in manifest.get(data_type, ()):
+        for path in module.get(data_type, ()):
             if path.endswith(('.xml', '.csv')):
                 yield file_path(join(module_name, path), env=env)
 

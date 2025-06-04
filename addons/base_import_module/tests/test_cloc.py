@@ -151,6 +151,7 @@ class TestClocFields(test_cloc.TestClocCustomization):
                 ]
             },
             'license': 'LGPL-3',
+            'author': 'Odoo',
         })
 
         stream = BytesIO()
@@ -200,6 +201,7 @@ class TestClocFields(test_cloc.TestClocCustomization):
                 ]
             },
             'license': 'LGPL-3',
+            'author': 'Odoo',
         })
 
         stream = BytesIO()
@@ -243,6 +245,7 @@ class TestClocFields(test_cloc.TestClocCustomization):
                     'data/test.xml',
             ],
             'license': 'LGPL-3',
+            'author': 'Odoo',
         })
 
         stream = BytesIO()

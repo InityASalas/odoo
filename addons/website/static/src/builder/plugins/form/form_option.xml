@@ -289,8 +289,8 @@
 	            id="'hidden_condition_file_opt'" preview="false" dataAttributeAction="'visibilityComparator'"
 	        >
 	            <!-- file comparator possibilities -->
-	            <BuilderSelectItem dataAttributeActionValue="'fileset'">Is set</BuilderSelectItem>
-	            <BuilderSelectItem dataAttributeActionValue="'!fileset'">Is not set</BuilderSelectItem>
+	            <BuilderSelectItem dataAttributeActionValue="'fileSet'">Is set</BuilderSelectItem>
+	            <BuilderSelectItem dataAttributeActionValue="'!fileSet'">Is not set</BuilderSelectItem>
 	        </BuilderSelect>
             <BuilderSelect t-if="domStateDependency.isRecordField"
                 id="'hidden_condition_record_opt'" dataAttributeAction="'visibilityComparator'" preview="false"

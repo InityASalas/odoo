@@ -476,12 +476,20 @@ export function useClickableBuilderComponent() {
             }
         },
         preview: () => {
-            callOperation(applyOperation.preview, {
-                operationParams: {
-                    cancellable: true,
-                    cancelPrevious: () => applyOperation.revert(),
+            callOperation(
+                (...args) => {
+                    if (comp.env.editor.shared.history.getIsPreviewing()) {
+                        return;
+                    }
+                    applyOperation.preview(...args);
                 },
-            });
+                {
+                    operationParams: {
+                        cancellable: true,
+                        cancelPrevious: () => applyOperation.revert(),
+                    },
+                }
+            );
         },
         revert: () => {
             // The `next` will cancel the previous operation, which will revert

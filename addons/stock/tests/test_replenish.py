@@ -5,7 +5,7 @@ from freezegun import freeze_time
 
 from odoo.addons.stock.tests.common import TestStockCommon
 from odoo.tests import Form
-from odoo import fields
+from odoo import Command, fields
 
 
 
@@ -75,3 +75,22 @@ class TestStockReplenish(TestStockCommon):
         self.assertEqual(len(product.route_ids), 0)
         wizard = Form(self.env['product.replenish'].with_context(default_product_tmpl_id=product.id))
         self.assertEqual(wizard._values['quantity'], 1)
+
+    def test_multi_product_replenishment_source_document_visibility(self):
+        warehouse_1 = self.env['stock.warehouse'].search([('company_id', '=', self.env.company.id)])
+        warehouse_2 = self.env['stock.warehouse'].create({'name': 'Small Warehouse', 'code': 'SWH'})
+        warehouse_1.write({'resupply_wh_ids': [Command.set(warehouse_2.ids)]})
+        product1, product2 = self.productA, self.productB
+        orderpoints = self.env['stock.warehouse.orderpoint'].create([{
+            'product_id': product.id,
+            'location_id': self.stock_location,
+            'qty_to_order': 1,
+            'route_id': warehouse_1.resupply_route_ids[0].id,
+        } for product in (product1, product2)])
+        for orderpoint in orderpoints:
+            orderpoint.action_replenish()
+        replenishment = self.env['stock.picking'].search([], order='create_date desc', limit=1)
+        self.assertEqual(
+            replenishment.origin,
+            ','.join(replenishment.move_ids.mapped('origin'))
+        )

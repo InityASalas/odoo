@@ -37,21 +37,18 @@
         <xpath expr="//footer" position="after">
             <div class="py-3 m-0 p-0 text-end">
                 <div class="o_survey_progress_wrapper d-inline-block pe-1 text-start">
-                    <t t-call="survey.survey_progression"
-                        t-if="survey and survey.questions_layout != 'one_page' and answer and answer.state == 'in_progress' and (not question or not question.is_page) and not survey_form_readonly">
+                    <t t-if="survey and survey.questions_layout != 'one_page' and answer and answer.state == 'in_progress' and (not question or not question.is_page) and not survey_form_readonly">
                         <t t-if="survey.questions_layout == 'page_per_section'">
                             <t t-set="page_ids" t-value="survey.page_ids.ids"/>
                             <t t-set="page_number" t-value="page_ids.index(page.id) + (1 if survey.progression_mode == 'number' else 0)"/>
                         </t>
                         <t t-else="">
-                            <t t-if="not answer.is_session_answer and survey.questions_selection == 'random'">
-                                <t t-set="page_ids" t-value="answer.predefined_question_ids.ids"/>
-                            </t>
-                            <t t-else="">
-                                <t t-set="page_ids" t-value="survey.question_ids.ids"/>
-                            </t>
+                            <t t-if="not answer.is_session_answer and survey.questions_selection == 'random'"
+                                t-set="page_ids" t-value="answer.predefined_question_ids.ids"/>
+                            <t t-else="" t-set="page_ids" t-value="survey.question_ids.ids"/>
                             <t t-set="page_number" t-value="page_ids.index(question.id)"/>
                         </t>
+                        <t t-call="survey.survey_progression"/>
                     </t>
                 </div>
                 <div class="o_survey_brand_message float-end rounded me-3 border">

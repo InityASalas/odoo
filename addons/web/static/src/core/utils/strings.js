@@ -151,22 +151,23 @@ export function odoomark(text) {
 
 /**
  * Returns a markuped version of the input text where
- * the query is highlighted using the input classes and
- * a b tag if it is part of the text
+ * the query is highlighted using the input classes
+ * if it is part of the text. Combined with odoomark
+ * by default.
  *
  * @param {string} query
  * @param {string} text
  * @param {string} classes
+ * @param {boolean} useOdooMark
  * @returns {string}
  */
-export function highlightText(query, text, classes) {
+export function highlightText(query, text, classes, useOdoomark = true) {
+    const inputText = useOdoomark ? odoomark(text) : escape(text);
     if (!query) {
-        return odoomark(text);
+        return useOdoomark ? inputText : markup(inputText);
     }
     const regex = new RegExp(`(${escapeRegExp(escape(query))})+(?=(?:[^>]*<[^<]*>)*[^<>]*$)`, "ig");
-    return markup(
-        odoomark(text).toString().replaceAll(regex, `<span class="${classes}">$1</span>`)
-    );
+    return markup(inputText.replaceAll(regex, `<span class="${escape(classes)}">$1</span>`));
 }
 
 /* eslint-disable */

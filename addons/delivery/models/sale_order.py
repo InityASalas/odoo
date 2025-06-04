@@ -89,7 +89,7 @@ class SaleOrder(models.Model):
                 pickup_location = None
             self.pickup_location_data = pickup_location
 
-    def _get_pickup_locations(self, zip_code=None, country=None, **kwargs):
+    def _get_pickup_locations(self, zip_code=None, country_code=None, **kwargs):
         """ Return the pickup locations of the delivery method close to a given zip code.
 
         Use provided `zip_code` and `country` or the order's delivery address to determine the zip
@@ -98,13 +98,18 @@ class SaleOrder(models.Model):
         Note: self.ensure_one()
 
         :param int zip_code: The zip code to look up to, optional.
-        :param res.country country: The country to look up to, required if `zip_code` is provided.
+        :param string country_code: The code of the country to look up to, required if `zip_code`
+                                    is provided.
         :return: The close pickup locations data.
         :rtype: dict
         """
         self.ensure_one()
         if zip_code:
-            assert country  # country is required if zip_code is provided.
+            assert country_code  # country is required if zip_code is provided.
+            country = self.env['res.country'].search(
+                [('code', '=', country_code)],
+                limit=1,
+            )
             partner_address = self.env['res.partner'].new({
                 'active': False,
                 'country_id': country.id,

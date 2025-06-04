@@ -43,7 +43,7 @@
                         <div invisible="not pos_config_id">
                             <block title="Point of Sale" id="restaurant_section">
                                 <!-- Wrap the warnings in an o_setting_box so that it doesn't show in the search. -->
-                                <setting id="is_restaurant">
+                                <setting id="is_restaurant" invisible="is_kiosk_mode">
                                     <field name="pos_module_pos_restaurant" readonly="pos_has_active_session"/>
                                     <div class="content-group" id="warning_text_pos_restaurant" invisible="not pos_module_pos_restaurant">
                                         <div class="text-warning mt16 mb4">
@@ -107,7 +107,7 @@
                                                 invisible="not group_cash_rounding"/>
                                     </div>
                                 </setting>
-                                <setting help="Set a maximum difference allowed between the expected and counted money during the closing of the session">
+                                <setting help="Set a maximum difference allowed between the expected and counted money during the closing of the session" invisible="is_kiosk_mode">
                                     <field name="pos_set_maximum_difference" />
                                     <div class="content-group mt16" invisible="not pos_set_maximum_difference">
                                         <label for="pos_amount_authorized_diff" string="Authorized Difference" class="fw-normal me-1"/>
@@ -124,7 +124,7 @@
                                     </div>
                                 </setting>
                             </block>
-                            <block title="PoS Interface" id="pos_interface_section">
+                            <block title="PoS Interface" id="pos_interface_section" invisible="is_kiosk_mode">
                                 <div class="o_notification_alert alert alert-warning" invisible="pos_company_has_template" role="alert">
                                     There is no Chart of Accounts configured on the company. Please go to the invoicing settings to install a Chart of Accounts.
                                 </div>
@@ -207,7 +207,7 @@
                                     </div>
                                     <field name="account_default_pos_receivable_account_id" colspan="4" nolabel="1" domain="[('reconcile', '=', True), ('account_type', '=', 'asset_receivable')]"/>
                                 </setting>
-                                <setting id="order_edit_tracking" help="Store edited orders in the backend">
+                                <setting id="order_edit_tracking" help="Store edited orders in the backend" invisible="is_kiosk_mode">
                                     <field name="pos_order_edit_tracking"/>
                                 </setting>
                                 <setting id="flexible_taxes" invisible="pos_use_presets" title="Choose a specific fiscal position at the order depending on the kind of customer (tax exempt, onsite vs. takeaway, etc.)." string="Flexible Taxes" help="Use fiscal positions to get different taxes by order" documentation="/applications/sales/point_of_sale/pricing/fiscal_position.html">
@@ -244,7 +244,7 @@
                                 <setting string="Closing Entry by product" id="pos_closeing_entry_by_product" help="Display the breakdown of sales lines by product in the automatically generated closing entry.">
                                     <field name="pos_is_closing_entry_by_product"/>
                                 </setting>
-                                <setting id="pos-avatax" help="Use automatic taxes mapping with Avatax">
+                                <setting id="pos-avatax" help="Use automatic taxes mapping with Avatax" invisible="is_kiosk_mode">
                                     <field name="pos_module_pos_avatax" />
                                 </setting>
                             </block>
@@ -278,7 +278,7 @@
                                 <setting id="manual_discount" help="Allow cashiers to set a discount per line" documentation="/applications/sales/point_of_sale/pricing/discounts.html">
                                     <field name="pos_manual_discount"/>
                                 </setting>
-                                <setting help="Adds a button to set a global discount" documentation="/applications/sales/point_of_sale/pricing/discounts.html">
+                                <setting help="Adds a button to set a global discount" documentation="/applications/sales/point_of_sale/pricing/discounts.html" invisible="is_kiosk_mode">
                                     <field name="pos_module_pos_discount"/>
                                     <div class="content-group mt16" invisible="not pos_module_pos_discount">
                                         <div class="text-warning mb4" id="warning_text_pos_discount" >
@@ -286,10 +286,10 @@
                                         </div>
                                     </div>
                                 </setting>
-                                <setting id="pos_pricer" string="Pricer" title="Pricer tags" help="Display and update your products information through electronic price tags">
+                                <setting id="pos_pricer" string="Pricer" title="Pricer tags" help="Display and update your products information through electronic price tags" invisible="is_kiosk_mode">
                                     <field name="module_pos_pricer"/>
                                 </setting>
-                                <setting id="pos-loyalty" title="Boost your sales with multiple kinds of programs: Coupons, Promotions, Gift Card, Loyalty. Specific conditions can be set (products, customers, minimum purchase amount, period). Rewards can be discounts (% or amount) or free products." string="Promotions, Coupons, Gift Card &amp; Loyalty Program" help="Manage promotion that will grant customers discounts or gifts" documentation="/applications/sales/point_of_sale/pricing/loyalty.html">
+                                <setting id="pos-loyalty" title="Boost your sales with multiple kinds of programs: Coupons, Promotions, Gift Card, Loyalty. Specific conditions can be set (products, customers, minimum purchase amount, period). Rewards can be discounts (% or amount) or free products." string="Promotions, Coupons, Gift Card &amp; Loyalty Program" help="Manage promotion that will grant customers discounts or gifts" documentation="/applications/sales/point_of_sale/pricing/loyalty.html" invisible="is_kiosk_mode">
                                     <field name="module_loyalty"/>
                                 </setting>
                             </block>
@@ -340,7 +340,7 @@
                                         </div>
                                     </div>
                                 </setting>
-                                <setting help="Print basic ticket without prices. Can be used for gifts.">
+                                <setting help="Print basic ticket without prices. Can be used for gifts." invisible="is_kiosk_mode">
                                     <field name="pos_basic_receipt"/>
                                 </setting>
                             </block>
@@ -435,7 +435,7 @@
                                         </div>
                                     </div>
                                 </setting>
-                                <setting string="Internal Notes" help="Add internal notes on order lines for the kitchen" id="iface_orderline_notes">
+                                <setting string="Internal Notes" help="Add internal notes on order lines for the kitchen" id="iface_orderline_notes" invisible="is_kiosk_mode">
                                     <div class="content-group">
                                         <div class="mt16">
                                             <label string="Note Models" for="pos_note_ids" class="o_light_label me-2"/>
@@ -452,7 +452,7 @@
                                 <setting title="Operation types show up in the Inventory dashboard." string="Operation Type" help="Used to record product pickings. Products are consumed from its default source location.">
                                     <field name="pos_picking_type_id" domain="[('company_id', '=', company_id)]" required="pos_config_id"/>
                                 </setting>
-                                <setting string="Allow Ship Later" help="Sell products and deliver them later.">
+                                <setting string="Allow Ship Later" help="Sell products and deliver them later." invisible="is_kiosk_mode">
                                     <field name="pos_ship_later"/>
                                     <div class="content-group mt16" invisible="not pos_ship_later">
                                         <div class="row">
@@ -469,7 +469,7 @@
                                         </div>
                                     </div>
                                 </setting>
-                                <setting id="barcode_scanner">
+                                <setting id="barcode_scanner" invisible="is_kiosk_mode">
                                     <span class="o_form_label">Barcodes</span>
                                     <i class="fa fa-info-circle me-1" title="This setting is common to all PoS." pos-data-toggle="tooltip"/>
                                     <div class="text-muted">

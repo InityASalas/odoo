@@ -360,11 +360,11 @@ function normalizeCondition(condition) {
  * @param {boolean} [negate=false]
  * @returns {{ tree: Tree, remaimingASTs: AST[] }}
  */
-function _construcTree(ASTs, options = {}, negate = false) {
+function _constructTree(ASTs, options = {}, negate = false) {
     const [firstAST, ...tailASTs] = ASTs;
 
     if (firstAST.type === 1 && firstAST.value === "!") {
-        return _construcTree(tailASTs, options, !negate);
+        return _constructTree(tailASTs, options, !negate);
     }
 
     const tree = { type: firstAST.type === 1 ? "connector" : "condition" };
@@ -403,7 +403,7 @@ function _construcTree(ASTs, options = {}, negate = false) {
     let remaimingASTs = tailASTs;
     if (tree.type === "connector") {
         for (let i = 0; i < 2; i++) {
-            const { tree: child, remaimingASTs: otherASTs } = _construcTree(
+            const { tree: child, remaimingASTs: otherASTs } = _constructTree(
                 remaimingASTs,
                 options,
                 options.distributeNot && negate
@@ -420,7 +420,7 @@ function _construcTree(ASTs, options = {}, negate = false) {
  * @param {Options} [options={}]
  * @returns {Tree}
  */
-function construcTree(domain, options = {}) {
+function constructTree(domain, options = {}) {
     domain = new Domain(domain);
     const domainAST = domain.ast;
     // @ts-ignore
@@ -428,7 +428,7 @@ function construcTree(domain, options = {}) {
     if (!initialASTs.length) {
         return connector("&");
     }
-    const { tree } = _construcTree(initialASTs, options);
+    const { tree } = _constructTree(initialASTs, options);
     return tree;
 }
 
@@ -951,7 +951,7 @@ class TreePattern extends Pattern {
         for (const name of vars) {
             values[name] = new Hole(name);
         }
-        const tree = construcTree(domain);
+        const tree = constructTree(domain);
         this._template = replaceVariablesByValues(tree, values);
     }
     detect(tree) {
@@ -1649,10 +1649,10 @@ export function domainFromTree(tree) {
 
 /**
  * @param {DomainRepr} domain
- * @param {Object} [options={}] see construcTree API
+ * @param {Object} [options={}] see constructTree API
  * @returns {Tree} a (simple) tree representation of a domain
  */
 export function treeFromDomain(domain, options = {}) {
-    const tree = construcTree(domain, options);
+    const tree = constructTree(domain, options);
     return applyTransformations(FULL_VIRTUAL_OPERATORS_CREATION, tree, options);
 }

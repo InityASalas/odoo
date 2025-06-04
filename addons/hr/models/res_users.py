@@ -80,16 +80,12 @@ HR_WRITABLE_FIELDS = [
 class ResUsers(models.Model):
     _inherit = 'res.users'
 
-    def _employee_ids_domain(self):
-        # employee_ids is considered a safe field and as such will be fetched as sudo.
-        # So try to enforce the security rules on the field to make sure we do not load employees outside of active companies
-        return [('company_id', 'in', self.env.company.ids + self.env.context.get('allowed_company_ids', []))]
-
     # note: a user can only be linked to one employee per company (see sql constraint in ´hr.employee´)
-    employee_ids = fields.One2many('hr.employee', 'user_id', string='Related employee', domain=_employee_ids_domain)
+    employee_ids = fields.One2many('hr.employee', 'user_id', string='Related employee', compute='_compute_company_employees', search='_search_company_employees', store=False)
     employee_id = fields.Many2one('hr.employee', string="Company employee",
         compute='_compute_company_employee', search='_search_company_employee', store=False)
 
+    all_companies_employee_ids = fields.One2many('hr.employee', 'user_id', string='Related employees in all companies')
     job_title = fields.Char(related='employee_id.job_title', readonly=False, related_sudo=False)
     work_phone = fields.Char(related='employee_id.work_phone', readonly=False, related_sudo=False)
     mobile_phone = fields.Char(related='employee_id.mobile_phone', readonly=False, related_sudo=False)
@@ -307,6 +303,18 @@ class ResUsers(models.Model):
         if self.env.user.employee_id:
             return self.env['ir.actions.act_window']._for_xml_id('hr.res_users_action_my')
         return super().action_get()
+
+    @api.depends("all_companies_employee_ids")
+    @api.depends_context('company')
+    @api.depends_context('allowed_company_ids')
+    def _compute_company_employees(self):
+        current_companies = self.env.company.ids + self.env.context.get('allowed_company_ids', [])
+        for employee in self:
+            employee.employee_ids = self.all_companies_employee_ids.filtered(lambda emp: emp.company_id.id in current_companies)
+
+    def _search_company_employees(self, operator, value):
+        current_companies = self.env.company.ids + self.env.context.get('allowed_company_ids', [])
+        return [('all_companies_employee_ids', operator, value), ('all_companies_employee_ids.company_id', 'in', current_companies)]
 
     @api.depends('employee_ids')
     @api.depends_context('company')

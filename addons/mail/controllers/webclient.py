@@ -70,6 +70,13 @@ class WebclientController(http.Controller):
                 )
             else:
                 store.add(thread, request_list=params["request_list"], as_thread=True)
+        if name == "avatar_card":
+            user_id = params["user_id"]
+            partner = request.env["res.partner"].sudo().search(
+                domain=[("user_id", "=", user_id)],
+                limit=1,
+            )
+            store.add(partner, ["avatar_card"])
 
     @classmethod
     def _process_request_for_logged_in_user(self, store: Store, name, params):

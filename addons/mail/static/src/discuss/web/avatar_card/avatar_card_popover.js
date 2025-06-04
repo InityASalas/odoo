@@ -12,23 +12,26 @@ export class AvatarCardPopover extends Component {
 
     setup() {
         this.actionService = useService("action");
-        this.orm = useService("orm");
+        this.store = useService("mail.store");
         this.openChat = useOpenChat("res.users");
         onWillStart(async () => {
-            [this.user] = await this.orm.read("res.users", [this.props.id], this.fieldNames);
+            await this.store.Persona.getAvatarCardData(this.props.id);
         });
     }
 
-    get fieldNames() {
-        return ["name", "email", "phone", "im_status", "share", "partner_id"];
+    get persona() {
+        const persona = Object.values(this.store.Persona.records).filter(
+            (x) => x.userId === this.props.id
+        )[0];
+        return persona;
     }
 
     get email() {
-        return this.user.email;
+        return this.persona.email;
     }
 
     get phone() {
-        return this.user.phone;
+        return this.persona.phone;
     }
 
     get showViewProfileBtn() {
@@ -41,7 +44,7 @@ export class AvatarCardPopover extends Component {
 
     async getProfileAction() {
         return {
-            res_id: this.user.partner_id[0],
+            res_id: this.persona.id,
             res_model: "res.partner",
             type: "ir.actions.act_window",
             views: [[false, "form"]],
@@ -49,7 +52,7 @@ export class AvatarCardPopover extends Component {
     }
 
     get userId() {
-        return this.user.id;
+        return this.persona.userId;
     }
 
     onSendClick() {

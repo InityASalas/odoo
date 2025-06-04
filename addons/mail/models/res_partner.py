@@ -257,6 +257,9 @@ class ResPartner(models.Model):
     def _to_store_defaults(self):
         return ["active", "avatar_128", "email", "im_status", "is_company", "name", "user"]
 
+    def _get_avatar_store_fields(self):
+        return ["name", "phone", "email", "im_status", "user", "share"]
+
     def _to_store(self, store: Store, fields, *, main_user_by_partner=None):
         if not self.env.user._is_internal() and "email" in fields:
             fields.remove("email")
@@ -265,13 +268,15 @@ class ResPartner(models.Model):
             [
                 field
                 for field in fields
-                if field not in ["display_name", "isAdmin", "notification_type", "signature", "user"]
+                if field not in ["display_name", "isAdmin", "notification_type", "signature", "share", "user", "avatar_card"]
             ],
         )
         for partner in self:
             data = {}
             if "display_name" in fields:
                 data["displayName"] = partner.display_name
+            if "avatar_card" in fields:
+                self._to_store(store, self._get_avatar_store_fields(), main_user_by_partner=main_user_by_partner)
             if "user" in fields:
                 main_user = main_user_by_partner and main_user_by_partner.get(partner)
                 if not main_user:
@@ -286,6 +291,8 @@ class ResPartner(models.Model):
                     data["notification_preference"] = main_user.notification_type
                 if "signature" in fields:
                     data["signature"] = main_user.signature
+                if "share" in fields:
+                    data["share"] = main_user.share
             if data:
                 store.add(partner, data)
 

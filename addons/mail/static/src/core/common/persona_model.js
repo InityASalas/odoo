@@ -179,6 +179,12 @@ export class Persona extends Record {
     _getActualModelName() {
         return this.type === "partner" ? "res.partner" : "mail.guest";
     }
+
+    static async getAvatarCardData(userId) {
+        await this.store.fetchStoreData("avatar_card", {
+            user_id: userId,
+        });
+    }
 }
 
 Persona.register();

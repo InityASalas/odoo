@@ -31,5 +31,11 @@ class ResPartner(models.Model):
     def _get_on_leave_ids(self):
         return self.env['res.users']._get_on_leave_ids(partner=True)
 
+    def _get_avatar_store_fields(self):
+        return super()._get_avatar_store_fields() + ['leave_date_to']
+
+    def _get_avatar_employee_store_fields(self):
+        return super()._get_avatar_employee_store_fields() + ['leave_date_to']
+
     def _to_store_defaults(self):
         return super()._to_store_defaults() + ["leave_date_to"]

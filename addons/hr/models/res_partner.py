@@ -1,6 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models, _
+from odoo.addons.mail.tools.discuss import Store
 
 
 class ResPartner(models.Model):
@@ -62,3 +63,41 @@ class ResPartner(models.Model):
         employees = {employee for [employee] in employee_data}
         for partner in self:
             partner.employee = partner in employees
+
+    def _get_avatar_store_fields(self):
+        return super()._get_avatar_store_fields() + ["all_companies_employee_ids", "employee_ids"]
+
+    def _get_avatar_employee_store_fields(self):
+        return [
+            "work_phone", "work_email", "work_location_name", "work_location_type",
+            "job_title", Store.One("department_id", ["name"], sudo=True),
+        ]
+
+    def _to_store(self, store: Store, fields, *, main_user_by_partner=None):
+        super()._to_store(
+            store,
+            [field for field in fields if field not in ["all_companies_employee_ids"]],
+            main_user_by_partner=main_user_by_partner,
+        )
+        for partner in self:
+            if "user" in fields:
+                if "all_companies_employee_ids" in fields:
+                    store.add(
+                        partner,
+                        {
+                            "all_companies_employee_ids": Store.Many(
+                                partner.mapped("user_ids.all_companies_employee_ids"),
+                                self._get_avatar_employee_store_fields()
+                            )
+                        }
+                    )
+                if "employee_ids" in fields:
+                    store.add(
+                        partner,
+                        {
+                            "employee_ids": Store.Many(
+                                partner.mapped("user_ids.employee_ids"),
+                                self._get_avatar_employee_store_fields()
+                            )
+                        }
+                    )

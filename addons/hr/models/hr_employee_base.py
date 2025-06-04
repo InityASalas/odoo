@@ -204,7 +204,7 @@ class HrEmployeeBase(models.AbstractModel):
     def _compute_phones(self):
         for employee in self:
             employee.work_phone = employee.address_id.phone
-    
+
     @api.depends('work_contact_id', 'work_contact_id.phone', 'work_contact_id.email')
     def _compute_work_contact_details(self):
         for employee in self:

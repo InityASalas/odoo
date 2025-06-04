@@ -25,9 +25,11 @@ export class BuilderOptionsPlugin extends Plugin {
         "getRemoveDisabledReason",
         "getCloneDisabledReason",
         "getReloadSelector",
+        "setNextContainersTarget",
     ];
     resources = {
         step_added_handlers: this.onStepAdded.bind(this),
+        normalize_handlers: this.onWillAddStep.bind(this),
         clean_for_save_handlers: this.cleanForSave.bind(this),
         post_undo_handlers: this.restoreContainer.bind(this),
         post_redo_handlers: this.restoreContainer.bind(this),
@@ -70,6 +72,9 @@ export class BuilderOptionsPlugin extends Plugin {
             const el = this.editable.querySelector(this.config.initialTarget);
             this.updateContainers(el);
         }
+
+        this.nextTargetEl = null;
+        this.forceContainerUpdate = false;
     }
 
     destroy() {
@@ -149,7 +154,6 @@ export class BuilderOptionsPlugin extends Plugin {
         }
 
         this.lastContainers = newContainers;
-        this.dependencies.history.setStepExtra("currentTarget", this.target);
         this.dispatchTo("change_current_options_containers_listeners", this.lastContainers);
     }
 
@@ -265,18 +269,34 @@ export class BuilderOptionsPlugin extends Plugin {
         }
     }
 
-    onStepAdded({ step }) {
+    onStepAdded() {
         // If a target is specified, activate its containers.
-        const nextTargetEl = step.extraStepInfos.nextTarget;
-        if (nextTargetEl) {
-            const forceUpdate = step.extraStepInfos.forceContainerUpdate || false;
-            this.updateContainers(nextTargetEl, { forceUpdate });
+        if (this.nextTargetEl) {
+            this.updateContainers(this.nextTargetEl, { forceUpdate: this.forceContainerUpdate });
+            this.nextTargetEl = null;
+            this.forceContainerUpdate = false;
         } else {
             this.updateContainers();
         }
     }
 
+    onWillAddStep(_, status) {
+        console.warn("NORMALIZE", status);
+        // Save the current target in the step, to restore its container on undo
+        // and redo.
+        if (!["undo", "redo"].includes(status)) {
+            console.log("LA");
+            this.dependencies.history.setStepExtra("currentTarget", this.target);
+        }
+    }
+
+    setNextContainersTarget(targetEl, forceContainerUpdate = false) {
+        this.nextTargetEl = targetEl;
+        this.forceContainerUpdate = forceContainerUpdate;
+    }
+
     restoreContainer(revertedStep) {
+        console.warn("RESTORE", revertedStep);
         if (revertedStep && revertedStep.extraStepInfos.currentTarget) {
             const targetEl = revertedStep.extraStepInfos.currentTarget;
             this.updateContainers(targetEl, { forceUpdate: true });

@@ -151,7 +151,8 @@ class ImageGalleryOption extends Plugin {
 
                 // Activate the active image.
                 const activeImageEl = galleryEl.querySelector(".carousel-item.active img");
-                this.dependencies.history.setStepExtra("nextTarget", activeImageEl);
+                this.dependencies["builder-options"].setNextContainersTarget(activeImageEl);
+                // this.dependencies.history.setStepExtra("nextTarget", activeImageEl);
             }
         }
     }

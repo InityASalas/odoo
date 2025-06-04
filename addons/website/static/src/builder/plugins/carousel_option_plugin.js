@@ -240,7 +240,8 @@ export class CarouselOptionPlugin extends Plugin {
                     activeIndicatorEl.setAttribute("aria-current", "true");
 
                     // Activate the active item.
-                    this.dependencies.history.setStepExtra("nextTarget", activeItemEl);
+                    this.dependencies["builder-options"].setNextContainersTarget(activeItemEl);
+                    // this.dependencies.history.setStepExtra("nextTarget", activeItemEl);
 
                     resolve();
                 }, 0.2 * slideDuration);
@@ -331,8 +332,9 @@ export class CarouselOptionPlugin extends Plugin {
 
             // Activate the active slide (need to force the update because the
             // target will be the same as the current one).
-            this.dependencies.history.setStepExtra("forceContainerUpdate", true);
-            this.dependencies.history.setStepExtra("nextTarget", activeItemEl);
+            this.dependencies["builder-options"].setNextContainersTarget(activeItemEl, true);
+            // this.dependencies.history.setStepExtra("forceContainerUpdate", true);
+            // this.dependencies.history.setStepExtra("nextTarget", activeItemEl);
         }
     }
 }

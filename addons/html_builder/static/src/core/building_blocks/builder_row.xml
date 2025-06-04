@@ -14,6 +14,7 @@
                 t-ref="collapse"
                 t-if="props.slots.collapse"
                 class="o_hb_collapse_toggler btn border-0 bg-transparent"
+                t-att-class="{ 'active': state.expanded }"
                 title="Toggle more options"
                 t-on-click="toggleCollapseContent"
                 t-att-aria-expanded="state.expanded ? 'true' : 'false'"

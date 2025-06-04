@@ -51,7 +51,7 @@ class HrVersion(models.Model):
                 created_versions |= super().create([vals])
             if all_new_leave_vals:
                 self._create_all_new_leave(all_new_leave_origin, all_new_leave_vals)
-        except ValidationError as e:
+        except ValidationError:
             # In case a validation error is thrown due to holiday creation with the new resource calendar (which can
             # increase their duration), we catch this error to display a more meaningful error message.
             raise ValidationError(
@@ -115,8 +115,6 @@ class HrVersion(models.Model):
         if vals.get('contract_date_end'):
             domain = Domain.AND([domain, [('date_from', '<=', fields.Date.from_string(vals['contract_date_end']))]])
         return self.env['hr.leave'].search(domain)
-
-
 
     def _check_overlapping_contract(self, leave):
         # Get all overlapping contracts but exclude draft contracts that are not included in this transaction.

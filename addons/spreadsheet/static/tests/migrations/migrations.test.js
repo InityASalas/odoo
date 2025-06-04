@@ -515,22 +515,43 @@ test("Pivot sorted columns are migrated (12 to 13)", () => {
                 sortedColumn: { groupId: [[], []], measure: "testMeasure", order: "desc" },
                 columns: [],
                 rows: [],
+<<<<<<< beecdfa443b0cac05ea008f71155635eb4768fa3
                 measures: [{ id: "testMeasure", fieldName: "testMeasure" }],
+||||||| 6e329fcfe8949a651c6a22b927b54b0aee0bfb20
+                measures: [],
+=======
+                measures: [{ id: "testMeasure:sum", fieldName: "testMeasure", aggregator: "sum" }],
+>>>>>>> 37324cfcf01a5f5cc392da7753585852da326e2e
             },
             2: {
                 name: "test2",
                 sortedColumn: { groupId: [[], [1]], measure: "testMeasure", order: "desc" },
                 columns: [{ fieldName: "product_id" }],
                 rows: [],
+<<<<<<< beecdfa443b0cac05ea008f71155635eb4768fa3
                 measures: [{ id: "testMeasure", fieldName: "testMeasure" }],
+||||||| 6e329fcfe8949a651c6a22b927b54b0aee0bfb20
+                measures: [],
+=======
+                measures: [{ id: "testMeasure:sum", fieldName: "testMeasure", aggregator: "sum" }],
+            },
+            3: {
+                name: "test",
+                // sortedColumn is not in the measures
+                sortedColumn: { groupId: [[], []], measure: "testMeasure", order: "desc" },
+                columns: [],
+                rows: [],
+                measures: [],
+>>>>>>> 37324cfcf01a5f5cc392da7753585852da326e2e
             },
         },
     };
     const migratedData = load(data);
     expect(migratedData.pivots["1"].sortedColumn).toEqual({
         domain: [],
-        measure: "testMeasure",
+        measure: "testMeasure:sum",
         order: "desc",
     });
     expect(migratedData.pivots["2"].sortedColumn).toBe(undefined);
+    expect(migratedData.pivots["3"].sortedColumn).toBe(undefined);
 });

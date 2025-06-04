@@ -60,7 +60,28 @@ cp -av "${OVERWRITE_FILES_BEFORE_INIT_DIR}"/* "${MOUNT_POINT}"
 # it needs to be performed in the classic filesystem, as 'systemctl' commands are not available in /root_bypass_ramdisks
 sudo systemctl reload NetworkManager
 
+<<<<<<< 80b880f3076a2f42930608be05e77f8f4dcd2b37
 # Run initialization script inside /mount_point (the mounted path of the image)
+||||||| 625bb077819a945eecd9df173c6f8039ec35e258
+# generate a keypair for the IoT Box
+mkdir -pv ./.ssh
+echo "y" | ssh-keygen -t ed25519 -f ./.ssh/iotbox -N "" -C https://www.odoo.com/app/iot
+# copy the public key to the image
+mkdir -pv "${MOUNT_POINT}/home/pi/.ssh"
+cp -v ./.ssh/iotbox.pub "${MOUNT_POINT}/home/pi/.ssh/authorized_keys"
+
+# ensure the image has the correct permissions
+chmod 700 "${MOUNT_POINT}/home/pi/.ssh"
+chmod 755 "${MOUNT_POINT}/home/pi"
+chmod 600 "${MOUNT_POINT}/home/pi/.ssh/authorized_keys"
+
+=======
+# generate a keypair for the IoT Box SSH Certificate Authority
+mkdir -pv ./.ssh
+echo "y" | ssh-keygen -t ed25519 -f "./.ssh/iotbox_ca_${VERSION_IOTBOX}" -N "" -C "Odoo SSH CA ${VERSION_IOTBOX}"
+cp -v "./.ssh/iotbox_ca_${VERSION_IOTBOX}.pub" "${MOUNT_POINT}/etc/ssh/ca.pub"
+
+>>>>>>> b8486c230b254f299e355cdda0b51aab1582627b
 chroot "${MOUNT_POINT}" /bin/bash -c "/etc/init_image.sh"
 
 # Copy IoT Box version info.
@@ -85,4 +106,12 @@ rm -rf "${OVERWRITE_FILES_BEFORE_INIT_DIR}/usr"
 rm -rfv "${MOUNT_POINT}"
 losetup -d ${LOOP_IOT}
 
+<<<<<<< 80b880f3076a2f42930608be05e77f8f4dcd2b37
 echo "Image build finished."
+||||||| 625bb077819a945eecd9df173c6f8039ec35e258
+echo ""
+echo "Image build finished, you'll find the private key at './.ssh/iotbox'"
+=======
+echo ""
+echo "Image build finished, you'll find the certificate authority keypair at './.ssh/iotbox_ca_${VERSION_IOTBOX}'"
+>>>>>>> b8486c230b254f299e355cdda0b51aab1582627b

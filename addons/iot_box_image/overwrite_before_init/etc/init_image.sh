@@ -156,6 +156,128 @@ apt-get update
 # This will be modified by a unique password on the first start of Odoo
 password="$(openssl rand -base64 12)"
 echo "pi:${password}" | chpasswd
+<<<<<<< 80b880f3076a2f42930608be05e77f8f4dcd2b37
+||||||| 625bb077819a945eecd9df173c6f8039ec35e258
+chown -R pi:pi "/home/pi/.ssh"  # Ensure pi user has access to its .ssh directory
+
+PKGS_TO_INSTALL="
+    chromium-browser \
+    console-data \
+    cups \
+    cups-ipp-utils \
+    dbus \
+    dnsmasq \
+    fswebcam \
+    git \
+    hostapd \
+    iw \
+    kpartx \
+    labwc \
+    libcups2-dev \
+    libpq-dev \
+    libffi-dev \
+    localepurge \
+    nginx-full \
+    printer-driver-all \
+    python3 \
+    python3-cups \
+    python3-babel \
+    python3-dateutil \
+    python3-dbus \
+    python3-decorator \
+    python3-dev \
+    python3-docutils \
+    python3-geoip2 \
+    python3-jinja2 \
+    python3-ldap \
+    python3-libsass \
+    python3-libcamera \
+    python3-lxml \
+    python3-mako \
+    python3-mock \
+    python3-netifaces \
+    python3-passlib \
+    python3-pil \
+    python3-pip \
+    python3-psutil \
+    python3-psycopg2 \
+    python3-pydot \
+    python3-qrcode \
+    python3-reportlab \
+    python3-requests \
+    python3-serial \
+    python3-stdnum \
+    python3-tz \
+    python3-vobject \
+    rsync \
+    screen \
+    seatd \
+    swaybg \
+    swig \
+    vim \
+    wlr-randr \
+    xdotool"
+=======
+echo TrustedUserCAKeys /etc/ssh/ca.pub >> /etc/ssh/sshd_config
+
+PKGS_TO_INSTALL="
+    chromium-browser \
+    console-data \
+    cups \
+    cups-ipp-utils \
+    dbus \
+    dnsmasq \
+    fswebcam \
+    git \
+    hostapd \
+    iw \
+    kpartx \
+    labwc \
+    libcups2-dev \
+    libpq-dev \
+    libffi-dev \
+    localepurge \
+    nginx-full \
+    printer-driver-all \
+    python3 \
+    python3-cups \
+    python3-babel \
+    python3-dateutil \
+    python3-dbus \
+    python3-decorator \
+    python3-dev \
+    python3-docutils \
+    python3-geoip2 \
+    python3-jinja2 \
+    python3-ldap \
+    python3-libsass \
+    python3-libcamera \
+    python3-lxml \
+    python3-mako \
+    python3-mock \
+    python3-netifaces \
+    python3-passlib \
+    python3-pil \
+    python3-pip \
+    python3-psutil \
+    python3-psycopg2 \
+    python3-pydot \
+    python3-qrcode \
+    python3-reportlab \
+    python3-requests \
+    python3-serial \
+    python3-stdnum \
+    python3-tz \
+    python3-vobject \
+    rsync \
+    screen \
+    seatd \
+    swaybg \
+    swig \
+    vim \
+    wlr-randr \
+    xdotool"
+>>>>>>> b8486c230b254f299e355cdda0b51aab1582627b
 
 # Prevent Wi-Fi blocking
 apt-get -y remove rfkill

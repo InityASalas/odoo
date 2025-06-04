@@ -1,0 +1,13 @@
+<templates xml:space="preserve">
+    <span t-name="crm.CRMActivityRescheduleDropdown" t-inherit="mail.ActivityListRescheduleDropdown">
+        <xpath expr="//Dropdown" position="attributes">
+            <attribute name="t-if">props.record.data.my_activity_date_deadline and !props.record.data.activity_calendar_event_id and this.isAllowedDisplay</attribute>
+        </xpath>
+        <xpath expr="//Dropdown" position="after">
+            <button t-elif="props.record.data.my_activity_date_deadline and props.record.data.activity_calendar_event_id and this.isAllowedDisplay"
+                class="btn btn-link p-0 text-warning" t-on-click="actionRescheduleMeeting">
+                <i class="fa fa-calendar o_button_icon"/> <span class="o_dropdown_title">Reschedule</span>
+            </button>
+        </xpath>
+    </span>
+</templates>

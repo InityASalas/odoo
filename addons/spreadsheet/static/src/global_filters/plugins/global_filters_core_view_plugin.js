@@ -168,11 +168,17 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                     return undefined;
             }
         }
-        if (filter.type === "date" && filter.rangeType === "from_to") {
-            return value || { from: undefined, to: undefined };
-        }
-        if (filter.type === "date" && isEmpty(value) && filter.defaultValue) {
-            return this._getValueOfCurrentPeriod(filterId);
+        if (filter.type === "date") {
+            switch (filter.rangeType) {
+                case "from_to":
+                    return value || { from: undefined, to: undefined };
+                case "fixedPeriod":
+                case "relative":
+                    if (isEmpty(value) && filter.defaultValue) {
+                        return this._getValueOfCurrentPeriod(filterId);
+                    }
+                    return value;
+            }
         }
         if (
             filter.type === "relation" &&
@@ -233,55 +239,10 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             case "text":
             case "boolean":
                 return [[{ value: value?.length ? value.join(", ") : "" }]];
-            case "date": {
-                if (filter.rangeType === "from_to") {
-                    const locale = this.getters.getLocale();
-                    const from = {
-                        value: value.from ? toNumber(value.from, locale) : "",
-                        format: locale.dateFormat,
-                    };
-                    const to = {
-                        value: value.to ? toNumber(value.to, locale) : "",
-                        format: locale.dateFormat,
-                    };
-                    return [[from], [to]];
-                }
-                if (value && typeof value === "string") {
-                    const type = RELATIVE_DATE_RANGE_TYPES.find((type) => type.type === value);
-                    if (!type) {
-                        return [[{ value: "" }]];
-                    }
-                    return [[{ value: type.description.toString() }]];
-                }
-                if (!value || value.year === undefined) {
-                    return [[{ value: "" }]];
-                }
-                const year = String(value.year);
-                const period = QUARTER_OPTIONS[value.period];
-                let periodStr = period && "Q" + period.setParam.quarter; // we do not want the translated value (like T1 in French)
-                // Named months aren't in QUARTER_OPTIONS
-                if (!period) {
-                    periodStr =
-                        value.period > 0 &&
-                        value.period <= 12 &&
-                        String(value.period).padStart(2, "0");
-                }
-                return [[{ value: periodStr ? periodStr + "/" + year : year }]];
-            }
+            case "date":
+                return this._getDateFilterDisplayValue(filter, value);
             case "relation":
-                if (!value?.length || !this.nameService) {
-                    return [[{ value: "" }]];
-                }
-                if (!this.recordsDisplayName[filter.id]) {
-                    const promise = this.nameService
-                        .loadDisplayNames(filter.modelName, value)
-                        .then((result) => {
-                            this.recordsDisplayName[filter.id] = Object.values(result);
-                        });
-                    this.odooDataProvider.notifyWhenPromiseResolves(promise);
-                    return [[{ value: "" }]];
-                }
-                return [[{ value: this.recordsDisplayName[filter.id].join(", ") }]];
+                return this._getRelationFilterDisplayValue(filter, value);
         }
     }
 
@@ -408,6 +369,62 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
     // -------------------------------------------------------------------------
     // Private
     // -------------------------------------------------------------------------
+
+    _getDateFilterDisplayValue(filter, value) {
+        switch (filter.rangeType) {
+            case "from_to": {
+                const locale = this.getters.getLocale();
+                const from = {
+                    value: value.from ? toNumber(value.from, locale) : "",
+                    format: locale.dateFormat,
+                };
+                const to = {
+                    value: value.to ? toNumber(value.to, locale) : "",
+                    format: locale.dateFormat,
+                };
+                return [[from], [to]];
+            }
+            case "fixedPeriod": {
+                if (!value || value.year === undefined) {
+                    return [[{ value: "" }]];
+                }
+                const year = String(value.year);
+                const period = QUARTER_OPTIONS[value.period];
+                let periodStr = period && "Q" + period.setParam.quarter; // we do not want the translated value (like T1 in French)
+                // Named months aren't in QUARTER_OPTIONS
+                if (!period) {
+                    periodStr =
+                        value.period > 0 &&
+                        value.period <= 12 &&
+                        String(value.period).padStart(2, "0");
+                }
+                return [[{ value: periodStr ? periodStr + "/" + year : year }]];
+            }
+            case "relative": {
+                const type = RELATIVE_DATE_RANGE_TYPES.find((type) => type.type === value);
+                if (!type) {
+                    return [[{ value: "" }]];
+                }
+                return [[{ value: type.description.toString() }]];
+            }
+        }
+    }
+
+    _getRelationFilterDisplayValue(filter, value) {
+        if (!value?.length || !this.nameService) {
+            return [[{ value: "" }]];
+        }
+        if (!this.recordsDisplayName[filter.id]) {
+            const promise = this.nameService
+                .loadDisplayNames(filter.modelName, value)
+                .then((result) => {
+                    this.recordsDisplayName[filter.id] = Object.values(result);
+                });
+            this.odooDataProvider.notifyWhenPromiseResolves(promise);
+            return [[{ value: "" }]];
+        }
+        return [[{ value: this.recordsDisplayName[filter.id].join(", ") }]];
+    }
 
     /**
      * Get the domain relative to a date field

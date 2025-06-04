@@ -966,10 +966,11 @@ test("ODOO.FILTER.VALUE date filter", async function () {
         id: "42",
         type: "date",
         label: "Date Filter",
+        rangeType: "fixedPeriod",
     });
     await animationFrame();
     const [filter] = model.getters.getGlobalFilters();
-    const year = DateTime.now().year;
+    const year = DateTime.local().year;
     await setGlobalFilterValue(model, {
         id: filter.id,
         value: {
@@ -978,7 +979,7 @@ test("ODOO.FILTER.VALUE date filter", async function () {
         },
     });
     await animationFrame();
-    expect(getCellValue(model, "A10")).toBe(`Q1/${DateTime.now().year}`);
+    expect(getCellValue(model, "A10")).toBe(`Q1/${year}`);
     await setGlobalFilterValue(model, {
         id: filter.id,
         value: {
@@ -986,7 +987,7 @@ test("ODOO.FILTER.VALUE date filter", async function () {
         },
     });
     await animationFrame();
-    expect(getCellValue(model, "A10")).toBe(`${DateTime.now().year}`);
+    expect(getCellValue(model, "A10")).toBe(`${year}`);
     await setGlobalFilterValue(model, {
         id: filter.id,
         value: {
@@ -995,7 +996,7 @@ test("ODOO.FILTER.VALUE date filter", async function () {
         },
     });
     await animationFrame();
-    expect(getCellValue(model, "A10")).toBe(`01/${DateTime.now().year}`);
+    expect(getCellValue(model, "A10")).toBe(`01/${year}`);
     await setGlobalFilterValue(model, {
         id: filter.id,
         value: {},

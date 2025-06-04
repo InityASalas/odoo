@@ -4,7 +4,7 @@ import json
 import lxml.html
 from urllib.parse import urlparse
 
-from odoo.addons.website.tools import MockRequest
+from odoo.addons.website.tests.common import MockRequest
 from odoo.tests import HttpCase, tagged
 
 

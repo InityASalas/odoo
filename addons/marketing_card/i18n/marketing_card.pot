@@ -957,10 +957,28 @@ msgid "Update"
 msgstr ""
 
 #. module: marketing_card
+<<<<<<< 80b880f3076a2f42930608be05e77f8f4dcd2b37
 #: model_terms:ir.ui.view,arch_db:marketing_card.robots
 msgid ""
 "User-agent: *\n"
 "                Allow: /cards/"
+||||||| a214db1f4d1907747546ea9a00e92e1c10c017b7
+#: model_terms:ir.ui.view,arch_db:marketing_card.mailing_mailing_view_form_inherit_marketing_card
+msgid "Update Cards"
+msgstr ""
+
+#. module: marketing_card
+#: model_terms:ir.ui.view,arch_db:marketing_card.robots
+msgid ""
+"User-agent: *\n"
+"                Allow: /cards/"
+msgstr ""
+
+#. module: marketing_card
+=======
+#: model_terms:ir.ui.view,arch_db:marketing_card.mailing_mailing_view_form_inherit_marketing_card
+msgid "Update Cards"
+>>>>>>> f2fc396bf0cfe6a26db965c5320530013e627a9e
 msgstr ""
 
 #. module: marketing_card

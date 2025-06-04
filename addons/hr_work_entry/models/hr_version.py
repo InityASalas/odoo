@@ -357,7 +357,7 @@ class HrVersion(models.Model):
         })
         utc = pytz.timezone('UTC')
         for version in self:
-            version_tz = (version.resource_calendar_id or version.employee_id.resource_calendar_id).tz
+            version_tz = (version.resource_calendar_id or version.company_id.resource_calendar_id).tz
             tz = pytz.timezone(version_tz) if version_tz else pytz.utc
             version_start = tz.localize(fields.Datetime.to_datetime(version.date_start)).astimezone(utc).replace(tzinfo=None)
             version_stop = datetime.combine(fields.Datetime.to_datetime(version.date_end or datetime.max.date()),

@@ -1139,13 +1139,10 @@ class HrEmployee(models.Model):
             for version in employee._get_versions_with_contract_overlap_with_period(start.date(), stop.date()):
                 # if employee is under fully flexible contract, use timezone of the employee
                 calendar_tz = timezone(version.resource_calendar_id.tz) if version.resource_calendar_id else timezone(employee.resource_id.tz)
-                if version.date_start:
-                    date_start = datetime.combine(
-                        version.date_start,
-                        time(0, 0, 0)
-                    ).replace(tzinfo=calendar_tz).astimezone(utc)
-                else:
-                    date_start = start
+                date_start = datetime.combine(
+                    version.date_start,
+                    time(0, 0, 0)
+                ).replace(tzinfo=calendar_tz).astimezone(utc)
                 if version.date_end:
                     date_end = datetime.combine(
                         version.date_end + relativedelta(days=1),
@@ -1293,7 +1290,7 @@ class HrEmployee(models.Model):
         that have at least 1 day in contract during that period
         """
         return self.env['hr.version'].search([
-            ('contract_date_start', '<=', date_to),
+            ('employee_id', '=', self.id), ('contract_date_start', '!=', False), ('contract_date_start', '<=', date_to),
             '|', ('contract_date_end', '>=', date_from), ('contract_date_end', '=', False),
         ])
 

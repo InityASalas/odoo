@@ -722,7 +722,7 @@ export class PosStore extends WithLazyGetterTrap {
         line.setDiscount(val);
     }
 
-    async setTip(tip) {
+    async setTip(tip, { type = "fixed", value } = {}) {
         const currentOrder = this.getOrder();
         const tipProduct = this.config.tip_product_id;
         let line = currentOrder.lines.find((line) => line.product_id.id === tipProduct.id);
@@ -742,7 +742,19 @@ export class PosStore extends WithLazyGetterTrap {
 
         currentOrder.is_tipped = true;
         currentOrder.tip_amount = tip;
+        currentOrder.tip_type = type;
+        currentOrder.tip_value = value || tip;
         return line;
+    }
+    getTip() {
+        const currentOrder = this.getOrder();
+        return currentOrder.is_tipped
+            ? {
+                  amount: currentOrder.tip_amount,
+                  type: currentOrder.tip_type,
+                  value: currentOrder.tip_value,
+              }
+            : null;
     }
 
     selectOrderLine(order, line) {
@@ -846,12 +858,12 @@ export class PosStore extends WithLazyGetterTrap {
                     ]),
                     custom_attribute_value_ids: Object.entries(payload.attribute_custom_values).map(
                         ([id, cus]) => [
-                            "create",
-                            {
-                                custom_product_template_attribute_value_id:
-                                    this.models["product.template.attribute.value"].get(id),
-                                custom_value: cus,
-                            },
+                        "create",
+                        {
+                            custom_product_template_attribute_value_id:
+                                this.models["product.template.attribute.value"].get(id),
+                            custom_value: cus,
+                        },
                         ]
                     ),
                     price_extra: values.price_extra + payload.price_extra,
@@ -1905,8 +1917,8 @@ export class PosStore extends WithLazyGetterTrap {
             this.action,
             "point_of_sale.res_partner_action_edit_pos",
             {
-                props: { resId: partner?.id },
-                additionalContext: this.editPartnerContext(),
+            props: { resId: partner?.id },
+            additionalContext: this.editPartnerContext(),
             }
         );
         const newPartner = await this.data.read("res.partner", record.config.resIds);

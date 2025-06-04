@@ -18,6 +18,8 @@ class PosPayment(models.Model):
     _inherit = ['pos.load.mixin']
 
     name = fields.Char(string='Label', readonly=True)
+    extra_info = fields.Char(string='Extra Info', readonly=True)
+    is_tipped = fields.Boolean(string='Is Tipped', readonly=True)
     pos_order_id = fields.Many2one('pos.order', string='Order', required=True, index=True, ondelete='cascade')
     amount = fields.Monetary(string='Amount', required=True, currency_field='currency_id', help="Total amount of the payment.")
     payment_method_id = fields.Many2one('pos.payment.method', string='Payment Method', required=True)

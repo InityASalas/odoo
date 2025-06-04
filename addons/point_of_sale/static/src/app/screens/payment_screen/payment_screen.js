@@ -176,7 +176,7 @@ export class PaymentScreen extends Component {
             return false;
         }
     }
-    updateSelectedPaymentline(amount = false) {
+    updateSelectedPaymentline(amount = false, { tipType = false, tipValue = false } = {}) {
         if (this.paymentLines.every((line) => line.paid)) {
             this.currentOrder.addPaymentline(this.payment_methods_from_config[0]);
         }
@@ -216,6 +216,7 @@ export class PaymentScreen extends Component {
             this.deletePaymentLine(this.selectedPaymentLine.uuid);
         } else {
             this.selectedPaymentLine.setAmount(amount);
+            this.selectPaymentLine.setExtraInfo({ tipAmount: amount, tipType, tipValue });
         }
     }
     async toggleIsToInvoice() {
@@ -225,28 +226,48 @@ export class PaymentScreen extends Component {
         this.hardwareProxy.openCashbox();
     }
     async addTip() {
-        const tip = this.currentOrder.getTip();
+        const tip = this.pos.getTip();
         const change = this.currentOrder.getChange();
-        const value = tip === 0 && change > 0 ? change : tip;
-        const newTip = await makeAwaitable(this.dialog, NumberPopup, {
-            title: tip ? _t("Change Tip") : _t("Add Tip"),
-            startingValue: this.env.utils.formatCurrency(value, false),
-            formatDisplayedValue: (x) => `${this.pos.currency.symbol} ${x}`,
-        });
+        const amount = tip.amount === 0 && change > 0 ? change : tip.amount;
 
+        this.dialog.add(NumberPopup, {
+            title: tip ? _t("Change Tip") : _t("Add Tip"),
+            startingValue: tip?.type === "percent" ? tip.value : this.env.utils.formatCurrency(amount, false),
+            startingType: tip?.type || "fixed",
+            types: [
+                { name: "fixed", symbol: this.pos.currency.symbol },
+                { name: "percent", symbol: "%" },
+            ],
+            getPayload: (amount, type) => this.onNewTip(amount, type, tip.value),
+            formatDisplayedValue: (amount, type) => {
+                if (type === "fixed") {
+                    return `${this.pos.currency.symbol} ${amount}`;
+                }
+                if (type === "percent") {
+                    return `${amount} %`;
+                }
+                return amount;
+            },
+        });
+    }
+    async onNewTip(newTip, type, currentTip) {
         if (newTip === undefined) {
             return;
         }
 
-        await this.pos.setTip(parseFloat(newTip ?? ""));
+        // Set tip
+        const tipAmount = this.computeNewTip(newTip, type);
+        await this.pos.setTip(tipAmount);
+
+        // Update payment line
         const pLine =
             this.selectedPaymentLine &&
-            (!this.selectedPaymentLine.isElectronic() ||
-                this.selectedPaymentLine.getPaymentStatus() === "pending")
+            (!this.selectedPaymentLine.isElectronic() || this.selectedPaymentLine.getPaymentStatus() === "pending")
                 ? this.selectedPaymentLine
                 : false;
 
-        if (!pLine || newTip === tip) {
+
+        if (!pLine || newTip === currentTip) {
             this.notification.add(
                 _t(
                     "The tip has been added to the order. However,the selected payment line does not allow tips to be added."
@@ -255,7 +276,20 @@ export class PaymentScreen extends Component {
             return;
         }
 
-        pLine.setAmount(pLine.getAmount() - (tip || 0) + parseFloat(newTip));
+        pLine.setAmount(pLine.getAmount() - (currentTip || 0) + tipAmount);
+        pLine.setExtraInfo({ tipAmount, tipType: type, tipValue: newTip });
+    }
+    computeNewTip(value, type) {
+        const valueParsed = parseFloat(value ?? "");
+        if (valueParsed === NaN) {
+            return 0;
+        }
+        let tip = valueParsed;
+        if (type === "percent") {
+            const total = this.currentOrder.getTotalWithTax();
+            tip = (total * valueParsed) / 100;
+        }
+        return tip;
     }
     async toggleShippingDatePicker() {
         if (!this.currentOrder.getShippingDate()) {
@@ -269,8 +303,21 @@ export class PaymentScreen extends Component {
             this.currentOrder.setShippingDate(false);
         }
     }
-    deletePaymentLine(uuid) {
+    deletePaymentLine(uuid, { isTipPaymentLine = false } = {}) {
         const line = this.paymentLines.find((line) => line.uuid === uuid);
+        if (!line) {
+            return;
+        }
+
+        // If the payment line is a tip payment line, we remove it
+        // and reset the tip amount on the order.
+        if (isTipPaymentLine) {
+            this.pos.setTip(0);
+            this.currentOrder.removePaymentline(line);
+            this.numberBuffer.reset();
+            return;
+        }
+
         if (line.payment_method_id.payment_method_type === "qr_code") {
             this.currentOrder.removePaymentline(line);
             this.numberBuffer.reset();
@@ -284,9 +331,9 @@ export class PaymentScreen extends Component {
             line.payment_method_id.payment_terminal
                 .sendPaymentCancel(this.currentOrder, uuid)
                 .then(() => {
-                    this.currentOrder.removePaymentline(line);
-                    this.numberBuffer.reset();
-                });
+                this.currentOrder.removePaymentline(line);
+                this.numberBuffer.reset();
+            });
         } else if (line.getPaymentStatus() !== "waitingCancel") {
             this.currentOrder.removePaymentline(line);
             this.numberBuffer.reset();
@@ -447,14 +494,25 @@ export class PaymentScreen extends Component {
         return true;
     }
     get nextPage() {
-        return !this.error
-            ? {
-                  page: "ReceiptScreen",
-                  params: {
-                      orderUuid: this.currentOrder.uuid,
-                  },
-              }
-            : this.pos.defaultPage;
+        if (this.error) {
+            return this.pos.defaultPage;
+        }
+
+        let page = "ReceiptScreen";
+        const order = this.currentOrder;
+        if (this.pos.config.set_tip_after_payment && !order.is_tipped) {
+            const mainPayment = order.payment_ids[0];
+            if (mainPayment && mainPayment.canBeAdjusted()) {
+                page = "TipScreen";
+            }
+        }
+
+        return {
+            page,
+            params: {
+                orderUuid: order.uuid,
+            },
+        };
     }
     paymentMethodImage(id) {
         if (this.paymentMethod.image) {

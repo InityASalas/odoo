@@ -25,6 +25,24 @@ export class PosPayment extends Base {
         return this.amount || 0;
     }
 
+    getExtraInfo() {
+        return this.extra_info || "";
+    }
+
+    setExtraInfo({ tipAmount, tipType, tipValue }) {
+        if (tipType === "percent") {
+            this.extra_info = `(Tip: ${tipValue}% --> ${this.pos_order_id.currency.round(tipAmount)})`;
+        } else if (tipType === "fixed") {
+            this.extra_info = `(Tip: ${this.pos_order_id.currency.round(tipValue)})`;
+        } else {
+            this.extra_info = "";
+        }
+    }
+
+    isTipped() {
+        return this.is_tipped || false;
+    }
+
     getPaymentStatus() {
         return this.payment_status;
     }
@@ -54,9 +72,7 @@ export class PosPayment extends Base {
     async pay() {
         this.setPaymentStatus("waiting");
 
-        return this.handlePaymentResponse(
-            await this.payment_method_id.payment_terminal.sendPaymentRequest(this.uuid)
-        );
+        return this.handlePaymentResponse(await this.payment_method_id.payment_terminal.sendPaymentRequest(this.uuid));
     }
 
     handlePaymentResponse(isPaymentSuccessful) {

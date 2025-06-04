@@ -39,12 +39,49 @@ export class PaymentScreenPaymentLines extends Component {
         if (this.ui.isSmall) {
             this.dialog.add(NumberPopup, {
                 title: _t("New amount"),
-                buttons: enhancedButtons(),
-                startingValue: this.env.utils.formatCurrency(paymentline.getAmount(), false),
-                getPayload: (num) => {
-                    this.props.updateSelectedPaymentline(parseFloat(num));
+                buttons: this.isTipPaymentLine(paymentline) ? undefined : enhancedButtons(),
+                types: this.isTipPaymentLine(paymentline)
+                    ? [
+                          { name: "fixed", symbol: this.pos.currency.symbol },
+                          { name: "percent", symbol: "%" },
+                      ]
+                    : undefined,
+                startingValue:
+                    this.props.tip?.type === "percent"
+                        ? this.props.tip.value
+                        : this.env.utils.formatCurrency(paymentline.getAmount(), false),
+                startingType: this.props.tip?.type || "fixed",
+                getPayload: (num, type) => {
+                    console.log("getPayload", num, type);
+                    let amount = typeof num === "number" ? num : parseFloat(num);
+                    if (this.isTipPaymentLine(paymentline)) {
+                        if (type === "percent") {
+                            const currentOrder = this.pos.getOrder();
+                            if (!currentOrder) {
+                                amount = 0;
+                            } else {
+                                const totalLessTip = currentOrder.getTotalWithTax() - paymentline.getAmount();
+                                amount = totalLessTip * (amount / 100);
+                            }
+                        }
+
+                        this.pos.setTip(amount, { type, value: num });
+                    }
+
+                    this.props.updateSelectedPaymentline(amount, { tipType: type, tipValue: num });
+                },
+                formatDisplayedValue: (amount, type) => {
+                    if (type === "percent") {
+                        return `${amount} %`;
+                    }
+                    return `${this.pos.currency.symbol} ${amount}`;
                 },
             });
         }
+    }
+
+    isTipPaymentLine(paymentline) {
+        console.log("isTipPaymentLine", paymentline);
+        return paymentline.isTipped()
     }
 }

@@ -99,7 +99,7 @@ class AttachmentController(http.Controller):
         # sudo: ir.attachment: access is validated below with membership of message or access token
         attachment_sudo = attachment.sudo()
         if message:
-            if not ThreadController._can_delete_attachment(message, **kwargs):
+            if not self._can_delete_attachment(message, **kwargs):
                 raise NotFound()
         else:
             if (
@@ -121,3 +121,6 @@ class AttachmentController(http.Controller):
         ids_list = list(map(int, file_ids.split(',')))
         attachments = request.env['ir.attachment'].browse(ids_list)
         return self._make_zip(zip_name, attachments)
+
+    def _can_delete_attachment(self, message, **kwargs):
+        return ThreadController._can_delete_attachment(message, **kwargs)

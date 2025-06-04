@@ -2,9 +2,19 @@
 <templates>
 
     <t t-name="web_hierarchy.HierarchyCard">
+<<<<<<< c1d88949a3c305b425ab3a862741ebab7b7cd344
         <div class="o_hierarchy_node_container mb-4 d-flex flex-column" t-att-class="classNames" t-att-data-node-id="props.node.id">
             <div class="o_hierarchy_node_button_container w-100 d-flex justify-content-end">
                 <button t-if="props.node.parentResId !== false and !props.node.parentNode"
+||||||| 0505cb9c6fe130f72378d51b45ba40600f4c767e
+        <div class="o_hierarchy_node_container d-flex flex-column" t-att-class="classNames" t-att-data-node-id="props.node.id">
+            <div class="o_hierarchy_node_button_container w-100 d-flex justify-content-center">
+                <button t-if="props.node.parentResId !== false and !props.node.parentNode"
+=======
+        <div class="o_hierarchy_node_container d-flex flex-column" t-att-class="classNames" t-att-data-node-id="props.node.id">
+            <div class="o_hierarchy_node_button_container w-100 d-flex justify-content-center">
+                <button t-if="props.node.parentResId !== false and !props.node.parentNode and props.node.parentResId !== props.node.resId"
+>>>>>>> 107c8e2c71772d91fa1804dd5ec6a59462574d1f
                         name="hierarchy_search_parent_node"
                         class="btn p-0"
                         t-on-click.synthetic="onClickArrowUp"

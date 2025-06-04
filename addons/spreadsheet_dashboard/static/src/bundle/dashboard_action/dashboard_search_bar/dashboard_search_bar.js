@@ -78,11 +78,11 @@ export class DashboardSearchBar extends Component {
                     ];
                     break;
                 }
-                if (filterValues.yearOffset === undefined) {
+                if (filterValues.year === undefined) {
                     values = [""];
                     break;
                 }
-                const year = String(DateTime.local().year + filterValues.yearOffset);
+                const year = String(filterValues.year);
                 if (filterValues.period) {
                     const period = QUARTER_OPTIONS[filterValues.period];
                     if (period) {

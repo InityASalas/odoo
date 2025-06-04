@@ -3,8 +3,6 @@ import { Domain } from "@web/core/domain";
 import { NO_RECORD_AT_THIS_POSITION } from "../pivot_model";
 import { OdooCoreViewPlugin } from "@spreadsheet/plugins";
 
-const { DateTime } = luxon;
-
 /**
  * @typedef {import("@spreadsheet").FieldMatching} FieldMatching
  * @typedef {import("@odoo/o-spreadsheet").Token} Token
@@ -31,33 +29,32 @@ function pivotPeriodToFilterValue(timeRange, value) {
         return undefined;
     }
 
-    const yearValue = Number.parseInt(value.split("/").at(-1), 10);
-    if (isNaN(yearValue)) {
+    const year = Number.parseInt(value.split("/").at(-1), 10);
+    if (isNaN(year)) {
         return undefined;
     }
-    const yearOffset = yearValue - DateTime.now().year;
     switch (timeRange) {
         case "year":
             return {
-                yearOffset,
+                year,
             };
         case "month": {
             const month = value.includes("/") ? Number.parseInt(value.split("/")[0]) : -1;
             if (month <= 0 || month > 12) {
-                return { yearOffset, period: undefined };
+                return { year, period: undefined };
             }
             return {
-                yearOffset,
+                year,
                 period: month,
             };
         }
         case "quarter": {
             const quarter = value.includes("/") ? Number.parseInt(value.split("/")[0]) - 1 : -1;
             if (!(quarter in FILTER_DATE_OPTION.quarter)) {
-                return { yearOffset, period: undefined };
+                return { year, period: undefined };
             }
             return {
-                yearOffset,
+                year,
                 period: FILTER_DATE_OPTION.quarter[quarter],
             };
         }

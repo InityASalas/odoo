@@ -27,7 +27,7 @@ export class DateFilterValue extends Component {
     static props = {
         // See @spreadsheet/bundle/global_filters/filters_plugin.RangeType
         onTimeRangeChanged: Function,
-        yearOffset: { type: Number, optional: true },
+        year: { type: Number, optional: true },
         period: { type: [String, Number], optional: true },
         disabledPeriods: { type: Array, optional: true },
     };
@@ -42,13 +42,9 @@ export class DateFilterValue extends Component {
     _setStateFromProps(props) {
         this.period = props.period;
         /** @type {number|undefined} */
-        this.yearOffset = props.yearOffset;
-        // date should be undefined if we don't have the yearOffset
-        /** @type {import("@web/core/l10n/dates").DateTime|undefined} */
-        this.date =
-            this.yearOffset !== undefined
-                ? DateTime.local().plus({ year: this.yearOffset })
-                : undefined;
+        this.year = props.year;
+        // date should be undefined if we don't have the year
+        this.date = this.year !== undefined ? DateTime.local().set({ year: this.year }) : undefined;
     }
 
     /**
@@ -90,13 +86,13 @@ export class DateFilterValue extends Component {
 
     onYearChanged(date) {
         this.date = date;
-        this.yearOffset = date.year - DateTime.now().year;
+        this.year = date.year;
         this._updateFilter();
     }
 
     _updateFilter() {
         this.props.onTimeRangeChanged({
-            yearOffset: this.yearOffset || 0,
+            year: this.year,
             period: this.period,
         });
     }

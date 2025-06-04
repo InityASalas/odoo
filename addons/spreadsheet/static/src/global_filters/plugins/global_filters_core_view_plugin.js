@@ -199,7 +199,7 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 return (
                     value &&
                     (typeof value === "string" ||
-                        value.yearOffset !== undefined ||
+                        value.year !== undefined ||
                         value.period ||
                         value.from ||
                         value.to)
@@ -253,10 +253,10 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                     }
                     return [[{ value: type.description.toString() }]];
                 }
-                if (!value || value.yearOffset === undefined) {
+                if (!value || value.year === undefined) {
                     return [[{ value: "" }]];
                 }
-                const year = String(DateTime.local().year + value.yearOffset);
+                const year = String(value.year);
                 const period = QUARTER_OPTIONS[value.period];
                 let periodStr = period && "Q" + period.setParam.quarter; // we do not want the translated value (like T1 in French)
                 // Named months aren't in QUARTER_OPTIONS
@@ -377,15 +377,15 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
         const filter = this.getters.getGlobalFilter(filterId);
         switch (filter.defaultValue) {
             case "this_year":
-                return { yearOffset: 0 };
+                return { year: DateTime.local().year };
             case "this_month": {
                 const month = DateTime.local().month;
-                return { yearOffset: 0, period: month };
+                return { year: DateTime.local().year, period: month };
             }
             case "this_quarter": {
                 const quarter = Math.floor(new Date().getMonth() / 3);
                 const period = FILTER_DATE_OPTION.quarter[quarter];
-                return { yearOffset: 0, period };
+                return { year: DateTime.local().year, period };
             }
         }
         return filter.defaultValue;
@@ -450,16 +450,15 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             return getRelativeDateDomain(now, offset, value, field, type);
         }
         const noPeriod = !value.period || value.period === "empty";
-        const noYear = value.yearOffset === undefined;
+        const noYear = value.year === undefined;
         if (noPeriod && noYear) {
             return new Domain();
         }
-        const setParam = { year: now.year };
-        const yearOffset = value.yearOffset || 0;
-        const plusParam = { years: yearOffset };
+        const setParam = { year: value.year || now.year };
+        const plusParam = {};
         if (noPeriod) {
             granularity = "year";
-            plusParam.years += offset;
+            setParam.year += offset;
         } else {
             // value.period is can be "first_quarter", "second_quarter", etc. or
             // the month number (1-indexed, so 1 for January, 2 for February, etc.)

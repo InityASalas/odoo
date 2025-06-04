@@ -170,7 +170,7 @@
                 </DatiFattureCollegate>
             </t>
             <t t-elif="record.ref and not record.reversed_entry_id">
-                <DatiFattureCollegate t-if="record.ref and not record.reversed_entry_id">
+                <DatiFattureCollegate>
                     <IdDocumento t-out="format_alphanumeric(record.ref, 20)"/>
                     <DataDocumento t-out="format_date(record.invoice_date)"/>
                 </DatiFattureCollegate>

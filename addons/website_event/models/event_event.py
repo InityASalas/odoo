@@ -610,6 +610,8 @@ class EventEvent(models.Model):
 
         # Bypassing the access rigths of partner to search the address.
         def search_in_address(env, search_term):
+            if not search_term:
+                return [('id', 'in', [])]
             ret = env['event.event'].sudo()._search([
                ('address_search', 'ilike', search_term),
             ])

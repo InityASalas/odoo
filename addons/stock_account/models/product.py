@@ -13,8 +13,8 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     cost_method = fields.Selection(
-        string="Cost Method",
-        selection=[
+            string="Cost Method",
+            selection=[
             ('standard', "Standard Price"),
             ('fifo', "First In First Out (FIFO)"),
             ('average', "Average Cost (AVCO)"),
@@ -46,9 +46,7 @@ class ProductTemplate(models.Model):
     def _compute_cost_method(self):
         for product_template in self:
             product_template.cost_method = (
-                product_template.categ_id.with_company(
-                    product_template.company_id
-                ).property_cost_method
+                product_template.categ_id.property_cost_method
                 or (product_template.company_id or self.env.company).cost_method
             )
 
@@ -1000,7 +998,6 @@ class ProductCategory(models.Model):
             ('average', "Average Cost (AVCO)"),
         ],
         company_dependent=True, copy=True,
-        default=lambda self: self.env.company.cost_method,
         help="""Standard Price: The products are valued at their standard cost defined on the product.
         Average Cost (AVCO): The products are valued at weighted average cost.
         First In First Out (FIFO): The products are valued supposing those that enter the company first will also leave it first.

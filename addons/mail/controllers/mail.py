@@ -17,9 +17,31 @@ class MailController(http.Controller):
     _cp_path = '/mail'
 
     @classmethod
+    def _redirect_to_generic_fallback(cls, model, res_id, access_token=None, **kwargs):
+        if request.session.uid is None:
+            return cls._redirect_to_login_with_mail_view(
+                model, res_id, access_token=access_token, **kwargs,
+            )
+        return cls._redirect_to_messaging()
+
+    @classmethod
     def _redirect_to_messaging(cls):
         url = '/web#%s' % url_encode({'action': 'mail.action_discuss'})
         return request.redirect(url)
+
+    @classmethod
+    def _redirect_to_login_with_mail_view(cls, model, res_id, access_token=None, **kwargs):
+        url_base = '/mail/view'
+        url_params = request.env['mail.thread']._notify_get_action_link_params(
+            'view', **{
+                'model': model,
+                'res_id': res_id,
+                'access_token': access_token,
+                **kwargs,
+            }
+        )
+        mail_view_url = f'{url_base}?{url_encode(url_params, sort=True)}'
+        return request.redirect(f'/web/login?{url_encode({"redirect": mail_view_url})}')
 
     @classmethod
     def _check_token(cls, token):
@@ -54,20 +76,26 @@ class MailController(http.Controller):
 
         # no model / res_id, meaning no possible record -> redirect to login
         if not model or not res_id or model not in request.env:
-            return cls._redirect_to_messaging()
+            return cls._redirect_to_generic_fallback(
+                model, res_id, access_token=access_token, **kwargs,
+            )
 
         # find the access action using sudo to have the details about the access link
         RecordModel = request.env[model]
         record_sudo = RecordModel.sudo().browse(res_id).exists()
         if not record_sudo:
             # record does not seem to exist -> redirect to login
-            return cls._redirect_to_messaging()
+            return cls._redirect_to_generic_fallback(
+                model, res_id, access_token=access_token, **kwargs,
+            )
 
         suggested_company = record_sudo._get_mail_redirect_suggested_company()
         # the record has a window redirection: check access rights
         if uid is not None:
             if not RecordModel.with_user(uid).check_access_rights('read', raise_exception=False):
-                return cls._redirect_to_messaging()
+                return cls._redirect_to_generic_fallback(
+                    model, res_id, access_token=access_token, **kwargs,
+                )
             try:
                 # We need here to extend the "allowed_company_ids" to allow a redirection
                 # to any record that the user can access, regardless of currently visible
@@ -91,27 +119,18 @@ class MailController(http.Controller):
                     cids = cids + [suggested_company.id]
                     record_sudo.with_user(uid).with_context(allowed_company_ids=cids).check_access_rule('read')
             except AccessError:
-                return cls._redirect_to_messaging()
+                return cls._redirect_to_generic_fallback(
+                    model, res_id, access_token=access_token, **kwargs,
+                )
             else:
                 record_action = record_sudo._get_access_action(access_uid=uid)
         else:
             record_action = record_sudo._get_access_action()
-            if suggested_company:
-                cids = [suggested_company.id]
+            # we have an act_url (probably a portal link): we need to retry being logged to check access
             if record_action['type'] == 'ir.actions.act_url' and record_action.get('target_type') != 'public':
-                url_params = {
-                    'model': model,
-                    'id': res_id,
-                    'active_id': res_id,
-                    'action': record_action.get('id'),
-                }
-                if cids:
-                    url_params['cids'] = cids[0]
-                view_id = record_sudo.get_formview_id()
-                if view_id:
-                    url_params['view_id'] = view_id
-                url = '/web/login?redirect=#%s' % url_encode(url_params)
-                return request.redirect(url)
+                return cls._redirect_to_login_with_mail_view(
+                    model, res_id, access_token=access_token, **kwargs,
+                )
 
         record_action.pop('target_type', None)
         # the record has an URL redirection: use it directly
@@ -133,7 +152,7 @@ class MailController(http.Controller):
 
         if cids:
             url_params['cids'] = ','.join([str(cid) for cid in cids])
-        url = '/web?#%s' % url_encode(url_params)
+        url = '/web?#%s' % url_encode(url_params, sort=True)
         return request.redirect(url)
 
     @http.route('/mail/view', type='http', auth='public')

@@ -3,10 +3,12 @@
 
 import logging
 import re
+from markupsafe import Markup
 import werkzeug
 
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.tools import get_lang, is_html_empty
 from odoo.tools.mail import email_split_and_format, email_normalize
 
 _logger = logging.getLogger(__name__)
@@ -258,7 +260,16 @@ class SurveyInvite(models.TransientModel):
                 'message': self.env['mail.message'].sudo().new(dict(body=mail_values['body_html'], record_name=self.survey_id.title)),
                 'model_description': self.env['ir.model']._get('survey.survey').display_name,
                 'company': self.env.company,
+                'record': answer,
+                "show_button": True,
+                "button_access": {"url": answer.get_start_url(), "title": "Start Certification" if self.survey_id.certification else "Take a Quiz"},
+                "subtitles": [self.survey_id.title],
+                "signature": Markup('<div>-- <br/>%s</div>') % self.survey_id.user_id.signature if not is_html_empty(self.survey_id.user_id.signature) else False,
+                "record_name": self.survey_id.title,
             }
+            if answer.deadline:
+                template_ctx['subtitles'].append(
+                    _('Deadline: %s', answer.deadline.strftime(get_lang(self.env).date_format)))
             body = self.env['ir.qweb']._render(email_layout_xmlid, template_ctx, minimal_qcontext=True, raise_if_not_found=False)
             if body:
                 mail_values['body_html'] = self.env['mail.render.mixin']._replace_local_links(body)
@@ -296,7 +307,42 @@ class SurveyInvite(models.TransientModel):
             raise UserError(_("Please enter at least one valid recipient."))
 
         answers = self._prepare_answers(valid_partners, valid_emails)
-        for answer in answers:
-            self._send_mail(answer)
+        self.composer_send_mail(answers, author_id=self.author_id.id, attachment_ids=self.attachment_ids.ids)
 
         return {'type': 'ir.actions.act_window_close'}
+
+    def _get_recipient_data(self, record):
+        data = super()._get_recipient_data(record)
+        template_ctx = {
+            "record_name": self.survey_id.title,
+            "button_access": {
+                "url": record.get_start_url(),
+                "title": "Start Certification"
+                if self.survey_id.certification
+                else "Take a Quiz",
+            },
+            "subtitles": [self.survey_id.title],
+            "signature": Markup("<div>-- <br/>%s</div>")
+            % self.survey_id.user_id.signature
+            if not is_html_empty(self.survey_id.user_id.signature)
+            else False,
+        }
+        if self.template_id.email_from:
+            email_from = self.template_id._render_field(
+                'email_from', record.ids)[record.id]
+        else:
+            email_from = self.author_id.email_formatted
+
+        if record.deadline:
+            template_ctx["subtitles"].append(
+                _(
+                    "Deadline: %s",
+                    record.deadline.strftime(get_lang(self.env).date_format),
+                ),
+            )
+
+        data["template_context"].update(template_ctx)
+        data["mail_values"].update(
+            {"recipient_ids": [(4, record.partner_id.id)], "email_from": email_from},
+        )
+        return data

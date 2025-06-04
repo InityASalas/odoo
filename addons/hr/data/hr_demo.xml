@@ -793,17 +793,15 @@ If you have development competencies, we can propose you specific traineeships</
             <field name="distance_home_work">50</field>
         </record>
 
-        <record id="work_contact_marty_mcfly" model="res.partner">
-            <field name="name">Marty McFly</field>
-            <field name="email">marty.mcfly@example.com</field>
-            <field name="image_1920" type="base64" file="hr/static/img/employee_marty_mcfly-image.jpg"/>
+        <record id="work_contact_barty_mcbly" model="res.partner">
+            <field name="name">Barty McBly</field>
+            <field name="email">barty.mcbly@example.com</field>
         </record>
 
-        <record id="employee_marty_mcfly" model="hr.employee">
-            <field name="name">Marty McFly</field>
+        <record id="employee_barty_mcbly" model="hr.employee">
+            <field name="name">Barty McBly</field>
             <field name="work_phone">(555)-234-3424</field>
-            <field name="work_contact_id" ref="hr.work_contact_marty_mcfly"/>
-            <field name="image_1920" type="base64" file="hr/static/img/employee_marty_mcfly-image.jpg"/>
+            <field name="work_contact_id" ref="hr.work_contact_barty_mcbly"/>
             <field name="date_version">1885-9-2</field>
             <field name="contract_date_start">1885-9-2</field>
             <field name="contract_date_end">1885-9-7</field>
@@ -819,7 +817,7 @@ If you have development competencies, we can propose you specific traineeships</
         </record>
 
         <function name="create_version" model="hr.employee">
-            <value eval="[ref('hr.employee_marty_mcfly')]"/>
+            <value eval="[ref('hr.employee_barty_mcbly')]"/>
             <value eval="{
                 'date_version': '1955-11-5',
                 'contract_date_start': '1955-11-5',
@@ -829,7 +827,7 @@ If you have development competencies, we can propose you specific traineeships</
         </function>
 
         <function name="create_version" model="hr.employee">
-            <value eval="[ref('hr.employee_marty_mcfly')]"/>
+            <value eval="[ref('hr.employee_barty_mcbly')]"/>
             <value eval="{
                 'date_version': '1985-10-26',
                 'contract_date_start': '1985-10-26',
@@ -839,7 +837,7 @@ If you have development competencies, we can propose you specific traineeships</
         </function>
 
         <function name="create_version" model="hr.employee">
-            <value eval="[ref('hr.employee_marty_mcfly')]"/>
+            <value eval="[ref('hr.employee_barty_mcbly')]"/>
             <value eval="{
                 'date_version': '2015-10-21',
                 'contract_date_start': '2015-10-21',

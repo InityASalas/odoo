@@ -1,4 +1,3 @@
-import { FILTER_DATE_OPTION } from "@spreadsheet/assets_backend/constants";
 import { Domain } from "@web/core/domain";
 import { NO_RECORD_AT_THIS_POSITION } from "../pivot_model";
 import { OdooCoreViewPlugin } from "@spreadsheet/plugins";
@@ -55,14 +54,14 @@ function pivotPeriodToFilterValue(timeRange, value) {
             };
         }
         case "quarter": {
-            const quarter = value.includes("/") ? Number.parseInt(value.split("/")[0]) - 1 : -1;
-            if (!(quarter in FILTER_DATE_OPTION.quarter)) {
+            const quarter = value.includes("/") ? Number.parseInt(value.split("/")[0]) : -1;
+            if (quarter <= 0 || quarter > 4) {
                 return { type: "year", period: { year } };
             }
             return {
                 type: "quarter",
                 period: {
-                    period: FILTER_DATE_OPTION.quarter[quarter],
+                    quarter,
                     year,
                 },
             };

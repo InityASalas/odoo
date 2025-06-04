@@ -2,7 +2,7 @@
 
 import { Component, onWillUpdateProps } from "@odoo/owl";
 import { DateTimeInput } from "@web/core/datetime/datetime_input";
-import { QUARTER_OPTIONS } from "@web/search/utils/dates";
+import { _t } from "@web/core/l10n/translation";
 
 const { DateTime } = luxon;
 
@@ -11,6 +11,15 @@ const { DateTime } = luxon;
  * @property {string} id
  * @property {string | import("@spreadsheet").LazyTranslatedString} description
  */
+
+function getQuarterList() {
+    return Array.from({ length: 4 }, (_, i) => ({
+        id: `quarter_${i + 1}`,
+        description: _t("Q%(quarter_number)s", {
+            quarter_number: i + 1,
+        }),
+    }));
+}
 
 function getMonthList() {
     return Array.from({ length: 12 }, (_, i) => ({
@@ -57,7 +66,7 @@ export class DateFilterValue extends Component {
         this.selectedPeriodId = undefined;
         switch (this.value.type) {
             case "quarter":
-                this.selectedPeriodId = this.value.period.period;
+                this.selectedPeriodId = `quarter_${this.value.period.quarter}`;
                 break;
             case "month":
                 this.selectedPeriodId = `month_${this.value.period.month}`;
@@ -72,12 +81,11 @@ export class DateFilterValue extends Component {
      * @returns {Array<Object>}
      */
     getDateOptions(props) {
-        const quarterOptions = Object.values(QUARTER_OPTIONS);
         const disabledPeriods = props.disabledPeriods || [];
 
         const dateOptions = [];
         if (!disabledPeriods.includes("quarter")) {
-            dateOptions.push(...quarterOptions);
+            dateOptions.push(...getQuarterList());
         }
         if (!disabledPeriods.includes("month")) {
             dateOptions.push(...getMonthList());
@@ -107,7 +115,7 @@ export class DateFilterValue extends Component {
                 type: "quarter",
                 period: {
                     year: this.value.period.year || DateTime.local().year,
-                    period: value,
+                    quarter: Number.parseInt(value.replace("quarter_", ""), 10),
                 },
             };
         }

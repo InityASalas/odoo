@@ -929,7 +929,7 @@ test("Get active filters with date filter enabled", async function () {
         id: filter.id,
         value: {
             type: "quarter",
-            period: { year, period: "first_quarter" },
+            period: { year, quarter: 1 },
         },
     });
     expect(model.getters.getActiveFilterCount()).toBe(1);
@@ -937,7 +937,7 @@ test("Get active filters with date filter enabled", async function () {
         id: filter.id,
         value: {
             type: "quarter",
-            period: { year, period: "first_quarter" },
+            period: { year, quarter: 1 },
         },
     });
     expect(model.getters.getActiveFilterCount()).toBe(1);
@@ -986,7 +986,7 @@ test("ODOO.FILTER.VALUE date filter", async function () {
         id: filter.id,
         value: {
             type: "quarter",
-            period: { year, period: "first_quarter" },
+            period: { year, quarter: 1 },
         },
     });
     await animationFrame();
@@ -1686,7 +1686,7 @@ test("Date filter automatic default value for quarter filter", async function ()
         type: "quarter",
         period: {
             year: 2022,
-            period: "fourth_quarter",
+            quarter: 4,
         },
     });
 });

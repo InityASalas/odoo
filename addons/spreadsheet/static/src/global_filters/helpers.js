@@ -5,7 +5,6 @@ import { Domain } from "@web/core/domain";
 
 import { CommandResult } from "@spreadsheet/o_spreadsheet/cancelled_reason";
 import { RELATIVE_DATE_RANGE_TYPES } from "@spreadsheet/helpers/constants";
-import { QUARTER_OPTIONS } from "@web/search/utils/dates";
 
 import { Registry } from "@spreadsheet/o_spreadsheet/o_spreadsheet";
 
@@ -14,8 +13,6 @@ export const globalFieldMatchingRegistry = new Registry();
 /**
  * @typedef {import("@spreadsheet").FieldMatching} FieldMatching
  */
-
-const quarterOptionsIds = Object.values(QUARTER_OPTIONS).map((option) => option.id);
 
 /**
  * Check if the value is valid for given filter.
@@ -65,7 +62,7 @@ function checkDateFilterValueIsValid(filter, value) {
                 return value !== "this_month" && typeof period !== "number";
             }
             if (filter.disabledPeriods.includes("quarter")) {
-                return value !== "this_quarter" && !quarterOptionsIds.includes(period);
+                return value !== "this_quarter" && typeof period !== "number";
             }
             return true;
         }

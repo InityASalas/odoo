@@ -10,12 +10,11 @@
 import { _t } from "@web/core/l10n/translation";
 import { Domain } from "@web/core/domain";
 import { user } from "@web/core/user";
-import { constructDateRange, QUARTER_OPTIONS } from "@web/search/utils/dates";
+import { constructDateRange } from "@web/search/utils/dates";
 
 import { EvaluationError, helpers } from "@odoo/o-spreadsheet";
 import { CommandResult } from "@spreadsheet/o_spreadsheet/cancelled_reason";
 
-import { FILTER_DATE_OPTION } from "@spreadsheet/assets_backend/constants";
 import {
     checkFilterValueIsValid,
     getRelativeDateDomain,
@@ -320,9 +319,8 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 return { type: "month", period: { year, month } };
             }
             case "this_quarter": {
-                const quarter = Math.floor(new Date().getMonth() / 3);
-                const period = FILTER_DATE_OPTION.quarter[quarter];
-                return { type: "quarter", period: { year, period } };
+                const quarter = Math.floor(new Date().getMonth() / 3) + 1;
+                return { type: "quarter", period: { year, quarter } };
             }
         }
         throw new Error(
@@ -386,11 +384,11 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                         ];
                     }
                     case "quarter": {
-                        const period = QUARTER_OPTIONS[value.period.period];
-                        if (!period) {
+                        if (value.period.quarter === undefined) {
                             return [[{ value: yearString }]];
                         }
-                        return [[{ value: "Q" + period.setParam.quarter + "/" + yearString }]]; // we do not want the translated value (like T1 in French)
+                        // we do not want the translated value (like T1 in French)
+                        return [[{ value: "Q" + String(value.period.quarter) + "/" + yearString }]];
                     }
                 }
                 return [[{ value: "" }]];
@@ -537,9 +535,9 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 }
                 break;
             case "quarter":
-                if (value.period.period !== undefined) {
+                if (value.period.quarter !== undefined) {
                     granularity = "quarter";
-                    setParam.quarter = QUARTER_OPTIONS[value.period.period].setParam.quarter;
+                    setParam.quarter = value.period.quarter;
                     plusParam.quarter = offset;
                 } else {
                     granularity = "year";

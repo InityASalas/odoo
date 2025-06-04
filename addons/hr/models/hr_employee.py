@@ -1290,7 +1290,7 @@ class HrEmployee(models.Model):
         that have at least 1 day in contract during that period
         """
         return self.env['hr.version'].search([
-            ('employee_id', '=', self.id), ('contract_date_start', '!=', False), ('contract_date_start', '<=', date_to),
+            ('employee_id', 'in', self.ids), ('contract_date_start', '!=', False), ('contract_date_start', '<=', date_to),
             '|', ('contract_date_end', '>=', date_from), ('contract_date_end', '=', False),
         ])
 

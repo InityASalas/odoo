@@ -137,12 +137,20 @@ class SaleOrderLine(models.Model):
     def _compute_analytic_distribution(self):
         super()._compute_analytic_distribution()
         for line in self:
-            if line.display_type or line.analytic_distribution or not line.product_id:
-                continue
             project = line.product_id.project_id or line.order_id.project_id
-            distribution = project._get_analytic_distribution()
-            if distribution:
-                line.analytic_distribution = distribution
+            if line.display_type or not line.product_id or not project:
+                continue
+
+            if line.analytic_distribution:
+                applied_root_plans = self.env['account.analytic.account'].browse(
+                    list({int(account_id) for ids in line.analytic_distribution for account_id in ids.split(",")})
+                ).root_plan_id
+                if accounts_to_add := project._get_analytic_accounts().filtered(
+                    lambda account: account.root_plan_id not in applied_root_plans
+                ):
+                    line.analytic_distribution |= {",".join(str(account_id.id) for account_id in accounts_to_add): 100}
+            else:
+                line.analytic_distribution = project._get_analytic_distribution()
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -430,8 +438,16 @@ class SaleOrderLine(models.Model):
             this method allows to retrieve the analytic account which is linked to project or task directly linked
             to this sale order line, or the analytic account of the project which uses this sale order line, if it exists.
         """
+<<<<<<< 2ddd62c26302b59e3a258127366a3869a7d00b43
         values = super()._prepare_invoice_line(**optional_values)
         if not values.get('analytic_distribution'):
+||||||| c1d88949a3c305b425ab3a862741ebab7b7cd344
+        values = super(SaleOrderLine, self)._prepare_invoice_line(**optional_values)
+        if not values.get('analytic_distribution'):
+=======
+        values = super(SaleOrderLine, self)._prepare_invoice_line(**optional_values)
+        if not values.get('analytic_distribution') and not self.analytic_distribution:
+>>>>>>> 2bcc8bf106a62c37a5e584e726ca72d4c5205044
             if self.task_id.project_id.account_id:
                 values['analytic_distribution'] = {self.task_id.project_id.account_id.id: 100}
             elif self.project_id.account_id:

@@ -232,7 +232,7 @@ class ProductTemplate(models.Model):
 
     def _get_product_accounts(self):
         product_accounts = super()._get_product_accounts()
-        product_accounts['downpayment'] = self.categ_id.property_account_downpayment_categ_id
+        product_accounts['downpayment'] = self.company_id.property_account_downpayment_categ_id
         return product_accounts
 
     ####################################

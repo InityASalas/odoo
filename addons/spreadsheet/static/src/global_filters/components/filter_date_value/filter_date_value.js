@@ -27,8 +27,7 @@ export class DateFilterValue extends Component {
     static props = {
         // See @spreadsheet/bundle/global_filters/filters_plugin.RangeType
         onTimeRangeChanged: Function,
-        year: { type: Number, optional: true },
-        period: { type: [String, Number], optional: true },
+        value: { type: Object, optional: true },
         disabledPeriods: { type: Array, optional: true },
     };
     setup() {
@@ -40,11 +39,30 @@ export class DateFilterValue extends Component {
         });
     }
     _setStateFromProps(props) {
-        this.period = props.period;
+        this.value = props.value;
+        if (!this.value) {
+            this.value = {
+                type: "year",
+                period: {
+                    year: undefined,
+                },
+            };
+        }
         /** @type {number|undefined} */
-        this.year = props.year;
         // date should be undefined if we don't have the year
-        this.date = this.year !== undefined ? DateTime.local().set({ year: this.year }) : undefined;
+        this.date =
+            this.value.period.year !== undefined
+                ? DateTime.local().set({ year: this.value.period.year })
+                : undefined;
+        this.selectedPeriodId = undefined;
+        switch (this.value.type) {
+            case "quarter":
+                this.selectedPeriodId = this.value.period.period;
+                break;
+            case "month":
+                this.selectedPeriodId = `month_${this.value.period.month}`;
+                break;
+        }
     }
 
     /**
@@ -68,7 +86,7 @@ export class DateFilterValue extends Component {
     }
 
     isSelected(periodId) {
-        return this.period === periodId;
+        return this.selectedPeriodId === periodId;
     }
 
     /**
@@ -77,23 +95,38 @@ export class DateFilterValue extends Component {
     onPeriodChanged(ev) {
         const value = ev.target.value;
         if (value.startsWith("month_")) {
-            this.period = Number.parseInt(value.replace("month_", ""), 10);
+            this.value = {
+                type: "month",
+                period: {
+                    year: this.value.period.year || DateTime.local().year,
+                    month: Number.parseInt(value.replace("month_", ""), 10),
+                },
+            };
         } else {
-            this.period = value;
+            this.value = {
+                type: "quarter",
+                period: {
+                    year: this.value.period.year || DateTime.local().year,
+                    period: value,
+                },
+            };
         }
         this._updateFilter();
     }
 
     onYearChanged(date) {
         this.date = date;
-        this.year = date.year;
+        this.value = {
+            type: this.value.type,
+            period: {
+                ...this.value.period,
+                year: date.year,
+            },
+        };
         this._updateFilter();
     }
 
     _updateFilter() {
-        this.props.onTimeRangeChanged({
-            year: this.year,
-            period: this.period,
-        });
+        this.props.onTimeRangeChanged(this.value);
     }
 }

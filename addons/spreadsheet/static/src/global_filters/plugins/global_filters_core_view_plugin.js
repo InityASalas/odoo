@@ -311,17 +311,18 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
      */
     _getValueOfCurrentPeriod(filterId) {
         const filter = this.getters.getGlobalFilter(filterId);
+        const year = DateTime.local().year;
         switch (filter.defaultValue) {
             case "this_year":
-                return { year: DateTime.local().year };
+                return { type: "year", period: { year } };
             case "this_month": {
                 const month = DateTime.local().month;
-                return { year: DateTime.local().year, period: month };
+                return { type: "month", period: { year, month } };
             }
             case "this_quarter": {
                 const quarter = Math.floor(new Date().getMonth() / 3);
                 const period = FILTER_DATE_OPTION.quarter[quarter];
-                return { year: DateTime.local().year, period };
+                return { type: "quarter", period: { year, period } };
             }
         }
         throw new Error(
@@ -362,20 +363,37 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 return [[from], [to]];
             }
             case "fixedPeriod": {
-                if (!value || value.year === undefined) {
+                if (!value || value.period?.year === undefined) {
                     return [[{ value: "" }]];
                 }
-                const year = String(value.year);
-                const period = QUARTER_OPTIONS[value.period];
-                let periodStr = period && "Q" + period.setParam.quarter; // we do not want the translated value (like T1 in French)
-                // Named months aren't in QUARTER_OPTIONS
-                if (!period) {
-                    periodStr =
-                        value.period > 0 &&
-                        value.period <= 12 &&
-                        String(value.period).padStart(2, "0");
+                const yearString = String(value.period.year);
+                switch (value.type) {
+                    case "year":
+                        return [[{ value: yearString }]];
+                    case "month": {
+                        if (value.period.month === undefined) {
+                            return [[{ value: yearString }]];
+                        }
+                        return [
+                            [
+                                {
+                                    value:
+                                        String(value.period.month).padStart(2, "0") +
+                                        "/" +
+                                        yearString,
+                                },
+                            ],
+                        ];
+                    }
+                    case "quarter": {
+                        const period = QUARTER_OPTIONS[value.period.period];
+                        if (!period) {
+                            return [[{ value: yearString }]];
+                        }
+                        return [[{ value: "Q" + period.setParam.quarter + "/" + yearString }]]; // we do not want the translated value (like T1 in French)
+                    }
                 }
-                return [[{ value: periodStr ? periodStr + "/" + year : year }]];
+                return [[{ value: "" }]];
             }
             case "relative": {
                 const type = RELATIVE_DATE_RANGE_TYPES.find((type) => type.type === value);
@@ -414,7 +432,6 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
      * @returns {Domain}
      */
     _getDateDomain(filter, fieldMatching) {
-        let granularity;
         const value = this.getGlobalFilterValue(filter.id);
         if (!value || !fieldMatching.chain) {
             return new Domain();
@@ -443,39 +460,7 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
         if (filter.rangeType === "relative") {
             return getRelativeDateDomain(now, offset, value, field, type);
         }
-        const noPeriod = !value.period || value.period === "empty";
-        const noYear = value.year === undefined;
-        if (noPeriod && noYear) {
-            return new Domain();
-        }
-        const setParam = { year: value.year || now.year };
-        const plusParam = {};
-        if (noPeriod) {
-            granularity = "year";
-            setParam.year += offset;
-        } else {
-            // value.period is can be "first_quarter", "second_quarter", etc. or
-            // the month number (1-indexed, so 1 for January, 2 for February, etc.)
-            granularity = typeof value.period === "string" ? "quarter" : "month";
-            switch (granularity) {
-                case "month":
-                    setParam.month = value.period;
-                    plusParam.month = offset;
-                    break;
-                case "quarter":
-                    setParam.quarter = QUARTER_OPTIONS[value.period].setParam.quarter;
-                    plusParam.quarter = offset;
-                    break;
-            }
-        }
-        return constructDateRange({
-            referenceMoment: now,
-            fieldName: field,
-            fieldType: type,
-            granularity,
-            setParam,
-            plusParam,
-        }).domain;
+        return this._getFixedPeriodDomain(now, offset, value, field, type);
     }
 
     /**
@@ -527,6 +512,48 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             return new Domain([[field, "=", toBoolean(value[0])]]);
         }
         return new Domain([[field, "in", [toBoolean(value[0]), toBoolean(value[1])]]]);
+    }
+
+    _getFixedPeriodDomain(now, offset, value, field, type) {
+        let granularity;
+        const noYear = value.period.year === undefined;
+        if (noYear) {
+            return new Domain();
+        }
+        const setParam = { year: value.period.year };
+        const plusParam = {};
+        switch (value.type) {
+            case "year":
+                granularity = "year";
+                plusParam.year = offset;
+                break;
+            case "month":
+                if (value.period.month !== undefined) {
+                    granularity = "month";
+                    setParam.month = value.period.month;
+                    plusParam.month = offset;
+                } else {
+                    granularity = "year";
+                }
+                break;
+            case "quarter":
+                if (value.period.period !== undefined) {
+                    granularity = "quarter";
+                    setParam.quarter = QUARTER_OPTIONS[value.period.period].setParam.quarter;
+                    plusParam.quarter = offset;
+                } else {
+                    granularity = "year";
+                }
+                break;
+        }
+        return constructDateRange({
+            referenceMoment: now,
+            fieldName: field,
+            fieldType: type,
+            granularity,
+            setParam,
+            plusParam,
+        }).domain;
     }
 
     /**

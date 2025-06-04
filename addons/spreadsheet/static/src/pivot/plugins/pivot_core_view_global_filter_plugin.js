@@ -36,26 +36,35 @@ function pivotPeriodToFilterValue(timeRange, value) {
     switch (timeRange) {
         case "year":
             return {
-                year,
+                type: "year",
+                period: {
+                    year,
+                },
             };
         case "month": {
             const month = value.includes("/") ? Number.parseInt(value.split("/")[0]) : -1;
             if (month <= 0 || month > 12) {
-                return { year, period: undefined };
+                return { type: "year", period: { year } };
             }
             return {
-                year,
-                period: month,
+                type: "month",
+                period: {
+                    month,
+                    year,
+                },
             };
         }
         case "quarter": {
             const quarter = value.includes("/") ? Number.parseInt(value.split("/")[0]) - 1 : -1;
             if (!(quarter in FILTER_DATE_OPTION.quarter)) {
-                return { year, period: undefined };
+                return { type: "year", period: { year } };
             }
             return {
-                year,
-                period: FILTER_DATE_OPTION.quarter[quarter],
+                type: "quarter",
+                period: {
+                    period: FILTER_DATE_OPTION.quarter[quarter],
+                    year,
+                },
             };
         }
     }

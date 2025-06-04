@@ -582,7 +582,7 @@ test("Relational filter default to current user", async function () {
     expect(model.getters.getGlobalFilterValue(filter.id)).toEqual([7]);
 
     model.dispatch("SET_GLOBAL_FILTER_VALUE", { id: filter.id });
-    expect(model.getters.getGlobalFilterValue(filter.id)).toEqual([], {
+    expect(model.getters.getGlobalFilterValue(filter.id)).toBe(undefined, {
         message: "can clear automatic value",
     });
 });
@@ -2056,7 +2056,7 @@ test("Can set a value to a relation filter from the SET_MANY_GLOBAL_FILTER_VALUE
     model.dispatch("SET_MANY_GLOBAL_FILTER_VALUE", {
         filters: [{ filterId: "42" }],
     });
-    expect(model.getters.getGlobalFilterValue("42")).toEqual([]);
+    expect(model.getters.getGlobalFilterValue("42")).toBe(undefined);
 });
 
 test("Can set a value to a date filter from the SET_MANY_GLOBAL_FILTER_VALUE command", async function () {

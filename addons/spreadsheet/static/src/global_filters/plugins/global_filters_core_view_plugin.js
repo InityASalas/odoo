@@ -15,7 +15,6 @@ import { constructDateRange, QUARTER_OPTIONS } from "@web/search/utils/dates";
 import { EvaluationError, helpers } from "@odoo/o-spreadsheet";
 import { CommandResult } from "@spreadsheet/o_spreadsheet/cancelled_reason";
 
-import { isEmpty } from "@spreadsheet/helpers/helpers";
 import { FILTER_DATE_OPTION } from "@spreadsheet/assets_backend/constants";
 import {
     checkFilterValueIsValid,
@@ -156,38 +155,28 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
         const filter = this.getters.getGlobalFilter(filterId);
 
         const value = filterId in this.values ? this.values[filterId].value : undefined;
+        if (value !== undefined) {
+            return value;
+        }
         const preventDefaultValue = this.values[filterId]?.preventDefaultValue;
-        if (value === undefined && preventDefaultValue) {
-            switch (filter.type) {
-                case "relation":
-                case "boolean":
-                    return [];
-                case "text":
-                    return [];
-                default:
-                    return undefined;
-            }
+        if (preventDefaultValue || filter.defaultValue === undefined) {
+            return undefined;
         }
-        if (filter.type === "date") {
-            switch (filter.rangeType) {
-                case "from_to":
-                    return value;
-                case "fixedPeriod":
-                case "relative":
-                    if (isEmpty(value) && filter.defaultValue) {
-                        return this._getValueOfCurrentPeriod(filterId);
-                    }
-                    return value;
-            }
+        switch (filter.type) {
+            case "text":
+            case "boolean":
+                return filter.defaultValue;
+            case "date":
+                if (filter.rangeType === "fixedPeriod" || filter.rangeType === "relative") {
+                    return this._getValueOfCurrentPeriod(filterId);
+                }
+                throw new Error("from_to should not have a default value");
+            case "relation":
+                if (filter.defaultValue === "current_user") {
+                    return [user.userId];
+                }
+                return filter.defaultValue;
         }
-        if (
-            filter.type === "relation" &&
-            isEmpty(value) &&
-            filter.defaultValue === "current_user"
-        ) {
-            return [user.userId];
-        }
-        return value || filter.defaultValue;
     }
 
     /**
@@ -196,24 +185,7 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
      * @returns { boolean } true if the given filter is active
      */
     isGlobalFilterActive(id) {
-        const { type } = this.getters.getGlobalFilter(id);
-        const value = this.getGlobalFilterValue(id);
-        switch (type) {
-            case "text":
-                return value && value.length > 0;
-            case "date":
-                return (
-                    value &&
-                    (typeof value === "string" ||
-                        value.year !== undefined ||
-                        value.period ||
-                        value.from ||
-                        value.to)
-                );
-            case "relation":
-            case "boolean":
-                return value && value.length;
-        }
+        return this.getGlobalFilterValue(id) !== undefined;
     }
 
     /**

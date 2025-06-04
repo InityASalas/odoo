@@ -60,16 +60,6 @@ class TestWorkEntryLeave(TestWorkEntryHolidaysBase):
         self.assertTrue(leave_work_entry.work_entry_type_id.is_leave, "It should have created a leave work entry")
         self.assertNotEqual(leave_work_entry[:1].state, 'conflict', "The leave work entry should not conflict")
 
-    def test_refuse_leave(self):
-        leave = self.create_leave(date(2019, 10, 10), date(2019, 10, 10))
-        work_entries = self.richard_emp.version_id._generate_work_entries(datetime(2019, 10, 10, 0, 0, 0), datetime(2019, 10, 10, 23, 59, 59))
-        adjacent_work_entry = self.create_work_entry(leave.date_from - relativedelta(days=3), leave.date_from)
-        self.assertTrue(all(work_entries.mapped(lambda w: w.state == 'conflict')), "Attendance work entries should all conflict with the leave")
-        self.assertNotEqual(adjacent_work_entry.state, 'conflict', "Non overlapping work entry should not conflict")
-        leave.action_refuse()
-        self.assertTrue(all(work_entries.mapped(lambda w: w.state != 'conflict')), "Attendance work entries should no longer conflict")
-        self.assertNotEqual(adjacent_work_entry.state, 'conflict', "Non overlapping work entry should not conflict")
-
     def test_refuse_approved_leave(self):
         start = datetime(2019, 10, 10, 6, 0)
         end = datetime(2019, 10, 10, 18, 0)

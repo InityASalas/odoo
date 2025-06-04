@@ -2360,45 +2360,32 @@ export class PosStore extends WithLazyGetterTrap {
         if (!list || list.length === 0) {
             return [];
         }
+
+        const filteredList = [];
         const excludedProductIds = new Set(this.getExcludedProductIds());
-        const posRestrictedCategIdSet = new Set(
+        const availableCateg = new Set(
             (this.config.iface_available_categ_ids || []).map((c) => c.id)
         );
-        list = list
-            .filter(
-                (product) =>
-                    !excludedProductIds.has(product.id) &&
-                    product.canBeDisplayed &&
-                    (posRestrictedCategIdSet.size === 0 ||
-                        product.pos_categ_ids?.some((categ) =>
-                            posRestrictedCategIdSet.has(categ.id)
-                        ))
-            )
-            .sort((a, b) => {
-                // Sort in the same order as what we receive (look _load_product_with_domain)
-                if (a.sequence !== b.sequence) {
-                    return a.sequence - b.sequence;
-                }
-                if (a.default_code !== b.default_code) {
-                    if (!b.default_code) {
-                        return -1;
-                    }
-                    if (!a.default_code) {
-                        return 1;
-                    }
-                    return a.default_code.localeCompare(b.default_code);
-                }
-                return a.name.localeCompare(b.name);
-            })
-            .slice(0, 100);
 
-        if (this.areAllProductsSpecial(list)) {
-            return [];
+        for (const p of list) {
+            if (filteredList.length >= 100) {
+                break;
+            }
+
+            if (excludedProductIds.has(p.id) || !p.canBeDisplayed) {
+                continue;
+            }
+
+            if (availableCateg.size && !p.pos_categ_ids.some((c) => availableCateg.has(c.id))) {
+                continue;
+            }
+
+            filteredList.push(p);
         }
 
         return searchWord !== ""
-            ? list.sort((a, b) => b.is_favorite - a.is_favorite)
-            : list.sort((a, b) => {
+            ? filteredList.sort((a, b) => b.is_favorite - a.is_favorite)
+            : filteredList.sort((a, b) => {
                   if (b.is_favorite !== a.is_favorite) {
                       return b.is_favorite - a.is_favorite;
                   } else if (a.pos_sequence !== b.pos_sequence) {

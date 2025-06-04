@@ -647,3 +647,10 @@ class StockMove(models.Model):
 
     def _get_all_related_sm(self, product):
         return self.filtered(lambda m: m.product_id == product)
+
+    def _get_layer_candidates(self, is_returned=False):
+        self.ensure_one()
+        qty_valued = sum(self.stock_valuation_layer_ids.mapped('quantity'))
+        if is_returned != bool(self.origin_returned_move_id and qty_valued >= 0):
+            return self.env['stock.valuation.layer']
+        return self.stock_valuation_layer_ids

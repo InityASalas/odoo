@@ -772,10 +772,9 @@ class ProductProduct(models.Model):
         if not qty_to_invoice:
             return 0
 
-        candidates = stock_moves\
-            .sudo()\
-            .filtered(lambda m: is_returned == bool(m.origin_returned_move_id and sum(m.stock_valuation_layer_ids.mapped('quantity')) >= 0))\
-            .mapped('stock_valuation_layer_ids')
+        candidates = self.env['stock.valuation.layer']
+        for move in stock_moves:
+            candidates |= move.sudo()._get_layer_candidates(is_returned)
 
         if self.env.context.get('candidates_prefetch_ids'):
             candidates = candidates.with_prefetch(self.env.context.get('candidates_prefetch_ids'))

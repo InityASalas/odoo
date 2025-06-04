@@ -149,7 +149,7 @@ def translate_xml_node(node, callback, parse, serialize):
             # be translated as a whole using the `o_translate_inline` class.
             "o_translate_inline" in node.attrib.get("class", "").split()
             or node.tag in TRANSLATED_ELEMENTS
-            and not any(key.endswith(".translate.f") or key.endswith(".translate") for key in node.attrib)
+            and not any(key.startswith("t-") or key.endswith(".translate.f") or key.endswith(".translate") for key in node.attrib)
             and all(translatable(child) for child in node)
         )
 
@@ -241,7 +241,7 @@ def translate_xml_node(node, callback, parse, serialize):
                     (key == 'value' and is_translatable_attrib_value(node)) or
                     (key == 'text' and is_translatable_attrib_text(node))
                 ):
-                    if key.endswith('.translate.f') or key.endswith('.translate'):
+                    if key.startswith('t-') or key.endswith('.f'):
                         value = translate_format_string_expression(val.strip(), callback)
                     else:
                         value = callback(val.strip())

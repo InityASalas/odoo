@@ -11,7 +11,7 @@
     <xpath expr="." position="inside">
         <div data-selector=".s_hr" data-target="hr">
             <t t-call="website.snippet_options_border_line_widgets"
-                label.translate.f="Border"
+                label.translate="Border"
                 direction.f="top"/>
             <we-select string="Width">
                 <we-button data-select-class="w-25">25%</we-button>

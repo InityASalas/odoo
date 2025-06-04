@@ -753,7 +753,7 @@
 
 <template id="snippet_options_border_widgets">
     <t t-call="website.snippet_options_border_line_widgets"
-        label.translate.f="Border"
+        label.translate="Border"
         with_bs_class="True"/>
     <we-input string="Round Corners"
               t-if="not no_border_radius"
@@ -920,7 +920,7 @@
     <!-- Font Awesome icons -->
     <xpath expr="//div[@data-js='FontawesomeTools']" position="inside">
         <t t-call="website.snippet_options_border_line_widgets"
-            label.translate.f="Border"
+            label.translate="Border"
             with_bs_class="True"/>
     </xpath>
 
@@ -1933,7 +1933,7 @@
 
             <t t-if="request.geoip.country_code">
                 <t t-call="website.snippet_options_conditional_visibility"
-                    option_name.translate.f="Country"
+                    option_name.translate="Country"
                     attribute_rule.f="visibilityValueCountryRule"
                     save_attribute.f="visibilityValueCountry"
                     attribute_name.f="data-country"
@@ -1943,7 +1943,7 @@
             </t>
             <t t-if="len(current_website.language_ids) > 1">
                 <t t-call="website.snippet_options_conditional_visibility"
-                    option_name.translate.f="Languages"
+                    option_name.translate="Languages"
                     attribute_rule.f="visibilityValueLangRule"
                     save_attribute.f="visibilityValueLang"
                     attribute_name.f="lang"
@@ -1953,21 +1953,21 @@
                     data_fields.f="[&quot;code&quot;]"/>
             </t>
             <t t-call="website.snippet_options_conditional_visibility"
-                option_name.translate.f="UTM Campaign"
+                option_name.translate="UTM Campaign"
                 attribute_rule.f="visibilityValueUtmCampaignRule"
                 save_attribute.f="visibilityValueUtmCampaign"
                 attribute_name.f="data-utm-campaign"
                 model.f="utm.campaign"
                 call_with.f="display_name"/>
             <t t-call="website.snippet_options_conditional_visibility"
-                option_name.translate.f="UTM Medium"
+                option_name.translate="UTM Medium"
                 attribute_rule.f="visibilityValueUtmMediumRule"
                 save_attribute.f="visibilityValueUtmMedium"
                 attribute_name.f="data-utm-medium"
                 model.f="utm.medium"
                 call_with.f="display_name"/>
             <t t-call="website.snippet_options_conditional_visibility"
-                option_name.translate.f="UTM Source"
+                option_name.translate="UTM Source"
                 attribute_rule.f="visibilityValueUtmSourceRule"
                 save_attribute.f="visibilityValueUtmSource"
                 attribute_name.f="data-utm-source"

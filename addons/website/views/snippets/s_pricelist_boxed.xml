@@ -16,34 +16,34 @@
                             <h3>✽&#160;&#160;Pizzas</h3>
                             <ul class="list-unstyled m-0">
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Margherita"
+                                    name.translate="Margherita"
                                     price.f="$12.00"
-                                    description.translate.f="Classic pizza with fresh mozzarella, San Marzano tomatoes, and basil leaves, drizzled with extra virgin olive oil."/>
+                                    description.translate="Classic pizza with fresh mozzarella, San Marzano tomatoes, and basil leaves, drizzled with extra virgin olive oil."/>
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Quattro Stagioni"
+                                    name.translate="Quattro Stagioni"
                                     price.f="$14.50"
-                                    description.translate.f="A delicious mix of four toppings: mushrooms, artichokes, ham, and olives, all on a bed of mozzarella and tomato sauce."/>
+                                    description.translate="A delicious mix of four toppings: mushrooms, artichokes, ham, and olives, all on a bed of mozzarella and tomato sauce."/>
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Diavola"
+                                    name.translate="Diavola"
                                     price.f="$13.50"
-                                    description.translate.f="Spicy pepperoni paired with fiery chili flakes, mozzarella, and tomato sauce for a flavorful kick."/>
+                                    description.translate="Spicy pepperoni paired with fiery chili flakes, mozzarella, and tomato sauce for a flavorful kick."/>
                             </ul>
                         </div>
                         <div class="s_pricelist_boxed_section col-lg-12 pt48" data-name="Menu Section">
                             <h3>✽&#160;&#160;Pastas</h3>
                             <ul class="list-unstyled m-0">
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Spaghetti Carbonara"
+                                    name.translate="Spaghetti Carbonara"
                                     price.f="$15.00"
-                                    description.translate.f="Traditional Roman dish with creamy egg, crispy pancetta, and Pecorino Romano, topped with black pepper."/>
+                                    description.translate="Traditional Roman dish with creamy egg, crispy pancetta, and Pecorino Romano, topped with black pepper."/>
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Penne all'Arrabbiata"
+                                    name.translate="Penne all'Arrabbiata"
                                     price.f="$13.00"
-                                    description.translate.f="Penne pasta tossed in a spicy tomato and garlic sauce with a hint of chili peppers, finished with fresh parsley."/>
+                                    description.translate="Penne pasta tossed in a spicy tomato and garlic sauce with a hint of chili peppers, finished with fresh parsley."/>
                                 <t t-call="website.s_pricelist_boxed_item"
-                                    name.translate.f="Lasagna al Forno"
+                                    name.translate="Lasagna al Forno"
                                     price.f="$16.00"
-                                    description.translate.f="Layers of pasta, rich meat ragu, béchamel sauce, and melted mozzarella, baked to perfection."/>
+                                    description.translate="Layers of pasta, rich meat ragu, béchamel sauce, and melted mozzarella, baked to perfection."/>
                             </ul>
                         </div>
                     </div>
@@ -89,7 +89,7 @@
         <div data-js="Pricelist" data-selector=".s_pricelist_boxed">
             <we-checkbox string="Descriptions" data-toggle-description="true" data-items-class="s_pricelist_boxed_item" data-description-class="s_pricelist_boxed_item_description" data-no-preview="true"/>
             <t t-call="website.snippet_options_border_line_widgets"
-                label.translate.f="Separator"
+                label.translate="Separator"
                 direction.f="top"
                 apply_to.f=".s_pricelist_boxed_item_line"/>
         </div>

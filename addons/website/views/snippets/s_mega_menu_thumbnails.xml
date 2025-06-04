@@ -10,37 +10,37 @@
                         <div class="row">
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_1"
-                                _text.translate.f="Laptops"/>
+                                _text.translate="Laptops"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_2"
-                                _text.translate.f="Mouse"/>
+                                _text.translate="Mouse"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_3"
-                                _text.translate.f="Keyboards"/>
+                                _text.translate="Keyboards"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_4"
-                                _text.translate.f="Printers"/>
+                                _text.translate="Printers"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_5"
-                                _text.translate.f="Storage"/>
+                                _text.translate="Storage"/>
 
                             <div class="w-100 d-none d-lg-block"/>
 
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_6"
-                                _text.translate.f="Tablets"/>
+                                _text.translate="Tablets"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_7"
-                                _text.translate.f="Phones"/>
+                                _text.translate="Phones"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_8"
-                                _text.translate.f="Screens"/>
+                                _text.translate="Screens"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_9"
-                                _text.translate.f="Gaming"/>
+                                _text.translate="Gaming"/>
                             <t t-call="website.s_mega_menu_thumbnails_item"
                                 _img_src.f="/web/image/website.s_mega_menu_thumbnails_default_image_10"
-                                _text.translate.f="Sound"/>
+                                _text.translate="Sound"/>
                         </div>
                     </div>
                 </div>

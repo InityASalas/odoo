@@ -2289,7 +2289,7 @@ class IrQweb(models.AbstractModel):
         # args
         for key in list(el.attrib):
             if key.endswith('.f') or key.endswith('.translate'):
-                name = key.split('.', 1)[0]
+                name = key.removesuffix(".f").removesuffix(".translate")
                 value = el.attrib.pop(key)
                 code.append(indent_code(f"t_call_values[{name!r}] = {self._compile_format(value)}", level))
             elif not key.startswith('t-'):

@@ -167,8 +167,11 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
             case "boolean":
                 return filter.defaultValue;
             case "date":
-                if (filter.rangeType === "fixedPeriod" || filter.rangeType === "relative") {
+                if (filter.rangeType === "fixedPeriod") {
                     return this._getValueOfCurrentPeriod(filterId);
+                }
+                if (filter.rangeType === "relative") {
+                    return filter.defaultValue;
                 }
                 throw new Error("from_to should not have a default value");
             case "relation":
@@ -321,7 +324,9 @@ export class GlobalFiltersCoreViewPlugin extends OdooCoreViewPlugin {
                 return { year: DateTime.local().year, period };
             }
         }
-        return filter.defaultValue;
+        throw new Error(
+            "Unsupported default value for fixed period date filter: " + filter.defaultValue
+        );
     }
 
     /**

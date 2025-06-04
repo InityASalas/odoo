@@ -6,7 +6,7 @@ from odoo import Command
 from odoo.addons.mail.tests.common import mail_new_test_user
 from odoo.tests import common
 from odoo.tests.common import TransactionCase
-from odoo.tools import Datetime
+from odoo.fields import Datetime
 
 
 class TestHrHolidaysCommon(common.TransactionCase):

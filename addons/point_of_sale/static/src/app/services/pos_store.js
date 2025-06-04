@@ -191,16 +191,10 @@ export class PosStore extends WithLazyGetterTrap {
     }
 
     get defaultPage() {
-        let openOrder = this.models["pos.order"].find((o) => o.state === "draft");
-
-        if (!openOrder) {
-            openOrder = this.addNewOrder();
-        }
-
         return {
             page: "ProductScreen",
             params: {
-                orderUuid: openOrder?.uuid,
+                orderUuid: this.getOpenOrder().uuid,
             },
         };
     }
@@ -1228,6 +1222,9 @@ export class PosStore extends WithLazyGetterTrap {
         } else {
             return this.addNewOrder();
         }
+    }
+    getOpenOrder() {
+        return this.models["pos.order"].find((o) => o.state === "draft") || this.addNewOrder();
     }
     getEmptyOrder() {
         const orders = this.models["pos.order"].filter(

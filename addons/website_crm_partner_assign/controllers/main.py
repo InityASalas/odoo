@@ -242,7 +242,7 @@ class WebsiteCrmPartnerAssign(WebsitePartnerPage, GoogleMap):
         if not request.env.user.has_group('website.group_website_restricted_editor'):
             base_partner_domain += [('grade_id.website_published', '=', True)]
         if search:
-            base_partner_domain += ['|', ('name', 'ilike', search), ('website_description', 'ilike', search)]
+            base_partner_domain += ['|', '|', ('name', 'ilike', search), ('website_description', 'ilike', search), ('zip', '=', search)]
 
         # Infer Country
         if not country and not country_all:

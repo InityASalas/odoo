@@ -1171,3 +1171,31 @@ class TestPartnerRecursion(TransactionCase):
         self.p1.parent_id = self.p2
         with self.assertRaises(ValidationError):
             (self.p3|self.p2).write({'parent_id': self.p1.id})
+
+    def test_display_name_whitespace_cleanup(self):
+        partner = self.env['res.partner'].create({
+            'name': 'John',
+            'street': '123 Road',
+            'street2': '',
+            'city': 'Nowhere',
+        })
+        name = partner.with_context(show_address=True).display_name
+        self.assertNotRegex(name, r'\s+\n')
+
+        partner = self.env['res.partner'].create({
+            'name': 'John',
+            'street': '',
+            'street2': 'blabla',
+            'city': 'Nowhere',
+        })
+        name = partner.with_context(show_address=True).display_name
+        self.assertNotRegex(name, r'\s+\n')
+
+        partner = self.env['res.partner'].create({
+            'name': 'John',
+            'street': '',
+            'street2': '',
+            'city': 'Nowhere',
+        })
+        name = partner.with_context(show_address=True).display_name
+        self.assertNotRegex(name, r'\s+\n')

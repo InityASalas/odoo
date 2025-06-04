@@ -7,7 +7,7 @@ class AccountTax(models.Model):
     # TODO: move to l10n_es?
     @api.model
     def _l10n_es_get_sujeto_tax_types(self):
-        return ['sujeto', 'sujeto_isp', 'sujeto_agricultura']
+        return ['sujeto', 'sujeto_isp', 'sujeto_agricultura', 'igic']
 
     @api.model
     def _l10n_es_edi_verifactu_get_tax_types_map(self):

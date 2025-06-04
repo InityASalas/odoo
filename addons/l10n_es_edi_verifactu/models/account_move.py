@@ -176,6 +176,8 @@ class AccountMove(models.Model):
             regimen_key = '02'
         else:
             regimen_key = '01'
+        # TODO: (VAT subject to IPSI/IGIC) or (IGIC subject to VAT/IPSI)
+        #   regimen_key = '08'
 
         return f'{verifactu_tax_type}_{regimen_key}'
 
@@ -224,7 +226,8 @@ class AccountMove(models.Model):
     @api.depends('l10n_es_edi_verifactu_document_ids', 'l10n_es_edi_verifactu_document_ids.record_identifier')
     def _compute_l10n_es_edi_verifactu_qr_code(self):
         for move in self:
-            url = move.l10n_es_edi_verifactu_document_ids._get_last('submission')._get_qr_code_img_url()
+            last_submission = move.l10n_es_edi_verifactu_document_ids._get_last('submission')
+            url = last_submission._get_qr_code_img_url() if last_submission else False
             move.l10n_es_edi_verifactu_qr_code = url
 
     @api.depends('l10n_es_edi_verifactu_state', 'l10n_es_edi_verifactu_document_ids', 'l10n_es_edi_verifactu_document_ids.state')

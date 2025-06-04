@@ -307,7 +307,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 continue
 
             previous_document = self.env['l10n_es_edi_verifactu.document'].search(
-                [('chain_index', '!=', False)], order='chain_index asc', limit=1,
+                [('chain_index', '!=', False)], order='chain_index desc', limit=1,
             )
             for record_values in record_values_list:
                 if record_values.get('documents', self.env[self._name])._filter_waiting():
@@ -905,13 +905,6 @@ class L10nEsEdiVerifactuDocument(models.Model):
             base_amount = sign * tax_detail['base_amount']
             tax_amount = math.copysign(tax_detail['tax_amount'], base_amount)
 
-            if clave_regimen == '06' or verifactu_tax_type in ('02', '05'):
-                base_amount_no_sujeto = 0
-                base_amount_sujeto = base_amount
-            else:
-                base_amount_no_sujeto = base_amount
-                base_amount_sujeto = None
-
             calificacion_operacion = None  # Reported if not tax-exempt;
             recargo_equivalencia = {}
             if tax_type in sujeto_tax_types:
@@ -960,8 +953,7 @@ class L10nEsEdiVerifactuDocument(models.Model):
                 'CalificacionOperacion': calificacion_operacion,
                 'OperacionExenta': exempt_reason,
                 'TipoImpositivo': self._format_number_Tipo2_2(tax_percentage),
-                'BaseImponibleOimporteNoSujeto': self._format_number_ImporteSgn12_2(base_amount_no_sujeto),
-                'BaseImponibleACoste': self._format_number_ImporteSgn12_2(base_amount_sujeto),
+                'BaseImponibleOimporteNoSujeto': self._format_number_ImporteSgn12_2(base_amount),
                 'CuotaRepercutida': self._format_number_ImporteSgn12_2(tax_amount),
                 'TipoRecargoEquivalencia': self._format_number_Tipo2_2(recargo_percentage),
                 'CuotaRecargoEquivalencia': self._format_number_ImporteSgn12_2(recargo_amount),

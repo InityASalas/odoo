@@ -2318,7 +2318,7 @@ class IrQweb(models.AbstractModel):
                 """, level))
             if compile_context.get('dev_mode'):
                 _logger.warning(
-                    "Found deprecated t-call formating using t-set whitout t-arg-* @t-call=%r in template %r.",
+                    "Found deprecated t-call formating using t-set whitout attributes on @t-call=%r in template %r.",
                     expr,
                     compile_context.get('ref', '<unknown>'),
                 )

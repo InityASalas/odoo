@@ -1615,35 +1615,34 @@ export class PosStore extends Reactive {
                 printer.config.product_categories_ids,
                 orderChange
             );
-            const anyChangesToPrint = changes.new.length;
             const diningModeUpdate = orderChange.modeUpdate;
-            if (diningModeUpdate || anyChangesToPrint) {
+            const toPrintArray = this.preparePrintingData(order, changes);
+            if (diningModeUpdate) {
+                // print for dining mode change with showing existing lines
                 const printed = await this.printReceipts(
                     order,
                     printer,
-                    "New",
-                    changes.new,
+                    "",
+                    Object.values(order.last_order_preparation_change.lines),
                     true,
                     diningModeUpdate
                 );
                 if (!printed) {
                     unsuccedPrints.push("Detailed Receipt");
                 }
-            } else {
-                // Print all receipts related to line changes
-                const toPrintArray = this.preparePrintingData(order, changes);
-                for (const [key, value] of Object.entries(toPrintArray)) {
-                    const printed = await this.printReceipts(order, printer, key, value, false);
-                    if (!printed) {
-                        unsuccedPrints.push(key);
-                    }
+            }
+            // Print receipts for line changes
+            for (const [key, value] of Object.entries(toPrintArray)) {
+                const printed = await this.printReceipts(order, printer, key, value, false);
+                if (!printed) {
+                    unsuccedPrints.push(key);
                 }
-                // Print Order Note if changed
-                if (orderChange.generalNote) {
-                    const printed = await this.printReceipts(order, printer, "Message", []);
-                    if (!printed) {
-                        unsuccedPrints.push("General Message");
-                    }
+            }
+            // Print Order Note if changed
+            if (orderChange.generalNote) {
+                const printed = await this.printReceipts(order, printer, "Message", []);
+                if (!printed) {
+                    unsuccedPrints.push("General Message");
                 }
             }
         }

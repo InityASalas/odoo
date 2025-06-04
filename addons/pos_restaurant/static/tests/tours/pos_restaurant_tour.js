@@ -645,7 +645,7 @@ registry.category("web_tour.tours").add("MultiPreparationPrinter", {
             FloorScreen.clickTable("5"),
             ProductScreen.clickDisplayedProduct("Product 1"),
             ProductScreen.clickOrderButton(),
-            Dialog.bodyIs("Failed in printing Detailed Receipt changes of the order"),
+            Dialog.bodyIs("Failed in printing New Changes changes of the order"),
             Dialog.confirm(),
         ].flat(),
 });

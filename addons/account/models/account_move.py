@@ -5165,16 +5165,6 @@ class AccountMove(models.Model):
             if move.line_ids.account_id.filtered(lambda account: not account.active) and not self._context.get('skip_account_deprecation_check'):
                 validation_msgs.add(_("A line of this move is using a archived account, you cannot post it."))
 
-            # If the field autocheck_on_post is set, we want the checked field on the move to be checked
-            if move.journal_id.autocheck_on_post:
-                move.checked = move.journal_id.autocheck_on_post
-            else:
-                move.sudo().activity_schedule(
-                    activity_type_id=self.env.ref('mail.mail_activity_data_todo').id,
-                    summary=_('To check'),
-                    user_id=move.invoice_user_id.name,
-                )
-
         if validation_msgs:
             msg = "\n".join([line for line in validation_msgs])
             raise UserError(msg)
@@ -5573,10 +5563,6 @@ class AccountMove(models.Model):
         partial = self.env['account.partial.reconcile'].browse(partial_id)
         return partial.unlink()
 
-    def button_set_checked(self):
-        for move in self:
-            move.checked = True
-
     def button_draft(self):
         if any(move.state not in ('cancel', 'posted') for move in self):
             raise UserError(_("Only posted/cancelled journal entries can be reset to draft."))
@@ -5732,7 +5718,6 @@ class AccountMove(models.Model):
             ('state', '=', 'draft'),
             ('date', '<=', fields.Date.context_today(self)),
             ('auto_post', '!=', 'no'),
-            '|', ('checked', '=', True), ('journal_id.autocheck_on_post', '=', True)
         ]
         moves = self.search(domain, limit=batch_size)
         remaining = len(moves) if len(moves) < batch_size else self.search_count(domain)
@@ -5754,7 +5739,6 @@ class AccountMove(models.Model):
                 self.env['ir.cron']._commit_progress(1)
             except UserError as e:
                 self.env.cr.rollback()
-                move.checked = False
                 msg = _('The move could not be posted for the following reason: %(error_message)s', error_message=e)
                 move.message_post(body=msg, message_type='comment')
                 self.env['ir.cron']._commit_progress()

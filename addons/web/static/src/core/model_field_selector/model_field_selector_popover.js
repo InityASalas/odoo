@@ -114,6 +114,7 @@ export class ModelFieldSelectorPopover extends Component {
         filter: { type: Function, optional: true },
         sort: { type: Function, optional: true },
         followRelations: { type: Boolean, optional: true },
+        excludeDateFields: { type: Boolean, optional: true },
         showDebugInput: { type: Boolean, optional: true },
         isDebugMode: { type: Boolean, optional: true },
         path: { optional: true },
@@ -176,12 +177,17 @@ export class ModelFieldSelectorPopover extends Component {
         if (!this.props.followRelations) {
             return false;
         }
-        return (
-            fieldDef.relation ||
+        if (!this.props.excludeDateFields) {
             // fields that are not groupable are in general not searchable
-            (fieldDef.groupable && (fieldDef.type === "datetime" || fieldDef.type === "date")) ||
-            fieldDef.type === "datetime_option"
-        );
+            if (
+                (fieldDef.groupable &&
+                    (fieldDef.type === "datetime" || fieldDef.type === "date")) ||
+                fieldDef.type === "datetime_option"
+            ) {
+                return true;
+            }
+        }
+        return fieldDef.relation;
     }
 
     filter(fieldDefs, path) {

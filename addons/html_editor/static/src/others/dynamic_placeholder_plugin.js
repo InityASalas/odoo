@@ -64,6 +64,7 @@ export class DynamicPlaceholderPlugin extends Plugin {
                 close: this.onClose.bind(this),
                 validate: this.onValidate.bind(this),
                 resModel: resModel,
+                excludeDateFields: true,
             },
         });
     }

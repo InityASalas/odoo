@@ -70,3 +70,75 @@ class ResConfigSettings(models.TransientModel):
                 }
             }
         return True
+<<<<<<< a2aec78dd3d8cda98c868395862796cac4319a95
+||||||| 4b933b8dfafcdc2878961188fd2365c1f5766f5f
+
+    def button_migrate_peppol_registration(self):
+        """
+        Migrates AWAY from Odoo's SMP.
+        If the user is a receiver, they need to request a migration key, generated on the IAP server.
+        The migration key is then displayed in Peppol settings.
+        Currently, reopening after migrating away is not supported.
+        """
+        raise UserError(_("This feature is deprecated. Contact odoo support if you need a migration key."))
+
+    @handle_demo
+    def button_deregister_peppol_participant(self):
+        """
+        Deregister the edi user from Peppol network
+        """
+        self.ensure_one()
+
+        if self.account_peppol_edi_user:
+            self.account_peppol_edi_user._peppol_deregister_participant()
+        return True
+
+    def button_account_peppol_configure_services(self):
+        wizard = self.env['account_peppol.service.wizard'].create({
+            'edi_user_id': self.account_peppol_edi_user.id,
+            'service_json': self.account_peppol_edi_user._peppol_get_services().get('services'),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Configure your peppol services',
+            'res_model': 'account_peppol.service.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+=======
+
+    def button_migrate_peppol_registration(self):
+        """
+        Migrates AWAY from Odoo's SMP.
+        If the user is a receiver, they need to request a migration key, generated on the IAP server.
+        The migration key is then displayed in Peppol settings.
+        Currently, reopening after migrating away is not supported.
+        """
+        raise UserError(_("This feature is deprecated. Contact Odoo support if you need a migration key."))
+
+    @handle_demo
+    def button_deregister_peppol_participant(self):
+        """
+        Deregister the edi user from Peppol network
+        """
+        self.ensure_one()
+
+        if self.account_peppol_edi_user:
+            self.account_peppol_edi_user._peppol_deregister_participant()
+        return True
+
+    def button_account_peppol_configure_services(self):
+        wizard = self.env['account_peppol.service.wizard'].create({
+            'edi_user_id': self.account_peppol_edi_user.id,
+            'service_json': self.account_peppol_edi_user._peppol_get_services().get('services'),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Configure your peppol services',
+            'res_model': 'account_peppol.service.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+>>>>>>> 94c96564e6db37ef7dfb068db7696f369522a009

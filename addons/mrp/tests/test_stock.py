@@ -714,6 +714,15 @@ class TestKitPicking(common.TestMrpCommon):
                 'location_id': stock_location.id,
                 'location_dest_id': customer_location.id,
                 'product_packaging_id': packaging.id,
+            }),
+            Command.create({
+                'name': kit.name,
+                'product_id': kit.id,
+                'product_uom_qty': 24,
+                'product_uom': kit.uom_id.id,
+                'location_id': stock_location.id,
+                'location_dest_id': customer_location.id,
+                'product_packaging_id': False,
             })],
         })
         delivery.action_confirm()
@@ -721,4 +730,5 @@ class TestKitPicking(common.TestMrpCommon):
         delivery.move_ids.picked = True
         delivery.button_validate()
         self.assertTrue(delivery.state, 'done')
-        self.assertEqual(delivery.move_ids.move_line_ids.product_packaging_qty, 12)
+        self.assertEqual(delivery.move_ids.move_line_ids[0].product_packaging_qty, 12)
+        self.assertEqual(delivery.move_ids.move_line_ids[1].product_packaging_qty, 0)

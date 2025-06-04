@@ -6,6 +6,7 @@ from odoo import Command
 from odoo.addons.mail.tests.common import mail_new_test_user
 from odoo.tests import common
 from odoo.tests.common import TransactionCase
+from odoo.tools import Datetime
 
 
 class TestHrHolidaysCommon(common.TransactionCase):
@@ -158,4 +159,14 @@ class TestHolidayContract(TransactionCase):
             'name': 'Contract for Jules',
             'resource_calendar_id': cls.calendar_35h.id,
             'wage': 5000.0,
+        })
+
+    @classmethod
+    def create_leave(cls, date_from=None, date_to=None, name="", employee_id=False):
+        return cls.env['hr.leave'].create({
+            'name': name or 'Holiday!!!',
+            'employee_id': employee_id or cls.richard_emp.id,
+            'holiday_status_id': cls.leave_type.id,
+            'request_date_to': date_to or Datetime.today(),
+            'request_date_from': date_from or Datetime.today(),
         })

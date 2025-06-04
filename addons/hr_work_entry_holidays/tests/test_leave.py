@@ -63,8 +63,6 @@ class TestWorkEntryLeave(TestWorkEntryHolidaysBase):
     def test_refuse_leave(self):
         leave = self.create_leave(date(2019, 10, 10), date(2019, 10, 10))
         work_entries = self.richard_emp.version_id._generate_work_entries(datetime(2019, 10, 10, 0, 0, 0), datetime(2019, 10, 10, 23, 59, 59))
-        for work_entry in work_entries:
-            print(work_entry.name, work_entry.date_start, work_entry.date_stop, work_entry.state)
         adjacent_work_entry = self.create_work_entry(leave.date_from - relativedelta(days=3), leave.date_from)
         self.assertTrue(all(work_entries.mapped(lambda w: w.state == 'conflict')), "Attendance work entries should all conflict with the leave")
         self.assertNotEqual(adjacent_work_entry.state, 'conflict', "Non overlapping work entry should not conflict")

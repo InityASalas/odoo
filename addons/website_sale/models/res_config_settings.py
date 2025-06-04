@@ -9,9 +9,8 @@ class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
     # Groups
-    group_delivery_invoice_address = fields.Boolean(
-        string="Shipping Address",
-        implied_group='account.group_delivery_invoice_address',
+    # Ensures updating correctly when group access changes
+    group_sale_delivery_address = fields.Boolean(
         group='base.group_portal,base.group_user,base.group_public',
     )
     group_show_uom_price = fields.Boolean(

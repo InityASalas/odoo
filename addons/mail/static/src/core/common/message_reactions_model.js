@@ -10,7 +10,13 @@ export class MessageReactions extends Record {
     count;
     /** @type {number} */
     sequence;
-    personas = fields.Many("Persona");
+    partner_ids = fields.Many("res.partner");
+    guest_ids = fields.Many("mail.guest");
+    personas = fields.Many("Persona", {
+        compute() {
+            return [...this.partner_ids, ...this.guest_ids];
+        },
+    });
     message = fields.One("mail.message");
 
     async remove() {

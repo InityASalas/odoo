@@ -214,7 +214,15 @@ export class RecordListInternal {
         const targetModel = getTargetModel(recordList);
         if (typeof val !== "object") {
             // single-id data
-            val = { [recordList._store[targetModel].id]: val };
+            try {
+                val = { [recordList._store[targetModel].id]: val };
+            } catch {
+                recordList._store.handleError(
+                    new Error(
+                        `Invalid value for recordList ${recordList._.name} of model ${targetModel}: ${val}`
+                    )
+                );
+            }
         }
         if (inverse && inv) {
             // special command to call addNoinv/deleteNoInv, to prevent infinite loop

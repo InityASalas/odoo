@@ -47,7 +47,7 @@ test("navigate between builder tab don't fetch snippet description again", async
     );
     expect.verifySteps(["render_public_asset"]);
 
-    await contains(".o-website-builder_sidebar .o-snippets-tabs span:contains(THEME)").click();
+    await contains(".o-website-builder_sidebar .o-snippets-tabs span:contains(Theme)").click();
     await animationFrame();
     expect(queryOne(".o-website-builder_sidebar .o-snippets-tabs button.active")).toHaveText(
         "THEME"
@@ -96,7 +96,7 @@ test("activate customize tab without any selection", async () => {
         "BLOCKS"
     );
     await contains(
-        ".o-website-builder_sidebar .o-snippets-tabs button:contains(CUSTOMIZE)"
+        ".o-website-builder_sidebar .o-snippets-tabs button:contains(Edit)"
     ).click();
     expect(queryOne(".o-website-builder_sidebar .o-snippets-tabs button.active")).toHaveText(
         "CUSTOMIZE"
@@ -109,24 +109,24 @@ test("Clicking on the 'BLOCKS' or 'THEME' tab should deactivate the options", as
     await contains(":iframe .s_banner").click();
     await animationFrame();
     expect(".oe_overlay").toHaveCount(1);
-    expect(".o-snippets-tabs button:contains('CUSTOMIZE')").toHaveClass("active");
+    expect(".o-snippets-tabs button:contains('Edit')").toHaveClass("active");
     expect(".o_customize_tab .options-container").toHaveCount(1);
 
-    await contains(".o-snippets-tabs button:contains('BLOCKS')").click();
+    await contains(".o-snippets-tabs button:contains('Add')").click();
     expect(".oe_overlay").toHaveCount(0);
-    await contains(".o-snippets-tabs button:contains('CUSTOMIZE')").click();
-    expect(".o-snippets-tabs button:contains('CUSTOMIZE')").toHaveClass("active");
+    await contains(".o-snippets-tabs button:contains('Edit')").click();
+    expect(".o-snippets-tabs button:contains('Edit')").toHaveClass("active");
     expect(".o_customize_tab .options-container").toHaveCount(0);
 
     await contains(":iframe .s_banner").click();
     await waitFor(".o_customize_tab .options-container");
     expect(".oe_overlay").toHaveCount(1);
-    expect(".o-snippets-tabs button:contains('CUSTOMIZE')").toHaveClass("active");
+    expect(".o-snippets-tabs button:contains('Edit')").toHaveClass("active");
     expect(".o_customize_tab .options-container").toHaveCount(1);
 
     await contains(".o-snippets-tabs button:contains('THEME')").click();
     expect(".oe_overlay").toHaveCount(0);
-    await contains(".o-snippets-tabs button:contains('CUSTOMIZE')").click();
-    expect(".o-snippets-tabs button:contains('CUSTOMIZE')").toHaveClass("active");
+    await contains(".o-snippets-tabs button:contains('Edit')").click();
+    expect(".o-snippets-tabs button:contains('Edit')").toHaveClass("active");
     expect(".o_customize_tab .options-container").toHaveCount(0);
 });

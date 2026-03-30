@@ -11,7 +11,7 @@
     """,
     'version': '17.0.1.0.0',
     'category': 'Productivity',
-    'author': 'Custom',
+    'author': 'Inity',
     'depends': ['google_calendar'],
     'installable': True,
     'auto_install': False,
